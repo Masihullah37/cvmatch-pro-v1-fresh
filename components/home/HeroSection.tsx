@@ -198,17 +198,16 @@ export default function HeroSection() {
               ))}
             </div>
 
-            {/* CTAs */}
             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
               <a
                 href="#analyze"
-                className="group inline-flex items-center gap-3 font-black text-sm uppercase tracking-widest transition-all duration-200 hover:scale-105 active:scale-95 hover:bg-emerald-600"
+                id="hero-btn-analyze"
+                className="hero-btn-primary group inline-flex items-center gap-3 font-black text-sm uppercase tracking-widest transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{
-                  background: "#10b981",
                   color: "white",
                   padding: "16px 32px",
                   borderRadius: 16,
-                  boxShadow: "0 20px 40px rgba(16,185,129,0.3)",
+                  boxShadow: "0 20px 40px rgba(219,39,119,0.3)",
                   textDecoration: "none",
                 }}
               >
@@ -216,13 +215,11 @@ export default function HeroSection() {
                 Analyser mon CV
               </a>
               <button
+                id="hero-btn-create-cv"
                 onClick={handleCreateCV}
                 disabled={isCreating}
-                className="inline-flex items-center justify-center gap-3 font-bold text-sm uppercase tracking-widest transition-all duration-200 hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-80"
+                className="hero-btn-secondary inline-flex items-center justify-center gap-3 font-bold text-sm uppercase tracking-widest transition-all duration-200 hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-80"
                 style={{
-                  background: isCreating ? "#e2e8f0" : "#f8fafc",
-                  border: "2px solid #e2e8f0",
-                  color: isCreating ? "#94a3b8" : "#0f172a",
                   padding: "16px 32px",
                   borderRadius: 16,
                   cursor: isCreating ? "not-allowed" : "pointer",
@@ -230,12 +227,44 @@ export default function HeroSection() {
                 }}
               >
                 {isCreating ? (
-                  <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
                 ) : (
                   "Créer un CV"
                 )}
               </button>
             </div>
+
+            <style>{`
+              .hero-btn-primary {
+                background: #db2777;
+              }
+              .hero-btn-primary:hover {
+                background: #be185d;
+              }
+              .hero-btn-primary:active {
+                background: #9d174d;
+              }
+              .hero-btn-secondary {
+                background: #f8fafc;
+                border: 2px solid #e2e8f0;
+                color: #0f172a;
+              }
+              .hero-btn-secondary:hover {
+                border-color: #db2777;
+                color: #db2777;
+                background: #fdf2f8;
+              }
+              .hero-btn-secondary:active {
+                background: #fce7f3;
+                border-color: #be185d;
+                color: #be185d;
+              }
+              .hero-btn-secondary:disabled {
+                background: #e2e8f0;
+                border-color: #e2e8f0;
+                color: #94a3b8;
+              }
+            `}</style>
 
             <div className="flex items-center gap-3 pt-2 justify-center lg:justify-start">
                <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">

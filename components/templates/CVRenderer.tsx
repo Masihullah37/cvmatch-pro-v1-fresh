@@ -421,7 +421,7 @@ export const CVRenderer = ({
   };
 
   const ProtectionOverlay = () =>
-    !isPaid && (
+    !template.hideWatermark && ( // Use the template's specific hideWatermark flag
       <div className="absolute inset-0 z-[60] select-none pointer-events-none">
         <Watermark />
         <div className="absolute inset-0 bg-black/[0.02] backdrop-blur-[0.5px]"></div>
@@ -506,18 +506,18 @@ export const CVRenderer = ({
               <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
             </p>
             {headers.contact && (
-            <DraggableSection id="contact" isInteractive={isInteractive} onDelete={onDeleteSection}>
-            <div className="mt-4 flex flex-col items-center gap-2 text-xs font-sans uppercase tracking-widest text-gray-400">
-              <p>
-                <InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} />
-                {" • "}
-                <InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} />
-                {" • "}
-                <InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} />
-              </p>
-              <ContactLinks className="" />
-            </div>
-            </DraggableSection>
+              <DraggableSection id="contact" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                <div className="mt-4 flex flex-col items-center gap-2 text-xs font-sans uppercase tracking-widest text-gray-400">
+                  <p>
+                    <InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} />
+                    {" • "}
+                    <InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} />
+                    {" • "}
+                    <InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} />
+                  </p>
+                  <ContactLinks className="" />
+                </div>
+              </DraggableSection>
             )}
           </div>
           <div className="flex flex-col gap-10 font-sans">
@@ -905,15 +905,15 @@ export const CVRenderer = ({
             <h1 className="text-4xl font-bold mb-2 tracking-tight"><InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} /></h1>
             <p className="text-lg text-gray-600 italic mb-4"><InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
             {headers.contact && (
-            <DraggableSection id="contact" isInteractive={isInteractive} onDelete={onDeleteSection}>
-            <div className="flex justify-center gap-6 text-xs text-gray-500 border-y border-gray-100 py-3">
-              {contact.location && <span><InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} /> • </span>}
-              <span><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
-              <span>•</span>
-              <span><InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
-            </div>
-            <ContactLinks className="text-xs text-gray-500 mt-2" />
-            </DraggableSection>
+              <DraggableSection id="contact" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                <div className="flex justify-center gap-6 text-xs text-gray-500 border-y border-gray-100 py-3">
+                  {contact.location && <span><InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} /> • </span>}
+                  <span><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
+                  <span>•</span>
+                  <span><InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
+                </div>
+                <ContactLinks className="text-xs text-gray-500 mt-2" />
+              </DraggableSection>
             )}
           </header>
           <div className="flex flex-col gap-10 font-sans">

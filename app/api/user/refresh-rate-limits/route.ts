@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { connection } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -9,8 +8,6 @@ import { resetAnalysisRateLimitsForUser } from "@/lib/rate-limit/reset-user-limi
 
 /** Called after checkout success so limits reset even if webhook is slightly delayed. */
 export async function POST() {
-  await connection();
-
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,8 +17,8 @@ export async function POST() {
     where: eq(users.clerkId, userId),
   });
 
-  const { plan, isValid } = getUserPlanStatus(dbUser);
-  if (!isValid || (plan !== "trial" && plan !== "pro")) {
+  const { plan, isValid } = getUserPlanStatus(dbUser ?? null); // Handle undefined by converting to null
+  if (!isValid || (plan !== "monthly" && plan !== "one_time")) {
     return NextResponse.json({ reset: false, reason: "no_active_paid_plan" });
   }
 

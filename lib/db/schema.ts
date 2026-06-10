@@ -5,6 +5,7 @@ export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', '
 export const analysisStatusEnum = pgEnum('status', ['processing', 'completed', 'failed']);
 export const paymentTypeEnum = pgEnum('payment_type', ['one_time', 'subscription']);
 export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'completed', 'failed', 'refunded']);
+export const creditReasonEnum = pgEnum('credit_reason', ['purchase', 'manual_download', 'ai_generation', 'admin_grant', 'refund']);
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -108,4 +109,36 @@ export const siteSettings = pgTable('site_settings', {
   id: uuid('id').defaultRandom().primaryKey(),
   activeOffer: jsonb('active_offer'), // { discount: 20, description: 'Offre Spéciale', expiresAt: '...' }
   updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// ── NEW: Template Ownership Ledger ──────────────────────────────────────────
+// Tracks which templates a specific user has "purchased" (i.e. spent 1 credit on).
+// First download costs 1 credit; subsequent downloads are free.
+// Ownership removes the watermark only for that user + that template.
+export const userTemplateUnlocks = pgTable('user_template_unlocks', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  templateId: uuid('template_id').notNull().references(() => cvTemplates.id, { onDelete: 'cascade' }),
+  unlockedAt: timestamp('unlocked_at').defaultNow(),
+});
+
+// ── NEW: Credit Ledger ───────────────────────────────────────────────────────
+// Immutable, append-only log of every credit addition and deduction.
+// This is the source of truth for auditing — users.credits is the running total.
+export const creditTransactions = pgTable('credit_transactions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Positive = credit added, negative = credit deducted
+  amount: integer('amount').notNull(),
+  reason: creditReasonEnum('reason').notNull(),
+  referenceId: varchar('reference_id'), // templateId, analysisId, stripeEventId, etc.
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// ── NEW: Stripe Event Idempotency Log ────────────────────────────────────────
+// Records every processed Stripe event ID to prevent double-crediting on retries.
+export const stripeEvents = pgTable('stripe_events', {
+  eventId: varchar('id').primaryKey(), // Stripe event ID (evt_xxx)
+  type: varchar('type').notNull(),
+  processedAt: timestamp('processed_at').defaultNow(),
 });

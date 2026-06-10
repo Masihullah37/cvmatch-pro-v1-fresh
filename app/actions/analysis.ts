@@ -1,11 +1,12 @@
 'use server';
 
 import { db } from "@/lib/db";
-import { cvAnalyses, cvTemplates, users } from "@/lib/db/schema";
+import { cvAnalyses, cvTemplates, users, userTemplateUnlocks } from "@/lib/db/schema";
 import { revalidatePath } from "next/cache";
 import { analyzeCV, extractRawCVData, generateOptimizedCV } from "@/lib/ai/ats-analyzer";
 import { parseCVFile } from "@/lib/ai/cv-parser";
 import { extractStructuredJobDetails, isUrl, scrapeJobDescription } from "@/lib/utils/scraper";
+import { addCredits, deductCredit } from "@/lib/billing/credit-service";
 
 import { auth } from "@clerk/nextjs/server";
 import { eq, sql, and } from "drizzle-orm";
@@ -189,69 +190,78 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
 
   if (!analysis) throw new Error("Analyse introuvable.");
 
-  // 1. Deduct 1 Credit for AI Generation
-  await db.update(users)
-    .set({ credits: sql`${users.credits} - 1` })
-    .where(eq(users.id, dbUser.id));
+  // Wrap deduction + AI generation in a transaction for atomicity.
+  // If AI fails, the credit deduction is rolled back automatically.
+  let finalData: any;
 
-  // 2. Perform AI Optimization (Include missing points/suggestions to increase score)
-  const cvSource = currentCVData ? JSON.stringify(currentCVData) : (analysis.optimizedData as any)?._originalCvText || "";
-  const structuredJobDetails = extractStructuredJobDetails(analysis.jobDescription || "");
-
-  const aiResult = await generateOptimizedCV(
-    cvSource,
-    analysis.jobDescription || "",
-    {
-      atsScore: analysis.atsScore,
-      scoreBreakdown: analysis.scoreBreakdown,
-      flaws: analysis.flaws,
-      suggestions: analysis.suggestions,
-      keywordsMissing: analysis.keywordsMissing,
-      keywordsFound: analysis.keywordsFound,
-    } as any,
-    structuredJobDetails
-  );
-
-  // RULE: Prevent AI from adding extra sections not present in user editor
-  // If currentCVData is provided, we filter the AI result to match the user's existing sections
-  let finalData = aiResult;
-  if (currentCVData && typeof aiResult === 'object' && aiResult !== null) {
-    const filteredResult: any = {};
-    // Only keep keys that existed in the original user data
-    Object.keys(currentCVData).forEach(key => {
-      // Use AI content if available, otherwise fallback to original
-      filteredResult[key] = aiResult[key] !== undefined ? aiResult[key] : currentCVData[key];
+  await db.transaction(async (tx) => {
+    // 1. Deduct 1 credit via the credit service (validates balance inside tx)
+    await deductCredit({
+      userId: dbUser.id,
+      amount: 1,
+      reason: "ai_generation",
+      referenceId: analysisId,
+      tx,
     });
-    finalData = filteredResult;
-  }
 
-  // 4. Update Analysis and all associated templates
-  await db.update(cvAnalyses)
-    .set({ optimizedData: finalData })
-    .where(eq(cvAnalyses.id, analysisId));
+    // 2. Perform AI Optimization outside the transaction (network I/O)
+    //    We intentionally do this after the deduction; if AI fails we throw
+    //    which rolls back the whole transaction.
+    const cvSource = currentCVData ? JSON.stringify(currentCVData) : (analysis.optimizedData as any)?._originalCvText || "";
+    const structuredJobDetails = extractStructuredJobDetails(analysis.jobDescription || "");
 
-  const existingTemplates = await db.query.cvTemplates.findMany({
-    where: eq(cvTemplates.analysisId, analysisId)
-  });
+    const aiResult = await generateOptimizedCV(
+      cvSource,
+      analysis.jobDescription || "",
+      {
+        atsScore: analysis.atsScore,
+        scoreBreakdown: analysis.scoreBreakdown,
+        flaws: analysis.flaws,
+        suggestions: analysis.suggestions,
+        keywordsMissing: analysis.keywordsMissing,
+        keywordsFound: analysis.keywordsFound,
+      } as any,
+      structuredJobDetails
+    );
 
-  if (existingTemplates.length > 0) {
-    await db.update(cvTemplates)
-      .set({ templateData: finalData, isPaid: true })
-      .where(eq(cvTemplates.analysisId, analysisId));
-  } else {
-    const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
-    const styles = [...CV_TEMPLATE_STYLES];
-    const templatePromises = styles.map((style, i) => {
-      return db.insert(cvTemplates).values({
-        analysisId: analysis.id,
-        templateNumber: i + 1,
-        templateStyle: style,
-        templateData: finalData as any,
-        isPaid: true
+    // RULE: Prevent AI from adding extra sections not present in user editor
+    let result = aiResult;
+    if (currentCVData && typeof aiResult === 'object' && aiResult !== null) {
+      const filteredResult: any = {};
+      Object.keys(currentCVData).forEach(key => {
+        filteredResult[key] = aiResult[key] !== undefined ? aiResult[key] : currentCVData[key];
       });
+      result = filteredResult;
+    }
+    finalData = result;
+
+    // 3. Persist AI-generated data within the same transaction
+    await tx.update(cvAnalyses)
+      .set({ optimizedData: finalData })
+      .where(eq(cvAnalyses.id, analysisId));
+
+    const existingTemplates = await tx.query.cvTemplates.findMany({
+      where: eq(cvTemplates.analysisId, analysisId)
     });
-    await Promise.all(templatePromises);
-  }
+
+    if (existingTemplates.length > 0) {
+      await tx.update(cvTemplates)
+        .set({ templateData: finalData, isPaid: true })
+        .where(eq(cvTemplates.analysisId, analysisId));
+    } else {
+      const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
+      const styles = [...CV_TEMPLATE_STYLES];
+      await tx.insert(cvTemplates).values(
+        styles.map((style, i) => ({
+          analysisId: analysis.id,
+          templateNumber: i + 1,
+          templateStyle: style,
+          templateData: finalData as any,
+          isPaid: true,
+        }))
+      );
+    }
+  });
 
   revalidatePath('/[locale]/results/[id]', 'page');
   revalidatePath('/[locale]/templates/[id]', 'page');
@@ -260,9 +270,72 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
 }
 
 /**
- * RULE: Credit Deduction Logic
- * Trigger: User clicks Télécharger (First time) or Éditer (New analysis).
- * Action: Deduct 1 credit and mark as paid (unlocks watermark/download).
+ * RULE: Credit Deduction Logic — Per-Template Ownership
+ * Trigger: User clicks Télécharger (Download) for the first time on a specific template.
+ * Action: Deduct 1 credit, record ownership in user_template_unlocks, mark template as paid.
+ * Subsequent downloads of the same template are FREE (ownership check prevents re-deduction).
+ *
+ * NOTE: Template selection/preview/editing is always 0 credits.
+ */
+export async function deductCreditForTemplate(templateId: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const dbUser = await db.query.users.findFirst({
+    where: eq(users.clerkId, userId),
+  });
+
+  if (!dbUser) throw new Error("Utilisateur introuvable.");
+  if (isCreditsExpired(dbUser)) throw new Error("EXPIRED: Votre plan a expiré.");
+  if (getEffectiveCredits(dbUser) < 1) throw new Error("Crédits insuffisants.");
+
+  const template = await db.query.cvTemplates.findFirst({
+    where: eq(cvTemplates.id, templateId),
+  });
+
+  if (!template) throw new Error("Modèle introuvable.");
+
+  // Run the entire flow atomically
+  await db.transaction(async (tx) => {
+    // 1. Check ownership INSIDE the transaction to prevent race conditions
+    const existingUnlock = await tx.query.userTemplateUnlocks.findFirst({
+      where: and(
+        eq(userTemplateUnlocks.userId, dbUser.id),
+        eq(userTemplateUnlocks.templateId, templateId)
+      ),
+    });
+
+    // Already owns it — no deduction needed
+    if (existingUnlock) return;
+
+    // 2. Deduct 1 credit via credit service
+    await deductCredit({
+      userId: dbUser.id,
+      amount: 1,
+      reason: "manual_download",
+      referenceId: templateId,
+      tx,
+    });
+
+    // 3. Record ownership
+    await tx.insert(userTemplateUnlocks).values({
+      userId: dbUser.id,
+      templateId,
+    });
+
+    // 4. Keep isPaid flag in sync for backward compatibility
+    await tx.update(cvTemplates)
+      .set({ isPaid: true })
+      .where(eq(cvTemplates.id, templateId));
+  });
+
+  revalidatePath('/[locale]/templates/[id]', 'page');
+  return { success: true };
+}
+
+/**
+ * @deprecated Use deductCreditForTemplate(templateId) instead.
+ * Kept for backward compatibility with TemplateGrid.tsx until migration is complete.
  */
 export async function deductCreditForAnalysis(analysisId: string) {
   const { userId } = await auth();
@@ -272,10 +345,7 @@ export async function deductCreditForAnalysis(analysisId: string) {
     where: eq(users.clerkId, userId),
   });
 
-  if (!dbUser) {
-    throw new Error("Utilisateur introuvable.");
-  }
-
+  if (!dbUser) throw new Error("Utilisateur introuvable.");
   if (isCreditsExpired(dbUser)) throw new Error("EXPIRED: Votre plan a expiré.");
   if (getEffectiveCredits(dbUser) < 1) throw new Error("Crédits insuffisants.");
 
@@ -285,39 +355,53 @@ export async function deductCreditForAnalysis(analysisId: string) {
 
   if (!analysis) throw new Error("Analyse introuvable.");
 
-  // Rule: Check if already paid (no double deduction for same analysis)
+  // Check if already paid at analysis level (legacy)
   const existingPaidTemplate = await db.query.cvTemplates.findFirst({
     where: and(eq(cvTemplates.analysisId, analysisId), eq(cvTemplates.isPaid, true))
   });
 
   if (existingPaidTemplate) return { success: true, alreadyPaid: true };
 
-  // 1. Deduct 1 Credit
-  await db.update(users)
-    .set({ credits: sql`${users.credits} - 1` })
-    .where(eq(users.id, dbUser.id));
+  // For legacy compatibility: deduct 1 credit and mark all templates in the analysis as paid
+  await db.transaction(async (tx) => {
+    await deductCredit({
+      userId: dbUser.id,
+      amount: 1,
+      reason: "manual_download",
+      referenceId: analysisId,
+      tx,
+    });
 
-  // 2. Ensure templates exist and mark as paid (unlocks watermark)
-  const existingTemplates = await db.query.cvTemplates.findMany({
-    where: eq(cvTemplates.analysisId, analysisId)
+    const existingTemplates = await tx.query.cvTemplates.findMany({
+      where: eq(cvTemplates.analysisId, analysisId)
+    });
+
+    if (existingTemplates.length === 0) {
+      const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
+      const styles = [...CV_TEMPLATE_STYLES];
+      await tx.insert(cvTemplates).values(
+        styles.map((style, i) => ({
+          analysisId,
+          templateNumber: i + 1,
+          templateStyle: style,
+          templateData: analysis.optimizedData as any,
+          isPaid: true,
+        }))
+      );
+    } else {
+      await tx.update(cvTemplates)
+        .set({ isPaid: true })
+        .where(eq(cvTemplates.analysisId, analysisId));
+
+      // Also record individual ownership for each template
+      await tx.insert(userTemplateUnlocks).values(
+        existingTemplates.map((t) => ({
+          userId: dbUser.id,
+          templateId: t.id,
+        }))
+      ).onConflictDoNothing();
+    }
   });
-
-  if (existingTemplates.length === 0) {
-    const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
-    const styles = [...CV_TEMPLATE_STYLES];
-    const templatePromises = styles.map((style, i) => db.insert(cvTemplates).values({
-      analysisId: analysisId,
-      templateNumber: i + 1,
-      templateStyle: style,
-      templateData: analysis.optimizedData as any,
-      isPaid: true
-    }));
-    await Promise.all(templatePromises);
-  } else {
-    await db.update(cvTemplates)
-      .set({ isPaid: true })
-      .where(eq(cvTemplates.analysisId, analysisId));
-  }
 
   revalidatePath('/[locale]/templates/[id]', 'page');
   return { success: true };

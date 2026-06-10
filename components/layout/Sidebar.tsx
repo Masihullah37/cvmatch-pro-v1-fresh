@@ -9,7 +9,7 @@
 //   const { userId } = await auth();
 //   let credits = 0;
 //   let planName = "Gratuit";
-  
+
 //   if (userId) {
 //     try {
 //       const userRecord = await db.query.users.findFirst({
@@ -19,7 +19,7 @@
 //         // Check for expiry
 //         const now = new Date();
 //         const expiryDate = userRecord.creditsExpiry ? new Date(userRecord.creditsExpiry) : null;
-        
+
 //         if (expiryDate && now > expiryDate) {
 //            credits = 0;
 //            // Optionally update DB here, but better to do it lazily or via a cron job
@@ -86,7 +86,8 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import SidebarClient from './SidebarClient';
+import SidebarClient from './SidebarClient'; // Assuming SidebarClient exists and handles rendering
+import { PlanType } from '@/lib/billing/get-user-plan'; // Import PlanType
 
 export default async function Sidebar() {
   const { userId } = await auth();
@@ -95,9 +96,9 @@ export default async function Sidebar() {
 
   if (userId) {
     try {
-      const userRecord = await db.query.users.findFirst({
-        where: eq(users.clerkId, userId),
-      });
+      const results = await db.select().from(users).where(eq(users.clerkId, userId)).limit(1);
+      const userRecord = results[0];
+
       if (userRecord) {
         const now = new Date();
         const expiryDate = userRecord.creditsExpiry ? new Date(userRecord.creditsExpiry) : null;

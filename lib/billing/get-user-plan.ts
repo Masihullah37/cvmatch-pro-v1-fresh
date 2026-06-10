@@ -1,59 +1,31 @@
-import { users } from "@/lib/db/schema";
+import { users, planEnum } from "@/lib/db/schema";
+import { InferSelectModel } from "drizzle-orm";
 
-export type PlanType = "anonymous" | "free" | "trial" | "pro";
+// Define the PlanType based on the Drizzle enum values
+export type PlanType = typeof planEnum.enumValues[number];
 
-interface PlanStatus {
-  plan: PlanType;
-  credits: number;
-  isValid: boolean;
-}
+type User = InferSelectModel<typeof users>;
 
-export function getUserPlan(user: any): PlanType {
-  const status = getUserPlanStatus(user);
-  return status.plan;
-}
-
-export function getUserPlanStatus(user: any): PlanStatus {
-  if (!user) {
-    return { plan: "anonymous", credits: 0, isValid: false };
+export function getUserPlan(user: User | null): PlanType {
+  if (!user || !user.plan) {
+    return 'free';
   }
+  // Ensure the returned value is one of the enum values.
+  // This cast is safe because planEnum.enumValues is the source of truth for PlanType.
+  if (planEnum.enumValues.includes(user.plan as PlanType)) {
+    return user.plan as PlanType;
+  }
+  return 'free'; // Fallback to 'free' if plan is somehow invalid or not recognized
+}
 
+export function getUserPlanStatus(user: User | null) {
+  // This function determines the user's current plan and its validity.
+  const plan = getUserPlan(user);
   const now = new Date();
+  const isValid = user ? (
+    (plan === 'monthly' && user.subscriptionStatus === 'active') ||
+    (plan === 'one_time' && (!user.subscriptionEndsAt || new Date(user.subscriptionEndsAt) > now))
+  ) : false;
 
-  // Pro Plan
-  if (user.plan === "monthly") {
-    const isPro = user.subscriptionStatus === "active" || user.subscriptionStatus === "canceled";
-    const endsAt = user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
-    
-    if (isPro && endsAt && endsAt > now) {
-      return { 
-        plan: "pro", 
-        credits: user.credits || 0, 
-        isValid: true 
-      };
-    }
-    // Fallback to free if expired
-    return { plan: "free", credits: 0, isValid: false };
-  }
-
-  // Trial Plan (one_time)
-  if (user.plan === "one_time") {
-    const expiry = user.creditsExpiry ? new Date(user.creditsExpiry) : null;
-    if (expiry && expiry > now) {
-      return { 
-        plan: "trial", 
-        credits: user.credits || 0, 
-        isValid: true 
-      };
-    }
-    // Fallback to free if expired
-    return { plan: "free", credits: 0, isValid: false };
-  }
-
-  // Free Plan
-  return { 
-    plan: "free", 
-    credits: user.credits || 0, 
-    isValid: true 
-  };
+  return { plan, isValid };
 }

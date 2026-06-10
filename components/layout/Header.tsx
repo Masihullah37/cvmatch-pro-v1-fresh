@@ -59,7 +59,7 @@ export default function Header() {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="/#analyze" className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
+          <Link href="/#analyze" className="flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-600 active:bg-pink-700 transition-all shadow-lg shadow-pink-200">
             <Plus size={14} /> Nouvelle Analyse
           </Link>
           {userId && (
@@ -90,7 +90,7 @@ export default function Header() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-slate-100 px-6 py-6 space-y-4 shadow-xl">
-          <Link href="/#analyze" className="flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all" onClick={() => setMobileOpen(false)}>
+          <Link href="/#analyze" className="flex items-center justify-center gap-2 bg-pink-500 text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-600 active:bg-pink-700 transition-all" onClick={() => setMobileOpen(false)}>
             <Plus size={14} /> Nouvelle Analyse
           </Link>
           {userId && (

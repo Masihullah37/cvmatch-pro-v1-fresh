@@ -1,10 +1,10 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, react-hooks/immutability, react/no-unescaped-entities */
 
-import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties, use } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { deductCreditForAnalysis } from "@/app/actions/analysis";
+import { deductCreditForAnalysis, deductCreditForTemplate, generateAIResume } from "@/app/actions/analysis";
 import {
   DndContext,
   closestCenter,
@@ -806,7 +806,7 @@ export default function TemplateGrid({
       } catch {
         /* ignore */
       }
-      fetch("/api/user/refresh-rate-limits", { method: "POST" }).catch(() => {});
+      fetch("/api/user/refresh-rate-limits", { method: "POST" }).catch(() => { });
       router.refresh();
     }
   }, [searchParams, router, hasRefreshed]);
@@ -828,43 +828,28 @@ export default function TemplateGrid({
     }
   }, [searchParams]);
 
-  const analysisIsPaid = templates.some((t: any) => t.isPaid);
-
   // Logic for "has access without immediate deduction"
+  const hasAvailableCredits = userCredits > 0 && !isExpired;
   const isJustPaid = searchParams.get("payment") === "success";
-  const isPro = plan === "pro";
-  const hasPaid = analysisIsPaid || isJustPaid || isPro;
+
+  // Get current selected template to check its specific watermark/ownership status
+  const selectedTpl = templates.find((t: any) => String(t.id) === String(selectedTemplate));
+
+  // hasPaid is true if just paid, has credits, or already owns this specific template.
+  // We tie this strictly to credits/ownership so watermarks reappear when balance is 0.
+  const hasPaid = isJustPaid || hasAvailableCredits || (selectedTpl?.hideWatermark ?? false);
 
   const handleSelectById = async (id: string) => {
     const template = initialTemplates.find((t: any) => String(t.id) === String(id));
     if (!template) return;
 
-    if (isExpired && !analysisIsPaid) {
+    if (isExpired && !hasPaid) {
       setShowPaywall(true);
       return;
     }
 
-    // Credit Deduction Logic:
-    // 1. If analysis already paid -> Skip
-    // 2. If just paid (from Stripe) -> Skip (Wait for Download)
-    // 3. If new analysis + user has credits -> Deduct on Edit
-    if (!analysisIsPaid && userCredits > 0 && !isJustPaid) {
-      try {
-        const res = await deductCreditForAnalysis(analysisId);
-        if (res.success) {
-          setUserCredits(prev => prev - 1);
-          setTemplates(prev => prev.map(t => ({ ...t, isPaid: true })));
-          router.refresh();
-        }
-      } catch (err: any) {
-        if (err.message.includes("EXPIRED:")) {
-          setShowPaywall(true);
-        } else {
-          console.error("Credit deduction failed", err);
-        }
-        return;
-      }
-    }
+    // RULE: Template selection is always FREE (0 credits).
+    // Credits are only deducted at Download time.
 
     const data = JSON.parse(JSON.stringify(template.templateData || {}));
     if (!data.contact) data.contact = { email: "", phone: "", location: "" };
@@ -897,28 +882,13 @@ export default function TemplateGrid({
     const template = templates.find((t) => String(t.id) === String(id));
     if (!template) return;
 
-    if (isExpired && !analysisIsPaid) {
+    if (isExpired && !hasPaid) {
       setShowPaywall(true);
       return;
     }
 
-    if (!analysisIsPaid && userCredits > 0 && !isJustPaid) {
-      try {
-        const res = await deductCreditForAnalysis(analysisId);
-        if (res.success) {
-          setUserCredits(prev => prev - 1);
-          setTemplates(prev => prev.map(t => ({ ...t, isPaid: true })));
-          router.refresh();
-        }
-      } catch (err: any) {
-        if (err.message.includes("EXPIRED:")) {
-          setShowPaywall(true);
-        } else {
-          console.error("Credit deduction failed", err);
-        }
-        return;
-      }
-    }
+    // RULE: Template selection is always FREE (0 credits).
+    // Credits are only deducted at Download time.
 
     const data = JSON.parse(JSON.stringify(template.templateData || {}));
     if (!data.contact) data.contact = { email: "", phone: "", location: "" };
@@ -949,16 +919,16 @@ export default function TemplateGrid({
   };
 
   const handleGenerateAI = async () => {
-    if (isExpired && !analysisIsPaid) {
+    if (isExpired && !hasPaid) {
       setShowPaywall(true);
       return;
     }
-    if (userCredits < 1 && !analysisIsPaid) { setShowPaywall(true); return; }
+    if (userCredits < 1 && !hasPaid) { setShowPaywall(true); return; }
     try {
       setIsGeneratingAI(true);
 
       // Deduct credit first if not already paid
-      if (!analysisIsPaid) {
+      if (!hasPaid) {
         try {
           const creditRes = await deductCreditForAnalysis(analysisId);
           if (creditRes.success) {
@@ -1030,30 +1000,26 @@ export default function TemplateGrid({
   };
 
   const handleDownload = async (templateId: string) => {
-    if (isExpired && !analysisIsPaid) {
+    if (isExpired && !hasPaid) {
       setShowPaywall(true);
       return;
     }
     try {
       setIsGenerating(templateId);
 
-      // Deduct credit if user has credits but analysis isn't paid yet
-      if (!analysisIsPaid && userCredits > 0) {
-        try {
-          const creditRes = await deductCreditForAnalysis(analysisId);
-          if (creditRes.success) {
-            setUserCredits(prev => prev - 1);
-            setTemplates(prev => prev.map(t => ({ ...t, isPaid: true })));
-            router.refresh();
-          }
-        } catch (err: any) {
-          if (plan === "anonymous") {
-            setShowGuestAuthModal(true);
-          } else {
-            setShowPaywall(true);
-          }
-          return;
-        }
+      // Deduct credit for this specific template download (handles ownership check internally)
+      // This function will throw if credits are insufficient or user is unauthorized.
+      await deductCreditForTemplate(templateId);
+
+      // If deduction/ownership check was successful, refresh the router to update UI
+      // (credits, watermark status, etc.)
+      router.refresh();
+
+      // The local state updates for userCredits and templates are removed here
+      // because router.refresh() will re-fetch the latest state from the server,
+      // ensuring consistency.
+      if (userCredits > 0) { // Only decrement if a credit was actually available to be deducted
+        setUserCredits((prev: number) => Math.max(0, prev - 1));
       }
 
       const currentData =
@@ -1061,9 +1027,8 @@ export default function TemplateGrid({
           ? editingDataRef.current
           : templates.find((t) => t.id === templateId)?.templateData;
 
-      if (selectedTemplate === templateId && editingDataRef.current) {
-        await persistEdits(currentData);
-      }
+      // Remove persistEdits here because it's already called by the button click
+      // or the manual save. Only call if specifically needed.
 
       const res = await fetch("/api/generate-pdf", {
         method: "POST",
@@ -1226,7 +1191,6 @@ export default function TemplateGrid({
     });
   }, []);
 
-  const selectedTpl = templates.find((t) => String(t.id) === String(selectedTemplate));
   const memoizedTemplate = useMemo(() => {
     if (!selectedTpl) return null;
     return { ...selectedTpl, templateData: editingData };
@@ -1297,6 +1261,13 @@ export default function TemplateGrid({
           60% { transform: scale(1.05); }
           80% { transform: scale(1.25); }
         }
+        /* Issue A: Hide template title text (NOT the dots icon) on very small screens.
+           The MoreVertical icon button is always visible because it has no text node. */
+        @media (max-width: 404px) {
+          .template-editor-title-text {
+            display: none;
+          }
+        }
       `}</style>
       {/* Payment Success Banner */}
       {showSuccessBanner && (
@@ -1318,7 +1289,7 @@ export default function TemplateGrid({
                 <CreditCard size={16} className="text-slate-400" />
                 <span className="text-sm font-black text-slate-700">{userCredits} Crédits</span>
               </div>
-              {!analysisIsPaid && (
+              {!hasPaid && (
                 <button
                   onClick={handleGenerateAI}
                   disabled={isGeneratingAI}
@@ -1375,12 +1346,12 @@ export default function TemplateGrid({
         <div className="fixed inset-0 z-[100] bg-white flex flex-col">
           <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-slate-100 bg-white shrink-0">
             <div className="flex items-center gap-3">
-              <button onClick={() => setSelectedTemplate(null)} className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+              <button onClick={() => setSelectedTemplate(null)} className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors shrink-0">
                 <ChevronLeft size={18} className="text-slate-600" />
               </button>
               <div>
-                <p className="font-black text-slate-900 text-sm">Modèle {selectedTpl.templateStyle}</p>
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest hidden sm:block">Éditeur de CV</p>
+                <p className="font-black text-slate-900 text-sm template-editor-title-text">Modèle {selectedTpl.templateStyle}</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest hidden sm:block template-editor-title-text">Éditeur de CV</p>
               </div>
             </div>
 
@@ -1397,9 +1368,9 @@ export default function TemplateGrid({
               </button>
               <button
                 onClick={async () => {
-                  if (editingData) await handleSave();
+                  if (saveStatus !== "saved" && editingData) await handleSave();
                   if (hasPaid) {
-                    handleDownload(selectedTpl.id);
+                    await handleDownload(selectedTpl.id);
                   } else if (plan === "anonymous") {
                     setShowGuestAuthModal(true);
                   } else {
@@ -1428,9 +1399,9 @@ export default function TemplateGrid({
             <div className="flex sm:hidden items-center gap-2">
               <button
                 onClick={async () => {
-                  if (editingData) await handleSave();
+                  if (saveStatus !== "saved" && editingData) await handleSave();
                   if (hasPaid) {
-                    handleDownload(selectedTpl.id);
+                    await handleDownload(selectedTpl.id);
                   } else if (plan === "anonymous") {
                     setShowGuestAuthModal(true);
                   } else {
@@ -1462,7 +1433,11 @@ export default function TemplateGrid({
           </div>
 
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-50">
-            <div className={`w-full md:w-[480px] flex flex-col border-r border-slate-200 bg-white shrink-0 shadow-xl z-10 ${mobileView === "preview" ? "hidden md:flex" : "flex"}`}>
+            {/* Issue B: Editor pane mobile scroll fix.
+               flex-1 min-h-0 constrains the panel to the remaining viewport height inside
+               the fixed inset-0 parent, so overflow-y-auto inside EditorContent works
+               correctly and doesn't stop scrolling below the Profile field. */}
+            <div className={`w-full md:w-[480px] flex flex-col border-r border-slate-200 bg-white shrink-0 shadow-xl z-10 flex-1 min-h-0 md:flex-initial ${mobileView === "preview" ? "hidden md:flex" : "flex"}`}>
               <EditorContent
                 editingData={editingData}
                 update={update}

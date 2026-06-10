@@ -1,17 +1,17 @@
 export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
-import { cvAnalyses, cvTemplates, users } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { cvAnalyses, cvTemplates } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getEffectiveCredits, isUserExpired } from "@/lib/utils/subscription";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
+import { getTemplateOwnership } from "@/lib/billing/template-service";
 import { notFound } from "next/navigation";
 import TemplateGrid from "@/components/templates/TemplateGrid";
 import { auth } from "@clerk/nextjs/server";
 import { syncUserWithClerk } from "@/lib/auth/sync";
-import { Sparkles } from "lucide-react";
 import { Link } from "@/i18n/routing";
-
+import { PlanType } from "@/lib/billing/get-user-plan";
 import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 
 const STYLES = [...CV_TEMPLATE_STYLES];
@@ -25,7 +25,7 @@ const DEMO_FALLBACK = {
   education: [{ degree: "Diplôme", school: "Établissement", year: "2020", details: "" }],
   skills: ["Compétence 1", "Compétence 2"],
   languages: [{ language: "Français", level: "Natif" }],
-  projects: []
+  projects: [],
 };
 
 function getTemplateContent(analysisData: any) {
@@ -41,9 +41,7 @@ function getTemplateContent(analysisData: any) {
 }
 
 async function ensureTemplatesExist(analysisId: string, analysisData: any) {
-  const existing = await db.query.cvTemplates.findMany({
-    where: eq(cvTemplates.analysisId, analysisId),
-  });
+  const existing = await db.select().from(cvTemplates).where(eq(cvTemplates.analysisId, analysisId));
 
   const content = getTemplateContent(analysisData);
 
@@ -78,9 +76,7 @@ async function ensureTemplatesExist(analysisId: string, analysisData: any) {
     }
   }
 
-  return await db.query.cvTemplates.findMany({
-    where: eq(cvTemplates.analysisId, analysisId),
-  });
+  return await db.select().from(cvTemplates).where(eq(cvTemplates.analysisId, analysisId));
 }
 
 export default async function TemplatesPage({
@@ -91,46 +87,48 @@ export default async function TemplatesPage({
   searchParams: Promise<{ template?: string; payment?: string }>;
 }) {
   const { locale, analysisId } = await params;
-  const { template: templateParam } = await searchParams;
-
+  const { template: templateParam, payment } = await searchParams;
   const { userId } = await auth();
 
-  // Ensure user is synced with DB
   const dbUser = await syncUserWithClerk();
 
-  const analysis = await db.query.cvAnalyses.findFirst({
-    where: eq(cvAnalyses.id, analysisId),
-  });
+  const analysisResults = await db.select().from(cvAnalyses).where(eq(cvAnalyses.id, analysisId)).limit(1);
+  const analysis = analysisResults[0];
+
   if (!analysis) notFound();
 
   const userCredits = dbUser ? getEffectiveCredits(dbUser) : 0;
   const isExpired = dbUser ? isUserExpired(dbUser) : false;
   const plan = getUserPlan(dbUser);
 
-  const analysisIsPaid = analysis.optimizedData && (
-    await db.query.cvTemplates.findFirst({
-      where: and(eq(cvTemplates.analysisId, analysisId), eq(cvTemplates.isPaid, true))
-    })
-  );
+  // const isJustPaid = payment === "success" || searchParams.then(s => s.payment === "success");
+  const isJustPaid = payment === "success";
 
-  const isPaid = !!analysisIsPaid;
-
-  // Ensure all 12 templates exist (creates them if missing)
+  // ── Fetch templates ───────────────────────────────────────────────────────
   const templates = await ensureTemplatesExist(analysisId, analysis);
+  const initialTemplate = templateParam ? parseInt(templateParam, 10) : 1;
 
-  // If unpaid, mask the optimized content if it exists
-  const safeTemplates = templates.map(t => {
-    if (t.isPaid || isPaid) return t;
+  // ── Ownership & Watermark Logic ───────────────────────────────────────────
+  let ownedTemplateIds = new Set<string>();
+  if (dbUser) {
+    ownedTemplateIds = await getTemplateOwnership(dbUser.id);
+  }
 
-    // Fallback to raw data if available, else a simplified version
-    const data = (analysis as any).optimizedData || DEMO_FALLBACK;
-    return {
-      ...t,
-      templateData: data
-    };
+  const hasAvailableCredits = userCredits > 0 && !isExpired;
+  const hasStructuralAccess = isJustPaid || hasAvailableCredits;
+
+  const safeTemplates = templates.map((t) => {
+    const templateOwned = ownedTemplateIds.has(t.id);
+    // Watermark stays hidden only if specific template is owned OR user has access (credits/just paid).
+    // This ensures watermarks reappear as soon as credits reach 0.
+    // const hideWatermark = templateOwned || hasStructuralAccess;
+    const hideWatermark = hasStructuralAccess; // Only hide watermark if user has active plan or credits
+    return { ...t, hideWatermark };
   });
 
-  const initialTemplate = templateParam ? parseInt(templateParam, 10) : 1;
+  // Overall "isPaid" status for the UI banner. 
+  // Tied strictly to access status to trigger paywall when credits run out.
+  const isPaid = hasStructuralAccess;
 
   if (analysis.status === "processing") {
     return (
@@ -158,12 +156,11 @@ export default async function TemplatesPage({
             </svg>
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Sparkles size={18} className="text-primary shrink-0" />
+            <h1 className="text-lg font-black text-slate-900">
               Vos Modèles Optimisés
             </h1>
             <p className="text-xs text-slate-400 font-medium mt-0.5 hidden sm:block truncate">
-              {analysis.jobTitle || "CV Optimisé"} · {templates.length} modèles disponibles
+              {analysis.jobTitle || "CV Optimisé"} · {safeTemplates.length} modèles disponibles
             </p>
           </div>
           {!isPaid && (
@@ -177,7 +174,7 @@ export default async function TemplatesPage({
       {/* Grid */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         <TemplateGrid
-          templates={templates as any}
+          templates={safeTemplates as any}
           isPaid={isPaid}
           userCredits={userCredits}
           isExpired={isExpired}
