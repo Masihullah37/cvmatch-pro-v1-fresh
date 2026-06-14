@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
-import { users, cvTemplates, cvGenerations, cvAnalyses } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { users, cvTemplates, cvGenerations, cvAnalyses, userTemplateUnlocks } from "@/lib/db/schema";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import puppeteer from "puppeteer";
 import React from "react";
+import { revalidatePath } from "next/cache";
 import { CVRenderer } from "@/components/templates/CVRenderer";
 import { pdfHourlyUserLimit, pdfDailyUserLimit, pdfIpLimit } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
@@ -18,10 +19,8 @@ export const runtime = "nodejs";
  * PDF GENERATION ROUTE
  */
 export async function POST(req: Request) {
-  // CRITICAL FIX: Use eval('require') to completely bypass Next.js static analysis for react-dom/server
-  const render = eval("require")("react-dom/server").renderToStaticMarkup;
 
-  let browser;
+  let browser: any;
   try {
     const { userId } = await auth();
     const body = await req.json();
@@ -47,7 +46,21 @@ export async function POST(req: Request) {
     const dbUser = userId ? await db.query.users.findFirst({ where: eq(users.clerkId, userId) }) : null;
     const plan = getUserPlan(dbUser);
 
-    if (plan === "free") {
+    // ✅ Ownership Check: Check if user has already unlocked ANY template for this analysis
+    const allTemplateIds = (await db.select({ id: cvTemplates.id }).from(cvTemplates).where(eq(cvTemplates.analysisId, analysisId))).map(t => t.id);
+
+    const existingUnlock = dbUser && allTemplateIds.length > 0 ? await db.query.userTemplateUnlocks.findFirst({
+      where: and(
+        eq(userTemplateUnlocks.userId, dbUser.id),
+        inArray(userTemplateUnlocks.templateId, allTemplateIds)
+      ),
+    }) : null;
+
+    // Verify if user has credits from a one-time payment pack
+    const hasCredits = !!(dbUser && (dbUser.credits ?? 0) > 0);
+
+    // If on free plan, block only if they have no credits AND haven't already unlocked it
+    if (plan === "free" && !hasCredits && !existingUnlock && !template.isPaid) {
       return NextResponse.json(
         { error: "Téléchargement bloqué. Passez au plan payant.", action: "upgrade" },
         { status: 403 },
@@ -61,61 +74,114 @@ export async function POST(req: Request) {
       );
     }
 
-    const isPro = plan === "pro";
-    
-    if (!isPro && !template.isPaid) {
+    // ✅ Access Logic: Allow if user is Pro, has credits, or already owns/unlocked the template
+    const hasAccess = plan === "pro" || hasCredits || !!existingUnlock || template.isPaid;
+
+    if (!hasAccess) {
       return NextResponse.json(
         { error: "Débloquez cette analyse pour télécharger le PDF.", action: "unlock" },
         { status: 403 },
       );
     }
 
+    // ✅ 2. Early Credit Deduction & Ownership Logic
+    // This prevents the "payment plan loop" by granting ownership BEFORE the long Puppeteer process starts.
+    // If the generation takes 10s and the user refreshes, they will already be marked as an owner.
+    if (dbUser && dbUser.id && plan !== "pro" && !template.isPaid && !existingUnlock) {
+      if ((dbUser.credits ?? 0) > 0) {
+        await db.transaction(async (tx) => {
+          await tx.update(users)
+            .set({ credits: sql`${users.credits} - 1` })
+            .where(eq(users.id, dbUser.id));
+
+          const allTemplates = await tx.select().from(cvTemplates).where(eq(cvTemplates.analysisId, analysisId));
+          if (allTemplates.length > 0) {
+            await tx.insert(userTemplateUnlocks).values(
+              allTemplates.map(t => ({ userId: dbUser.id, templateId: t.id }))
+            ).onConflictDoNothing();
+          }
+        });
+
+        // Refresh the server-side cache immediately
+        revalidatePath('/[locale]/templates/[analysisId]', 'page');
+      } else {
+        return NextResponse.json({ error: "Crédits insuffisants.", action: "upgrade" }, { status: 403 });
+      }
+    }
+
     // ✅ Rate limiting
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anonymous";
     const trackingSalt = process.env.TRACKING_SALT || "default_salt";
     const hashedIp = crypto.createHash('sha256').update(ip + trackingSalt).digest('hex');
-
     if (userId) {
-      const [hourly, daily] = await Promise.all([
-        pdfHourlyUserLimit.limit(userId),
-        pdfDailyUserLimit.limit(userId),
-      ]);
-
-      if (!hourly.success || !daily.success) {
+      // ✅ Check hourly limit first
+      const hourly = await pdfHourlyUserLimit.limit(userId);
+      if (!hourly.success) {
+        const formattedTime = new Date(hourly.reset).toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Europe/Paris",
+        });
         return NextResponse.json(
-          { error: "Limite de téléchargement atteinte." },
+          { error: `Limite de téléchargement atteinte. Réessayez à ${formattedTime}.` },
+          { status: 429 },
+        );
+      }
+
+      // ✅ Only check daily limit if hourly check passed.
+      // This prevents flickering reset times and "token leaking" from the daily bucket.
+      const daily = await pdfDailyUserLimit.limit(userId);
+      if (!daily.success) {
+        const formattedTime = new Date(daily.reset).toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Europe/Paris",
+        });
+        return NextResponse.json(
+          { error: `Limite de téléchargement atteinte. Réessayez à ${formattedTime}.` },
           { status: 429 },
         );
       }
     } else {
       const ipLimit = await pdfIpLimit.limit(hashedIp);
       if (!ipLimit.success) {
+        const formattedTime = new Date(ipLimit.reset).toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Europe/Paris",
+        });
+
         return NextResponse.json(
-          { error: "Limite de téléchargement atteinte pour cette IP." },
+          { error: `Limite de téléchargement atteinte pour cette IP. Réessayez à ${formattedTime}.` },
           { status: 429 },
         );
       }
     }
 
     // 2. Browser Launch
-    browser = await puppeteer.launch({
-      headless: true,
-      executablePath: puppeteer.executablePath(),
-      timeout: 60000,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--font-render-hinting=none",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-    });
+    if (process.env.NODE_ENV === 'production') {
+      // @ts-ignore
+      const chromium = (await import("@sparticuz/chromium")).default as any;
+      // @ts-ignore
+      const puppeteerCore = (await import("puppeteer-core")) as any;
+      browser = await puppeteerCore.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+      });
+    } else {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      });
+    }
 
     const page = await browser.newPage();
 
     // ✅ Block external trackers to speed up load
     await page.setRequestInterception(true);
-    page.on("request", (request) => {
+    page.on("request", (request: any) => {
       const url = request.url();
       if (url.includes("google-analytics") || url.includes("clerk")) {
         request.abort();
@@ -127,16 +193,33 @@ export async function POST(req: Request) {
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
 
     // ✅ Render CV to HTML string
-    const displayData = templateData || template.templateData;
-    const cvHtml = render(
+    // Priority: Body data (current editor state) > Analysis saved data > Template default
+    // Use type assertion to resolve ts(2339) property error for analysis.templateData
+    let displayData = { ...(templateData || (analysis as any).optimizedData || template.templateData || {}) };
+
+    // Safety: Ensure data is an object before rendering to prevent crash
+    if (typeof displayData === "string") {
+      try {
+        displayData = JSON.parse(displayData);
+      } catch (e) { /* fallback to original */ }
+    }
+
+    // Sanitize data to match Page logic and prevent CVRenderer crashes
+    if (displayData && typeof displayData === "object") {
+      if ((displayData as any)._originalCvText) delete (displayData as any)._originalCvText;
+      (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
+    }
+
+    // Bypassing Turbopack static analysis using eval('require')
+    const { renderToStaticMarkup } = eval('require')('react-dom/server');
+    const cvHtml = renderToStaticMarkup(
       React.createElement(CVRenderer, {
-        template: { ...template, templateData: displayData },
+        template: { ...template, templateData: displayData, hideWatermark: true },
         analysisData: analysis,
         isPaid: true,
         isPreview: false,
-      }),
+      })
     );
-
     const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -184,8 +267,8 @@ export async function POST(req: Request) {
     // ✅ Set content and wait for load
     await page.setContent(htmlContent, { waitUntil: "load", timeout: 30000 });
 
-    // Delay for Tailwind and fonts to finish rendering
-    await new Promise((r) => setTimeout(r, 2000));
+    // ✅ Wait for fonts to be fully loaded and rendered before generating the PDF
+    await page.evaluateHandle('document.fonts.ready');
 
     // ✅ SHRINK TO FIT & FILL WIDTH LOGIC
     await page.evaluate(() => {
@@ -217,6 +300,34 @@ export async function POST(req: Request) {
     });
 
     await browser.close();
+
+    // ✅ Log the generation to cv_generations table
+    try {
+      if (dbUser?.id) {
+        await db.insert(cvGenerations).values({
+          userId: dbUser.id,
+          analysisId,
+          templateId,
+          templateStyle: template.templateStyle,
+          templateData: displayData,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to log generation in cv_generations:", err);
+    }
+
+    // ✅ Increment monthly usage counter
+    try {
+      if (dbUser?.id && userId) {
+        await db.update(users)
+          .set({
+            cvTemplatesUsedThisMonth: sql`${users.cvTemplatesUsedThisMonth} + 1`,
+          })
+          .where(eq(users.id, dbUser.id));
+      }
+    } catch (err) {
+      console.error("Failed to increment monthly template usage:", err);
+    }
 
     return NextResponse.json({
       pdfBase64: Buffer.from(pdfBuffer).toString("base64"),

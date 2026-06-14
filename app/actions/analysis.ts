@@ -9,7 +9,7 @@ import { extractStructuredJobDetails, isUrl, scrapeJobDescription } from "@/lib/
 import { addCredits, deductCredit } from "@/lib/billing/credit-service";
 
 import { auth } from "@clerk/nextjs/server";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, inArray } from "drizzle-orm";
 import { getEffectiveCredits, isCreditsExpired } from "@/lib/utils/subscription";
 import { redis } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
@@ -112,7 +112,7 @@ export async function performCVAnalysis(formData: FormData) {
 
   // 3. Create Analysis Record
   let newAnalysis: typeof cvAnalyses.$inferSelect;
-  
+
   // ✅ ATS Platform Detection
   const atsKeywords = [
     "Workday",
@@ -123,10 +123,10 @@ export async function performCVAnalysis(formData: FormData) {
     "SmartRecruiters",
     "BambooHR"
   ];
-  
+
   let detectedPlatform = null;
   const combinedText = `${jobDescription} ${cvText}`;
-  
+
   for (const keyword of atsKeywords) {
     if (combinedText.toLowerCase().includes(keyword.toLowerCase())) {
       detectedPlatform = keyword;
@@ -160,7 +160,7 @@ export async function performCVAnalysis(formData: FormData) {
     throw new Error(`Database insert failed: ${dbError?.message ?? 'Unknown DB error'}`);
   }
 
-  revalidatePath('/[locale]/results/[id]', 'page');
+  revalidatePath('/[locale]/results/[analysisId]', 'page');
   return newAnalysis.id;
 }
 
@@ -263,8 +263,8 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
     }
   });
 
-  revalidatePath('/[locale]/results/[id]', 'page');
-  revalidatePath('/[locale]/templates/[id]', 'page');
+  revalidatePath('/[locale]/results/[analysisId]', 'page');
+  revalidatePath('/[locale]/templates/[analysisId]', 'page');
 
   return { success: true };
 }
@@ -281,11 +281,15 @@ export async function deductCreditForTemplate(templateId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  const dbUser = await db.query.users.findFirst({
-    where: eq(users.clerkId, userId),
-  });
-
+  const dbUser = await db.query.users.findFirst({ where: eq(users.clerkId, userId) });
   if (!dbUser) throw new Error("Utilisateur introuvable.");
+
+  const plan = getUserPlan(dbUser);
+  // Pro/Monthly users get unlimited downloads without credit deduction
+  if (plan === 'pro') {
+    return { success: true };
+  }
+
   if (isCreditsExpired(dbUser)) throw new Error("EXPIRED: Votre plan a expiré.");
   if (getEffectiveCredits(dbUser) < 1) throw new Error("Crédits insuffisants.");
 
@@ -296,41 +300,58 @@ export async function deductCreditForTemplate(templateId: string) {
   if (!template) throw new Error("Modèle introuvable.");
 
   // Run the entire flow atomically
-  await db.transaction(async (tx) => {
-    // 1. Check ownership INSIDE the transaction to prevent race conditions
-    const existingUnlock = await tx.query.userTemplateUnlocks.findFirst({
-      where: and(
-        eq(userTemplateUnlocks.userId, dbUser.id),
-        eq(userTemplateUnlocks.templateId, templateId)
-      ),
+  let deducted = false;
+  try {
+    await db.transaction(async (tx) => {
+      // 1. Check ownership INSIDE the transaction to prevent race conditions
+      const allTemplates = await tx.query.cvTemplates.findMany({
+        where: eq(cvTemplates.analysisId, template.analysisId!)
+      });
+      const allTemplateIds = allTemplates.map(t => t.id);
+
+      const existingUnlock = allTemplateIds.length > 0 ? await tx.query.userTemplateUnlocks.findFirst({
+        where: and(
+          eq(userTemplateUnlocks.userId, dbUser.id),
+          inArray(userTemplateUnlocks.templateId, allTemplateIds)
+        ),
+      }) : null;
+
+      // Already owns it (or generated via AI) — no deduction needed
+      if (existingUnlock || template.isPaid) return;
+
+      // 2. Deduct 1 credit via credit service
+      await deductCredit({
+        userId: dbUser.id,
+        amount: 1,
+        reason: "manual_download",
+        referenceId: templateId,
+        tx,
+      });
+
+      // 3. Record ownership for ALL styles of this CV
+      if (allTemplateIds.length > 0) {
+        await tx.insert(userTemplateUnlocks).values(
+          allTemplateIds.map(tId => ({
+            userId: dbUser.id,
+            templateId: tId,
+          }))
+        ).onConflictDoNothing();
+      }
+
+      // 4. Keep isPaid flag in sync for backward compatibility
+      await tx.update(cvTemplates)
+        .set({ isPaid: true })
+        .where(eq(cvTemplates.id, templateId));
+
+      deducted = true;
     });
+  } catch (error) {
+    console.error("Transaction failed in deductCreditForTemplate:", error);
+    throw error; // Re-throw to propagate the error to the client
+  }
 
-    // Already owns it — no deduction needed
-    if (existingUnlock) return;
-
-    // 2. Deduct 1 credit via credit service
-    await deductCredit({
-      userId: dbUser.id,
-      amount: 1,
-      reason: "manual_download",
-      referenceId: templateId,
-      tx,
-    });
-
-    // 3. Record ownership
-    await tx.insert(userTemplateUnlocks).values({
-      userId: dbUser.id,
-      templateId,
-    });
-
-    // 4. Keep isPaid flag in sync for backward compatibility
-    await tx.update(cvTemplates)
-      .set({ isPaid: true })
-      .where(eq(cvTemplates.id, templateId));
-  });
-
-  revalidatePath('/[locale]/templates/[id]', 'page');
-  return { success: true };
+  revalidatePath('/[locale]/templates/[analysisId]', 'page');
+  return { success: true, deducted };
 }
 
 /**
@@ -341,11 +362,13 @@ export async function deductCreditForAnalysis(analysisId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  const dbUser = await db.query.users.findFirst({
-    where: eq(users.clerkId, userId),
-  });
-
+  const dbUser = await db.query.users.findFirst({ where: eq(users.clerkId, userId) });
   if (!dbUser) throw new Error("Utilisateur introuvable.");
+
+  const plan = getUserPlan(dbUser);
+  // Pro/Monthly users don't need to spend credits for downloads
+  if (plan === 'pro') return { success: true, unlimited: true };
+
   if (isCreditsExpired(dbUser)) throw new Error("EXPIRED: Votre plan a expiré.");
   if (getEffectiveCredits(dbUser) < 1) throw new Error("Crédits insuffisants.");
 
@@ -403,13 +426,13 @@ export async function deductCreditForAnalysis(analysisId: string) {
     }
   });
 
-  revalidatePath('/[locale]/templates/[id]', 'page');
+  revalidatePath('/[locale]/templates/[analysisId]', 'page');
   return { success: true };
 }
 
 export async function generateRewritePreview(analysisId: string, currentCVData: any) {
   const { userId } = await auth();
-  
+
   let dbUser = null;
   if (userId) {
     dbUser = await db.query.users.findFirst({
@@ -419,10 +442,10 @@ export async function generateRewritePreview(analysisId: string, currentCVData: 
 
   const plan = getUserPlan(dbUser);
   const trackingSalt = process.env.TRACKING_SALT || "default_salt";
-  
+
   let userIdentifier = userId || "anonymous";
   let retryKey = `ai_rewrite_retry_${userIdentifier}`;
-  
+
   const cookieStore = await cookies();
   const trackToken = cookieStore.get('_cvb_track')?.value;
   const hashedToken = trackToken ? crypto.createHash('sha256').update(trackToken + trackingSalt).digest('hex') : "anon_fallback";
@@ -439,8 +462,7 @@ export async function generateRewritePreview(analysisId: string, currentCVData: 
   } else {
     // Check limits if not in retry window
     if (plan === "free") {
-      // @ts-ignore - ai_rewrites_used will be added to schema
-      if (dbUser && dbUser.ai_rewrites_used >= 3) {
+      if (dbUser && (dbUser.aiRewritesUsed ?? 0) >= 3) {
         throw new Error("Limite de modifications atteinte pour le plan gratuit.");
       }
     } else if (plan === "anonymous") {
@@ -491,7 +513,7 @@ export async function generateRewritePreview(analysisId: string, currentCVData: 
   if (typeof aiResult !== 'object' || aiResult === null) {
     throw new Error("Erreur de génération AI. Veuillez réessayer.");
   }
-  
+
   // Check for blank entries or hallucinated segments (basic check)
   const hasBlank = Object.values(aiResult).some(val => val === "" || val === null || val === undefined);
   if (hasBlank) {
@@ -519,7 +541,7 @@ export async function generateRewritePreview(analysisId: string, currentCVData: 
 
 export async function acceptRewrite(analysisId: string) {
   const { userId } = await auth();
-  
+
   let dbUser = null;
   if (userId) {
     dbUser = await db.query.users.findFirst({
@@ -529,7 +551,7 @@ export async function acceptRewrite(analysisId: string) {
 
   const plan = getUserPlan(dbUser);
   const trackingSalt = process.env.TRACKING_SALT || "default_salt";
-  
+
   const cookieStore = await cookies();
   const trackToken = cookieStore.get('_cvb_track')?.value;
   const hashedToken = trackToken ? crypto.createHash('sha256').update(trackToken + trackingSalt).digest('hex') : "anon_fallback";
@@ -537,8 +559,7 @@ export async function acceptRewrite(analysisId: string) {
   // Increment Timing: Only add to the count after the user reviews the preview output and explicitly clicks the "Accept" action.
   if (plan === "free" && dbUser) {
     await db.update(users)
-      // @ts-ignore - ai_rewrites_used will be added to schema
-      .set({ ai_rewrites_used: (dbUser.ai_rewrites_used || 0) + 1 })
+      .set({ aiRewritesUsed: (dbUser.aiRewritesUsed || 0) + 1 })
       .where(eq(users.id, dbUser.id));
   } else if (plan === "anonymous") {
     const anonKey = `ai_rewrite_anon_${hashedToken}`;

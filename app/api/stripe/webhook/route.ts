@@ -84,7 +84,7 @@ export async function POST(req: Request) {
           if (resolvedUserId) {
             // Check if it's a UUID to avoid Postgres type mismatch errors
             const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedUserId);
-            const whereClause = isUuid 
+            const whereClause = isUuid
               ? or(eq(users.clerkId, resolvedUserId), eq(users.id, resolvedUserId))
               : eq(users.clerkId, resolvedUserId);
             const usersFound = await tx.select().from(users).where(whereClause).limit(1);
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
             await tx.update(users)
               .set({
                 plan: targetPlan,
-                stripeCustomerId: stripeCustomerId,
+                stripeCustomerId: isSub ? stripeCustomerId : (userRecord.stripeCustomerId || stripeCustomerId),
                 stripeSubscriptionId: session.subscription as string || null,
                 subscriptionStatus: isSub ? "active" : null,
                 subscriptionEndsAt: thirtyDaysFromNow,
@@ -231,7 +231,7 @@ export async function POST(req: Request) {
       await db.transaction(async (tx) => {
         const processed = await tx.select().from(stripeEvents).where(eq(stripeEvents.eventId, event.id)).limit(1);
         if (processed.length > 0) return;
-        
+
         await tx.insert(stripeEvents).values({ eventId: event.id, type: event.type });
 
         await tx.update(users)

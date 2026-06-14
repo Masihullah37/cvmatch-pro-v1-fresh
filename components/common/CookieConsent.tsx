@@ -14,13 +14,23 @@ export default function CookieConsent() {
     }
   }, []);
 
-  const accept = () => {
+  const accept = async () => {
     localStorage.setItem('cookie-consent-v2', 'accepted');
+    await fetch('/api/user/consent', {
+      method: 'POST',
+      body: JSON.stringify({ consent: 'accepted' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
     setShow(false);
   };
 
-  const decline = () => {
+  const decline = async () => {
     localStorage.setItem('cookie-consent-v2', 'declined');
+    await fetch('/api/user/consent', {
+      method: 'POST',
+      body: JSON.stringify({ consent: 'declined' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
     setShow(false);
   };
 
@@ -31,10 +41,10 @@ export default function CookieConsent() {
       <div className="bg-white rounded-3xl border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] p-6 md:p-8 relative overflow-hidden group">
         {/* Glow effect */}
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
-        
+
         <div className="relative">
           <div className="flex items-center justify-between mb-4">
-            <button 
+            <button
               onClick={decline}
               className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-emerald-500 transition-colors"
             >
@@ -54,7 +64,7 @@ export default function CookieConsent() {
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mt-1">Conformité RGPD & Analyse IA</p>
             </div>
           </div>
-          
+
           <p className="text-sm text-slate-600 leading-relaxed mb-8">
             Nous utilisons des cookies pour optimiser votre expérience et analyser l'utilisation de nos outils d'IA via Google Analytics.
           </p>
@@ -66,19 +76,6 @@ export default function CookieConsent() {
             >
               Tout accepter
             </button>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={decline}
-                className="bg-slate-50 text-slate-900 px-6 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-100 transition-all border border-slate-100"
-              >
-                Refuser
-              </button>
-              <button
-                className="bg-white text-slate-900 px-6 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all border border-slate-200"
-              >
-                Préférences
-              </button>
-            </div>
           </div>
         </div>
       </div>

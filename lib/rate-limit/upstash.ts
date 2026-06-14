@@ -70,18 +70,18 @@ export const atsDailyPaidLimit = new Ratelimit({
   prefix: "ats_daily_paid",
 });
 
-// PDF download — hourly per user: 5/1h
+// PDF download — hourly per user: 20/1h
 export const pdfHourlyUserLimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(5, "1 h"),
+  limiter: Ratelimit.slidingWindow(20, "1 h"),
   analytics: true,
   prefix: "pdf_hourly",
 });
 
-// PDF download — daily per user: 10/24h
+// PDF download — daily per user: 40/24h
 export const pdfDailyUserLimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(10, "24 h"),
+  limiter: Ratelimit.slidingWindow(40, "24 h"),
   analytics: true,
   prefix: "pdf_daily",
 });

@@ -14,12 +14,12 @@ interface AnalyzeButtonProps {
   profileDescription?: string;
 }
 
-export default function AnalyzeButton({ 
-  cvFile, 
-  cvUrl, 
-  jobTitle, 
+export default function AnalyzeButton({
+  cvFile,
+  cvUrl,
+  jobTitle,
   jobDescription,
-  profileDescription 
+  profileDescription
 }: AnalyzeButtonProps) {
   const router = useRouter();
   const locale = useLocale();
@@ -40,7 +40,7 @@ export default function AnalyzeButton({
 
   const handleAnalyze = async () => {
     setError(null);
-    
+
     // Validation: We need either a CV file or a Profile Description
     if (!cvFile && !cvUrl && (!profileDescription || profileDescription.trim().length < 50)) {
       setError("Veuillez importer un CV ou décrire votre profil avec plus de détails (min. 50 caractères).");
@@ -59,7 +59,7 @@ export default function AnalyzeButton({
           files: [cvFile],
         });
         if (res && res[0]) {
-          finalCvUrl = res[0].url;
+          finalCvUrl = res[0].ufsUrl;
           finalCvName = res[0].name;
         } else {
           throw new Error("Erreur lors de l'envoi du CV. Veuillez réessayer.");
@@ -143,14 +143,13 @@ export default function AnalyzeButton({
         </div>
       )}
 
-      <button 
+      <button
         onClick={handleAnalyze}
         disabled={isAnalyzing}
-        className={`group flex items-center justify-center gap-3 sm:gap-4 w-full max-w-[500px] py-4 sm:py-6 rounded-2xl sm:rounded-[2.5rem] text-base sm:text-xl font-black shadow-2xl transition-all ${
-          isAnalyzing 
-            ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+        className={`group flex items-center justify-center gap-3 sm:gap-4 w-full max-w-[500px] py-4 sm:py-6 rounded-2xl sm:rounded-[2.5rem] text-base sm:text-xl font-black shadow-2xl transition-all ${isAnalyzing
+            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
             : 'bg-primary text-white hover:bg-emerald-600 hover:scale-[1.03] hover:shadow-emerald-500/30 active:scale-95 transition-all duration-200 shadow-emerald-500/20'
-        }`}
+          }`}
       >
         {isAnalyzing ? (
           <div className="relative flex items-center justify-center">
@@ -170,7 +169,7 @@ export default function AnalyzeButton({
         )}
         {isAnalyzing ? '' : 'Optimiser mon CV maintenant'}
       </button>
-      
+
       {isAnalyzing && (
         <p className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] animate-pulse">
           Analyse ATS et optimisation sémantique en cours
@@ -181,7 +180,7 @@ export default function AnalyzeButton({
       {isLimitModalOpen && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 md:p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white rounded-[2.5rem] max-w-[500px] w-full p-8 md:p-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.18)] relative border border-slate-100 flex flex-col items-center text-center">
-            
+
             <button
               onClick={() => setIsLimitModalOpen(false)}
               className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-all hover:rotate-90 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl"
@@ -218,7 +217,7 @@ export default function AnalyzeButton({
                   {limitReason === 'credits_exhausted' ? 'Recharger des crédits' : 'Passer au Plan Pro'}
                 </button>
               )}
-              
+
               <button
                 onClick={() => setIsLimitModalOpen(false)}
                 className="w-full py-4 px-6 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold transition-all active:scale-95"

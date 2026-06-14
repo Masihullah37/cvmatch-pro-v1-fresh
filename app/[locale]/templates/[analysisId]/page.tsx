@@ -115,20 +115,23 @@ export default async function TemplatesPage({
   }
 
   const hasAvailableCredits = userCredits > 0 && !isExpired;
-  const hasStructuralAccess = isJustPaid || hasAvailableCredits;
+  // ✅ Fix: Include 'trial' and 'one_time' plans in paid access calculation ONLY if they have credits.
+  // 'pro' and 'monthly' have unlimited access.
+  const isPlanPaid = plan === 'pro' || plan === 'monthly';
+  const hasStructuralAccess = isJustPaid || hasAvailableCredits || isPlanPaid;
+
+  // ✅ Fix: Check if user owns ANY template for this specific analysis
+  const ownsAnyInAnalysis = templates.some(t => ownedTemplateIds.has(t.id) || t.isPaid);
 
   const safeTemplates = templates.map((t) => {
-    const templateOwned = ownedTemplateIds.has(t.id);
-    // Watermark stays hidden only if specific template is owned OR user has access (credits/just paid).
-    // This ensures watermarks reappear as soon as credits reach 0.
-    // const hideWatermark = templateOwned || hasStructuralAccess;
-    const hideWatermark = hasStructuralAccess; // Only hide watermark if user has active plan or credits
+    // Treat as owned if they explicitly own it, OR if they own any template in this analysis, OR if it's marked as paid via AI generation
+    const templateOwned = ownedTemplateIds.has(t.id) || ownsAnyInAnalysis || t.isPaid;
+    const hideWatermark = templateOwned || hasStructuralAccess;
     return { ...t, hideWatermark };
   });
 
   // Overall "isPaid" status for the UI banner. 
-  // Tied strictly to access status to trigger paywall when credits run out.
-  const isPaid = hasStructuralAccess;
+  const isPaid = hasStructuralAccess || ownsAnyInAnalysis;
 
   if (analysis.status === "processing") {
     return (

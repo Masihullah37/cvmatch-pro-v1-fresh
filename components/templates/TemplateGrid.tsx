@@ -45,6 +45,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import CVRenderer from "./CVRenderer";
+import { toast } from "sonner";
 import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";
 import OuiCVLoader from "../common/OuiCVLoader";
 interface Template {
@@ -848,31 +849,32 @@ export default function TemplateGrid({
       return;
     }
 
-    // RULE: Template selection is always FREE (0 credits).
-    // Credits are only deducted at Download time.
+    if (!editingData) {
+      // RULE: Template selection is always FREE (0 credits).
+      // Credits are only deducted at Download time.
 
-    const data = JSON.parse(JSON.stringify(template.templateData || {}));
-    if (!data.contact) data.contact = { email: "", phone: "", location: "" };
-    const headerKeys = data.headers ? Object.keys(data.headers) : Object.keys(DEFAULT_HEADERS);
-    data.headers = headerKeys.reduce((acc: Record<string, string>, key: string) => {
-      acc[key] = data.headers?.[key] ?? DEFAULT_HEADERS[key] ?? key;
-      return acc;
-    }, {});
+      const data = JSON.parse(JSON.stringify(template.templateData || {}));
+      if (!data.contact) data.contact = { email: "", phone: "", location: "" };
+      const headerKeys = data.headers ? Object.keys(data.headers) : Object.keys(DEFAULT_HEADERS);
+      data.headers = headerKeys.reduce((acc: Record<string, string>, key: string) => {
+        acc[key] = data.headers?.[key] ?? DEFAULT_HEADERS[key] ?? key;
+        return acc;
+      }, {});
 
-    data.languages = asRecordArray(data.languages);
-    data.skills = asStringArray(data.skills);
-    data.experience = asRecordArray(data.experience);
-    data.education = asRecordArray(data.education);
-    data.projects = asRecordArray(data.projects);
-    // Initialize section order if missing
-    if (!data.sectionOrder) {
-      data.sectionOrder = Object.keys(data.headers).filter(k => k !== 'photoUrl' && k !== 'userName' && k !== 'jobTitle');
-    } else {
-      data.sectionOrder = Array.from(new Set(data.sectionOrder));
+      data.languages = asRecordArray(data.languages);
+      data.skills = asStringArray(data.skills);
+      data.experience = asRecordArray(data.experience);
+      data.education = asRecordArray(data.education);
+      data.projects = asRecordArray(data.projects);
+      // Initialize section order if missing
+      if (!data.sectionOrder) {
+        data.sectionOrder = Object.keys(data.headers).filter(k => k !== 'photoUrl' && k !== 'userName' && k !== 'jobTitle');
+      } else {
+        data.sectionOrder = Array.from(new Set(data.sectionOrder));
+      }
+      setEditingData(data);
     }
-
     setSelectedTemplate(id);
-    setEditingData(data);
     setSaveStatus("idle");
     setMobileView("edit");
     setForceDesktopPreview(false);
@@ -887,31 +889,32 @@ export default function TemplateGrid({
       return;
     }
 
-    // RULE: Template selection is always FREE (0 credits).
-    // Credits are only deducted at Download time.
+    if (!editingData) {
+      // RULE: Template selection is always FREE (0 credits).
+      // Credits are only deducted at Download time.
 
-    const data = JSON.parse(JSON.stringify(template.templateData || {}));
-    if (!data.contact) data.contact = { email: "", phone: "", location: "" };
-    const headerKeys = data.headers ? Object.keys(data.headers) : Object.keys(DEFAULT_HEADERS);
-    data.headers = headerKeys.reduce((acc: Record<string, string>, key: string) => {
-      acc[key] = data.headers?.[key] ?? DEFAULT_HEADERS[key] ?? key;
-      return acc;
-    }, {});
+      const data = JSON.parse(JSON.stringify(template.templateData || {}));
+      if (!data.contact) data.contact = { email: "", phone: "", location: "" };
+      const headerKeys = data.headers ? Object.keys(data.headers) : Object.keys(DEFAULT_HEADERS);
+      data.headers = headerKeys.reduce((acc: Record<string, string>, key: string) => {
+        acc[key] = data.headers?.[key] ?? DEFAULT_HEADERS[key] ?? key;
+        return acc;
+      }, {});
 
-    data.languages = asRecordArray(data.languages);
-    data.skills = asStringArray(data.skills);
-    data.experience = asRecordArray(data.experience);
-    data.education = asRecordArray(data.education);
-    data.projects = asRecordArray(data.projects);
-    // Initialize section order if missing
-    if (!data.sectionOrder) {
-      data.sectionOrder = Object.keys(data.headers).filter(k => k !== 'photoUrl' && k !== 'userName' && k !== 'jobTitle');
-    } else {
-      data.sectionOrder = Array.from(new Set(data.sectionOrder));
+      data.languages = asRecordArray(data.languages);
+      data.skills = asStringArray(data.skills);
+      data.experience = asRecordArray(data.experience);
+      data.education = asRecordArray(data.education);
+      data.projects = asRecordArray(data.projects);
+      // Initialize section order if missing
+      if (!data.sectionOrder) {
+        data.sectionOrder = Object.keys(data.headers).filter(k => k !== 'photoUrl' && k !== 'userName' && k !== 'jobTitle');
+      } else {
+        data.sectionOrder = Array.from(new Set(data.sectionOrder));
+      }
+      setEditingData(data);
     }
-
     setSelectedTemplate(id);
-    setEditingData(data);
     setSaveStatus("idle");
     setMobileView("edit");
     setForceDesktopPreview(false);
@@ -932,7 +935,9 @@ export default function TemplateGrid({
         try {
           const creditRes = await deductCreditForAnalysis(analysisId);
           if (creditRes.success) {
-            setUserCredits(prev => prev - 1);
+            if (!creditRes.alreadyPaid && userCredits > 0) {
+              setUserCredits(prev => prev - 1);
+            }
             setTemplates(prev => prev.map(t => ({ ...t, isPaid: true })));
             router.refresh();
           }
@@ -1009,7 +1014,7 @@ export default function TemplateGrid({
 
       // Deduct credit for this specific template download (handles ownership check internally)
       // This function will throw if credits are insufficient or user is unauthorized.
-      await deductCreditForTemplate(templateId);
+      const creditRes = await deductCreditForTemplate(templateId);
 
       // If deduction/ownership check was successful, refresh the router to update UI
       // (credits, watermark status, etc.)
@@ -1018,7 +1023,7 @@ export default function TemplateGrid({
       // The local state updates for userCredits and templates are removed here
       // because router.refresh() will re-fetch the latest state from the server,
       // ensuring consistency.
-      if (userCredits > 0) { // Only decrement if a credit was actually available to be deducted
+      if (creditRes?.deducted && userCredits > 0) { // Only decrement if a credit was actually available to be deducted
         setUserCredits((prev: number) => Math.max(0, prev - 1));
       }
 
@@ -1040,7 +1045,12 @@ export default function TemplateGrid({
         }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Erreur serveur");
+      if (!res.ok) {
+        if (result.action === "upgrade" || result.action === "unlock" || result.action === "login") {
+          throw new Error("PAYWALL");
+        }
+        throw new Error(result.error || "Erreur serveur");
+      }
 
       if (result.pdfBase64) {
         const link = document.createElement("a");
@@ -1051,10 +1061,14 @@ export default function TemplateGrid({
         document.body.removeChild(link);
       }
     } catch (err: any) {
-      if (plan === "anonymous") {
-        setShowGuestAuthModal(true);
+      if (err.message === "PAYWALL") {
+        if (plan === "anonymous") {
+          setShowGuestAuthModal(true);
+        } else {
+          setShowPaywall(true);
+        }
       } else {
-        setShowPaywall(true);
+        toast.error(err.message || "Une erreur s'est produite lors du téléchargement.");
       }
     } finally {
       setIsGenerating(null);

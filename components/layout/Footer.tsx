@@ -233,7 +233,7 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="flex items-center shrink-0">
-            <Image src="/ouicvlogo.png" alt="OuiCV" width={150} height={50} className="object-contain" />
+            <Image src="/ouicvlogo.png" alt="OuiCV" width={150} height={50} className="object-contain" style={{ height: 'auto' }} />
           </div>
 
           {/* Nav links */}

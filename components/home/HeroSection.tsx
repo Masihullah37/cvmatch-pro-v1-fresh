@@ -59,7 +59,7 @@ export default function HeroSection() {
     <section
       style={{
         position: "relative",
-        minHeight: "90vh",
+        minHeight: "auto",
         display: "flex",
         alignItems: "center",
         overflow: "hidden",
@@ -125,7 +125,7 @@ export default function HeroSection() {
           zIndex: 10,
           maxWidth: 1280,
           margin: "0 auto",
-          padding: "80px 24px",
+          padding: "80px 24px 30px",
           width: "100%",
         }}
       >
@@ -267,18 +267,18 @@ export default function HeroSection() {
             `}</style>
 
             <div className="flex items-center gap-3 pt-2 justify-center lg:justify-start">
-               <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
-                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                 <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Disponible 24/7</span>
-               </div>
-               <p className="text-sm text-slate-500 font-medium italic">
-                 "Optimisez votre avenir dès aujourd'hui"
-               </p>
+              <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Disponible 24/7</span>
+              </div>
+              <p className="text-sm text-slate-500 font-medium italic">
+                "Optimisez votre avenir dès aujourd'hui"
+              </p>
             </div>
           </div>
 
           {/* Right — Character image & Animation */}
-          <div className="relative flex items-center justify-center scale-[0.6] sm:scale-[0.8] lg:scale-100 mt-12 lg:mt-0">
+          <div className="relative flex items-center justify-center scale-[0.75] sm:scale-[0.9] lg:scale-110 mt-8 lg:mt-0">
             {/* Steps circular animation */}
             <div className="absolute inset-0 z-20 pointer-events-none">
               {STEPS.map((step, i) => {
@@ -286,7 +286,7 @@ export default function HeroSection() {
                 const radius = 240;
                 const isActive = i === activeStep;
                 const Icon = step.icon;
-                
+
                 return (
                   <div
                     key={i}
@@ -297,10 +297,10 @@ export default function HeroSection() {
                       transform: "translate(-50%, -50%)",
                     }}
                   >
-                    <div 
+                    <div
                       className={`flex flex-col items-center gap-2 transition-all duration-500 ${isActive ? 'scale-110' : 'scale-90 opacity-40 blur-[1px]'}`}
                     >
-                      <div 
+                      <div
                         className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500"
                         style={{
                           background: isActive ? step.color : 'rgba(148,163,184,0.1)',
@@ -317,7 +317,7 @@ export default function HeroSection() {
                   </div>
                 );
               })}
-              
+
               {/* Rotating orbit ring */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] border border-slate-200 rounded-full animate-[spin_20s_linear_infinite]" />
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-dashed border-primary/10 rounded-full animate-[spin_30s_linear_infinite_reverse]" />
@@ -342,6 +342,7 @@ export default function HeroSection() {
                 src="/hero.png"
                 alt="OuiCV AI Character"
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 480px"
                 className="object-contain"
                 style={{
                   zIndex: 10,

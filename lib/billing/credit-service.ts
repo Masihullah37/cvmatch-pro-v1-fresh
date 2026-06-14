@@ -116,7 +116,8 @@ export async function deductCredit({
   // 2. Decrement running total
   await executor
     .update(users)
-    .set({ credits: sql`${users.credits} - ${amount}`, updatedAt: new Date() })
+    // ✅ Fix: Use COALESCE to handle potential null values in the credits column
+    .set({ credits: sql`COALESCE(${users.credits}, 0) - ${amount}`, updatedAt: new Date() })
     .where(eq(users.id, userId));
 
   // 3. Append immutable ledger record (negative = credit deducted)

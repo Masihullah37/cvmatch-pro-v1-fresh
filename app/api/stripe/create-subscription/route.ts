@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe/client";
 import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
+import { cvAnalyses } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -9,7 +12,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { analysisId, locale = "fr", templateNumber, returnPath } = await req.json();
+    const { analysisId, locale = "fr", templateNumber, returnPath, templateData } = await req.json();
+
+    // ✅ Persist current edits to the database so they are not lost after payment redirect
+    if (analysisId && templateData) {
+      await db.update(cvAnalyses).set({ optimizedData: templateData as any }).where(eq(cvAnalyses.id, analysisId));
+    }
+
     let appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:3000").trim();
     if (returnPath) {
       try {
@@ -55,6 +64,7 @@ export async function POST(req: Request) {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
+      client_reference_id: userId,
       line_items: [
         {
           price: process.env.STRIPE_SUBSCRIPTION_PRICE_ID,

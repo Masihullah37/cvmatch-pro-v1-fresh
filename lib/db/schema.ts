@@ -23,6 +23,8 @@ export const users = pgTable('users', {
   aiRewritesUsed: integer('ai_rewrites_used').default(0),
   isAdmin: boolean('is_admin').default(false),
   isBlocked: boolean('is_blocked').default(false),
+  cookieConsent: varchar('cookie_consent').default('pending'),
+  cookieConsentAt: timestamp('cookie_consent_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

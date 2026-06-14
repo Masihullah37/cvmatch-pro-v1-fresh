@@ -29,17 +29,17 @@ export default function HeroUploadSection() {
   }, [userId, prevUserId]);
 
   return (
-    <div className="w-full mt-12 relative">
-      
+    <div className="w-full mt-4 relative">
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
-        <JobInputPanel 
-          jobTitle={jobTitle} 
-          setJobTitle={setJobTitle} 
-          jobDescription={jobDescription} 
-          setJobDescription={setJobDescription} 
+        <JobInputPanel
+          jobTitle={jobTitle}
+          setJobTitle={setJobTitle}
+          jobDescription={jobDescription}
+          setJobDescription={setJobDescription}
         />
-        <CVUploadPanel 
-          cvFile={cvFile} 
+        <CVUploadPanel
+          cvFile={cvFile}
           setCvFile={setCvFile}
           cvUrl={cvUrl}
           setCvUrl={setCvUrl}
@@ -48,16 +48,15 @@ export default function HeroUploadSection() {
         />
       </div>
 
-      <div className="mt-12 flex justify-center pb-20">
-        <AnalyzeButton 
-          cvFile={cvFile} 
+      <div className="mt-12 flex justify-center pb-10">
+        <AnalyzeButton
+          cvFile={cvFile}
           cvUrl={cvUrl}
-          jobTitle={jobTitle} 
+          jobTitle={jobTitle}
           jobDescription={jobDescription}
-          profileDescription={profileDescription} 
+          profileDescription={profileDescription}
         />
       </div>
     </div>
   );
 }
-

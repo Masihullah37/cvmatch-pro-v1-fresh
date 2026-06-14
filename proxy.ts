@@ -51,7 +51,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   if (userId) {
     // Check DB for admin/block status
     const [dbUser] = await db.select().from(users).where(eq(users.clerkId, userId));
-    
+
     if (dbUser?.isBlocked && !pathname.includes("/blocked")) {
       return NextResponse.redirect(new URL("/[locale]/blocked", req.url).toString().replace("[locale]", pathname.split('/')[1] || 'fr'));
     }
@@ -95,7 +95,8 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   }
 
   // ✅ GDPR Tracking Cookie
-  if (!req.cookies.has("_cvb_track")) {
+  const cookieConsent = req.cookies.get("cookie_consent")?.value;
+  if (!req.cookies.has("_cvb_track") && cookieConsent === "accepted") {
     const token = crypto.randomBytes(16).toString("hex");
     response.cookies.set("_cvb_track", token, {
       maxAge: 30 * 24 * 3600, // 30 days

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe/client";
 import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
+import { cvAnalyses } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +13,13 @@ export async function POST(req: Request) {
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
-    const { analysisId, locale = "fr", returnPath } = await req.json();
+    const { analysisId, locale = "fr", returnPath, templateData } = await req.json();
+
+    // Save editor state to DB before redirecting to Stripe to prevent data loss
+    if (analysisId && templateData) {
+      await db.update(cvAnalyses).set({ optimizedData: templateData as any }).where(eq(cvAnalyses.id, analysisId));
+    }
+
     let appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://127.0.0.1:3000").trim();
     if (returnPath) {
       try {
@@ -55,6 +64,8 @@ export async function POST(req: Request) {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
+      // ✅ FIX: Added client_reference_id at root level so the webhook can identify the user
+      client_reference_id: userId,
       line_items: [
         {
           price_data: {
@@ -73,7 +84,7 @@ export async function POST(req: Request) {
       cancel_url: cancelUrl.toString(),
       metadata: {
         analysisId,
-        userId: userId, // No longer 'guest'
+        userId: userId,
       },
     });
 
