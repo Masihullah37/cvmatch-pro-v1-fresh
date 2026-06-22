@@ -1,0 +1,36 @@
+name: Daily GDPR Cleanup
+
+on:
+  schedule:
+    # Runs at 2:00 AM UTC every day
+    - cron: '0 2 * * *'
+  # Allows manual trigger from GitHub Actions tab
+  # Useful for testing before first automatic run
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger GDPR hard-delete cleanup
+        run: |
+          echo "Triggering GDPR cleanup for accounts soft-deleted over 30 days ago..."
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            "${{ secrets.NEXT_PUBLIC_APP_URL }}/api/admin/cleanup-deleted-users")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response: $BODY"
+          echo "HTTP Status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Cleanup failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "✅ GDPR cleanup completed"

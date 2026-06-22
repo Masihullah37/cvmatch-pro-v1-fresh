@@ -12,16 +12,17 @@ const devOrigins = [
   'localhost:3000',
   '192.168.1.12:3000',
 ];
+
 const cspHeader = `
     default-src 'self';
-    script-src 'self' ${isProd ? "" : "'unsafe-eval'"} 'unsafe-inline' https://clerk.com https://*.clerk.accounts.dev https://js.stripe.com https://cdn.tailwindcss.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://img.clerk.com https://utfs.io;
+    script-src 'self' ${isProd ? "" : "'unsafe-eval'"} 'unsafe-inline' blob: https://clerk.com https://*.clerk.accounts.dev https://js.stripe.com https://cdn.tailwindcss.com https://challenges.cloudflare.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://challenges.cloudflare.com;
+    img-src 'self' blob: data: https://img.clerk.com https://utfs.io https://challenges.cloudflare.com;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-src https://js.stripe.com https://checkout.stripe.com;
+    frame-src https://js.stripe.com https://checkout.stripe.com https://challenges.cloudflare.com https://*.clerk.accounts.dev;
     connect-src 'self' 
         https://clerk.com 
         https://*.clerk.accounts.dev 
@@ -32,6 +33,9 @@ const cspHeader = `
         https://*.uploadthing.com
         https://www.google-analytics.com
         https://stats.g.doubleclick.net
+        https://clerk-telemetry.com
+        https://*.turnstile.cloudflareresolve.com
+        https://challenges.cloudflare.com
         ${isProd ? "" : "http://localhost:3000 https://giver-molar-judiciary.ngrok-free.dev http://192.168.1.12:3000 ws://localhost:3000 ws://192.168.1.12:3000"};
     worker-src 'self' blob:;
     upgrade-insecure-requests;
@@ -79,7 +83,7 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(withNextIntl(nextConfig), {
-  org: "your-org",
+  org: process.env.SENTRY_ORG || "your-org-name",
   project: "cvmatch-pro",
   silent: true,
 });

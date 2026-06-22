@@ -1,30 +1,28 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { auth, clerkClient } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
 
-export async function POST() {
+export async function POST(req: Request) {
   const { userId } = await auth();
 
   if (!userId) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new NextResponse('Unauthorized', { status: 401 });
   }
 
   try {
+    // Initiate user deletion in Clerk.
+    // This action will trigger the 'user.deleted' webhook,
+    // which our application uses to perform a soft delete in our database.
     const client = await clerkClient();
-    
-    // 1. Delete from Clerk (this will trigger the user.deleted webhook)
     await client.users.deleteUser(userId);
 
-    // 2. Manual cleanup in case webhook fails or is delayed (optional but safer for immediate UX)
-    // The webhook in app/api/webhooks/clerk/route.ts will also handle this.
-    // But we can do it here too.
-    await db.delete(users).where(eq(users.clerkId, userId));
+    // Clerk's deleteUser API returns a 200 even if the user is already deleted.
+    // The actual database soft-deletion is handled by our webhook.
 
-    return NextResponse.json({ success: true });
+    console.log(`[API/DELETE-ACCOUNT] User ${userId} deletion initiated with Clerk.`);
+
+    return new NextResponse('User deletion initiated', { status: 200 });
   } catch (error: any) {
-    console.error("[DELETE_ACCOUNT_API] Error:", error.message);
-    return new NextResponse(error.message || "Internal Error", { status: 500 });
+    console.error('[API/DELETE-ACCOUNT] Error initiating user deletion with Clerk:', error);
+    return new NextResponse(`Error: ${error.message || 'Failed to initiate user deletion'}`, { status: 500 });
   }
 }

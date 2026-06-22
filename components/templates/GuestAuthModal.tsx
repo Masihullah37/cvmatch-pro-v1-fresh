@@ -1,6 +1,6 @@
 'use client';
 
-import { LogIn, UserPlus, X, Zap, ShieldCheck } from 'lucide-react';
+import { LogIn, UserPlus, X, Zap, ShieldCheck, Gift } from 'lucide-react';
 import { SignInButton, SignUpButton } from '@clerk/nextjs';
 import { useEffect, useState } from 'react';
 
@@ -28,7 +28,7 @@ export default function GuestAuthModal({
   return (
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 md:p-6 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300">
       <div className="bg-white rounded-[3rem] max-w-[500px] w-full overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.3)] relative border border-slate-100 animate-in zoom-in-95 duration-300">
-        
+
         {/* Animated Accent Bar */}
         <div className="absolute top-0 left-0 w-full h-1.5 bg-primary overflow-hidden">
           <div className="w-1/3 h-full bg-accent animate-[move_3s_infinite_linear]" />
@@ -50,10 +50,17 @@ export default function GuestAuthModal({
           <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">
             Prêt à <span className="text-primary">Télécharger</span> ?
           </h2>
-          
+
           <p className="text-slate-500 text-lg font-medium leading-relaxed mb-10">
             Connectez-vous ou créez un compte pour sauvegarder vos modifications et télécharger votre CV optimisé.
           </p>
+
+          <div className="w-full mb-8 px-5 py-3 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center gap-2.5">
+            <Gift size={16} className="text-emerald-600 shrink-0" />
+            <p className="text-emerald-700 text-sm font-bold">
+              1 téléchargement gratuit offert à la création de votre compte
+            </p>
+          </div>
 
           <div className="flex flex-col w-full gap-4">
             <SignInButton mode="modal" forceRedirectUrl={currentUrl}>

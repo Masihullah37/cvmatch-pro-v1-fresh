@@ -4,7 +4,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties, use } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { deductCreditForAnalysis, deductCreditForTemplate, generateAIResume } from "@/app/actions/analysis";
+import { useAuth } from "@clerk/nextjs";
+import { deductCreditForAnalysis, deductCreditForTemplate, generateAIResume } from "@/app/actions/analysis"; // Assuming softDeleteCvAnalysis is imported
 import {
   DndContext,
   closestCenter,
@@ -49,6 +50,7 @@ import { toast } from "sonner";
 import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";
 import OuiCVLoader from "../common/OuiCVLoader";
 interface Template {
+  analysisId: string; // Add analysisId to Template interface for deletion
   id: string;
   templateNumber: number;
   templateStyle: string;
@@ -85,7 +87,6 @@ const DEFAULT_HEADERS: Record<string, string> = {
   skills: "Compétences",
   languages: "Langues",
   contact: "Contact",
-  certifications: "Certifications",
 };
 
 const sectionColors: Record<string, string> = {
@@ -233,7 +234,7 @@ const EditorContent = ({
   analysisData
 }: EditorContentProps) => (
   <div className="flex flex-col h-full overflow-hidden">
-    <div className="p-6 md:p-8 bg-white border-b border-slate-100 shrink-0">
+    <div className="p-6 md:p-8 bg-white border-b border-slate-100 shrink-0 z-10">
       <h3 className="text-xl font-black text-slate-900">Modifier le CV</h3>
       <p className="text-xs text-slate-400 font-medium mt-1">Personnalisez chaque section en temps réel.</p>
     </div>
@@ -453,20 +454,20 @@ const EditorContent = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className={labelCls}>Poste</label>
-                    <input className={inputCls} value={exp.title || ""} onChange={(e) => updateArr("experience", idx, "title", e.target.value)} />
+                    <input className={inputCls} value={exp?.title || ""} onChange={(e) => updateArr("experience", idx, "title", e.target.value)} />
                   </div>
                   <div>
                     <label className={labelCls}>Entreprise</label>
-                    <input className={inputCls} value={exp.company || ""} onChange={(e) => updateArr("experience", idx, "company", e.target.value)} />
+                    <input className={inputCls} value={exp?.company || ""} onChange={(e) => updateArr("experience", idx, "company", e.target.value)} />
                   </div>
                   <div>
                     <label className={labelCls}>Période</label>
-                    <input className={inputCls} value={exp.period || ""} onChange={(e) => updateArr("experience", idx, "period", e.target.value)} />
+                    <input className={inputCls} value={exp?.period || ""} onChange={(e) => updateArr("experience", idx, "period", e.target.value)} />
                   </div>
                 </div>
                 <div>
                   <label className={labelCls}>Missions & Réalisations</label>
-                  <textarea className={textareaCls} rows={4} value={exp.description || ""} onChange={(e) => updateArr("experience", idx, "description", e.target.value)} />
+                  <textarea className={textareaCls} rows={4} value={exp?.description || ""} onChange={(e) => updateArr("experience", idx, "description", e.target.value)} />
                 </div>
               </div>
             ))}
@@ -493,16 +494,16 @@ const EditorContent = ({
                 </button>
                 <div>
                   <label className={labelCls}>Diplôme / Formation</label>
-                  <input className={inputCls} value={edu.degree || ""} onChange={(e) => updateArr("education", idx, "degree", e.target.value)} />
+                  <input className={inputCls} value={edu?.degree || ""} onChange={(e) => updateArr("education", idx, "degree", e.target.value)} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2 sm:col-span-1">
                     <label className={labelCls}>Établissement</label>
-                    <input className={inputCls} value={edu.school || ""} onChange={(e) => updateArr("education", idx, "school", e.target.value)} />
+                    <input className={inputCls} value={edu?.school || ""} onChange={(e) => updateArr("education", idx, "school", e.target.value)} />
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <label className={labelCls}>Année / Période</label>
-                    <input className={inputCls} value={edu.year || ""} onChange={(e) => updateArr("education", idx, "year", e.target.value)} />
+                    <input className={inputCls} value={edu?.year || ""} onChange={(e) => updateArr("education", idx, "year", e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -526,7 +527,7 @@ const EditorContent = ({
             {asStringArray(editingData?.skills).map((skill: string, idx: number) => (
               <div key={idx} className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200 group/skill">
                 <input
-                  value={skill}
+                  value={skill || ""}
                   onChange={(e) => {
                     const arr = [...asStringArray(editingData?.skills)];
                     arr[idx] = e.target.value;
@@ -563,12 +564,12 @@ const EditorContent = ({
           <div className="space-y-3">
             {asRecordArray(editingData?.languages).map((lang: any, idx: number) => (
               <div key={idx} className="flex gap-3 items-center group/lang">
-                <input className={`${inputCls} flex-1 shadow-sm`} placeholder="Langue" value={lang.language || lang.name || ""} onChange={(e) => {
+                <input className={`${inputCls} flex-1 shadow-sm`} placeholder="Langue" value={lang?.language || lang?.name || ""} onChange={(e) => {
                   const arr = [...asRecordArray(editingData?.languages)];
                   arr[idx] = { ...arr[idx], language: e.target.value };
                   update("languages", arr);
                 }} />
-                <input className={`${inputCls} flex-1 shadow-sm`} placeholder="Niveau" value={lang.level || ""} onChange={(e) => {
+                <input className={`${inputCls} flex-1 shadow-sm`} placeholder="Niveau" value={lang?.level || ""} onChange={(e) => {
                   const arr = [...asRecordArray(editingData?.languages)];
                   arr[idx] = { ...arr[idx], level: e.target.value };
                   update("languages", arr);
@@ -597,15 +598,15 @@ const EditorContent = ({
                 <button onClick={() => removeArr("projects", idx)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
                 <div>
                   <label className={labelCls}>Nom du Projet</label>
-                  <input className={inputCls} value={proj.name || ""} onChange={(e) => updateArr("projects", idx, "name", e.target.value)} />
+                  <input className={inputCls} value={proj?.name || ""} onChange={(e) => updateArr("projects", idx, "name", e.target.value)} />
                 </div>
                 <div>
                   <label className={labelCls}>Technologies</label>
-                  <input className={inputCls} placeholder="Ex: React, Tailwind, Supabase" value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : proj.technologies || ""} onChange={(e) => updateArr("projects", idx, "technologies", e.target.value.split(",").map(s => s.trimStart()))} />
+                  <input className={inputCls} placeholder="Ex: React, Tailwind, Supabase" value={Array.isArray(proj?.technologies) ? proj.technologies.join(", ") : proj?.technologies || ""} onChange={(e) => updateArr("projects", idx, "technologies", e.target.value.split(",").map(s => s.trimStart()))} />
                 </div>
                 <div>
                   <label className={labelCls}>Description</label>
-                  <textarea className={textareaCls} rows={3} value={proj.description || ""} onChange={(e) => updateArr("projects", idx, "description", e.target.value)} />
+                  <textarea className={textareaCls} rows={3} value={proj?.description || ""} onChange={(e) => updateArr("projects", idx, "description", e.target.value)} />
                 </div>
               </div>
             ))}
@@ -614,7 +615,7 @@ const EditorContent = ({
       )}
 
       {/* Custom Sections */}
-      {Object.keys(editingData?.headers || {}).filter(k => !DEFAULT_HEADERS[k] && k !== 'photoUrl' && k !== 'userName' && k !== 'jobTitle').map(key => (
+      {Object.keys(editingData?.headers || {}).filter(k => !['summary', 'experience', 'education', 'skills', 'languages', 'contact', 'photoUrl', 'userName', 'jobTitle', 'projects', 'certifications', 'projet'].includes(k)).map(key => (
         <div key={key} className={`p-6 md:p-8 border-t border-slate-100 bg-slate-50/20`}>
           <SectionHeader
             sectionKey={key}
@@ -747,6 +748,16 @@ const EditorContent = ({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
+// export default function TemplateGrid({
+//   templates: initialTemplates,
+//   userCredits: initialUserCredits,
+//   isExpired = false,
+//   analysisId,
+//   analysisData,
+//   initialTemplate,
+//   plan,
+// }: any) {
+
 export default function TemplateGrid({
   templates: initialTemplates,
   userCredits: initialUserCredits,
@@ -755,10 +766,12 @@ export default function TemplateGrid({
   analysisData,
   initialTemplate,
   plan,
+  hasRealAnalysis = true,
 }: any) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const locale = useLocale();
+  const { userId } = useAuth();
 
   const [templates, setTemplates] = useState<any[]>(initialTemplates);
   const [userCredits, setUserCredits] = useState<number>(initialUserCredits);
@@ -781,6 +794,15 @@ export default function TemplateGrid({
 
   const editingDataRef = useRef<any>(null);
   const previewViewportRef = useRef<HTMLDivElement>(null);
+  const hasRestoredEdits = useRef(false);
+
+  // useEffect(() => {
+  //   editingDataRef.current = editingData;
+  // }, [editingData]);
+
+  // useEffect(() => {
+  //   setTemplates(initialTemplates);
+  // }, [initialTemplates]);
 
   useEffect(() => {
     editingDataRef.current = editingData;
@@ -820,6 +842,34 @@ export default function TemplateGrid({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTemplates]);
+
+  useEffect(() => {
+    if (hasRestoredEdits.current) return;
+
+    const saved = sessionStorage.getItem(`cv_anon_edits_${analysisId}`);
+    // Restore if data exists, user is now logged in, and a template is selected
+    if (saved && userId && selectedTemplate) {
+      try {
+        const parsedData = JSON.parse(saved);
+        setEditingData(parsedData);
+        sessionStorage.removeItem(`cv_anon_edits_${analysisId}`);
+        hasRestoredEdits.current = true;
+        // Auto-save the restored data to the database for the newly logged-in user
+        persistEdits(parsedData);
+      } catch (e) {
+        console.error("Failed to restore anon edits", e);
+      }
+    }
+  }, [selectedTemplate, userId, analysisId]);
+
+  // Close any auth modal automatically once the user becomes authenticated.
+  // Prevents Clerk's SignIn/SignUp modal from attempting to re-render
+  // while already signed in (which throws "cannot_render_single_session_enabled").
+  useEffect(() => {
+    if (userId && showGuestAuthModal) {
+      setShowGuestAuthModal(false);
+    }
+  }, [userId, showGuestAuthModal]);
 
   // Success banner after payment
   useEffect(() => {
@@ -921,7 +971,91 @@ export default function TemplateGrid({
     setShowModelPicker(false);
   };
 
+  // const handleGenerateAI = async () => {
+  //   // ✅ Fix: Anonymous users should always be prompted to login first
+  //   if (plan === "anonymous") {
+  //     setShowGuestAuthModal(true);
+  //     return;
+  //   }
+  //   // const handleGenerateAI = async () => {
+  //   //   // 🔍 Intercept empty generation to protect user credits and prevent blank CVs
+  //   //   const hasCvContent = analysisData?.optimizedData && Object.keys(analysisData.optimizedData).length > 0;
+  //   //   const hasJobInfo = analysisData?.jobDescription?.trim() || analysisData?.jobUrl?.trim();
+
+  //   //   if (!hasCvContent || !hasJobInfo) {
+  //   //     toast.error("Analyse manquante !", {
+  //   //       description: "Veuillez d'abord analyser votre CV avec une offre d'emploi pour obtenir votre score ATS avant de générer votre CV optimisé par l'IA.",
+  //   //       duration: 6000,
+  //   //     });
+
+  //   //     // Smoothly scroll down if the inputs exist on the same page workspace
+  //   //     const inputSection = document.getElementById("analysis-section") || document.getElementById("ats-form");
+  //   //     if (inputSection) {
+  //   //       inputSection.scrollIntoView({ behavior: "smooth" });
+  //   //     } else {
+  //   //       // Redirect directly to the analysis step
+  //   //       router.push(`/${locale}/dashboard/analyse`);
+  //   //     }
+  //   //     return;
+  //   //   }
+
+  //   //   // ✅ Fix: Anonymous users should always be prompted to login first
+  //   //   if (plan === "anonymous") {
+  //   //     setShowGuestAuthModal(true);
+  //   //     return;
+  //   //   }
+
+  //   if (isExpired && !hasPaid) {
+
+  //     if (isExpired && !hasPaid) {
+  //       setShowPaywall(true);
+  //       return;
+  //     }
+  //     if (userCredits < 1 && !hasPaid) { setShowPaywall(true); return; }
+  //     try {
+  //       setIsGeneratingAI(true);
+
+  //       // Deduct credit first if not already paid
+  //       if (!hasPaid) {
+  //         try {
+  //           const creditRes = await deductCreditForAnalysis(analysisId);
+  //           if (creditRes.success) {
+  //             if (!creditRes.alreadyPaid && userCredits > 0) {
+  //               setUserCredits(prev => prev - 1);
+  //             }
+  //             setTemplates(prev => prev.map(t => ({ ...t, isPaid: true })));
+  //             router.refresh();
+  //           }
+  //         } catch (err: any) {
+  //           setShowPaywall(true); // Only show paywall for logged-in users
+  //           return;
+  //         }
+  //       }
+
+  //       const res = await fetch("/api/generate-templates", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ analysisId }),
+  //       });
+  //       if (!res.ok) throw new Error("Erreur lors de la génération IA");
+  //       const result = await res.json();
+  //       if (result.success) {
+  //         router.refresh();
+  //       }
+  //     } catch (err: any) {
+  //       setShowPaywall(true); // Only show paywall for logged-in users
+  //     } finally {
+  //       setIsGeneratingAI(false);
+  //     }
+  //   };
+
   const handleGenerateAI = async () => {
+    // ✅ Fix: Anonymous users should always be prompted to login first
+    if (plan === "anonymous") {
+      setShowGuestAuthModal(true);
+      return;
+    }
+
     if (isExpired && !hasPaid) {
       setShowPaywall(true);
       return;
@@ -942,11 +1076,7 @@ export default function TemplateGrid({
             router.refresh();
           }
         } catch (err: any) {
-          if (plan === "anonymous") {
-            setShowGuestAuthModal(true);
-          } else {
-            setShowPaywall(true);
-          }
+          setShowPaywall(true);
           return;
         }
       }
@@ -962,11 +1092,7 @@ export default function TemplateGrid({
         router.refresh();
       }
     } catch (err: any) {
-      if (plan === "anonymous") {
-        setShowGuestAuthModal(true);
-      } else {
-        setShowPaywall(true);
-      }
+      setShowPaywall(true);
     } finally {
       setIsGeneratingAI(false);
     }
@@ -989,8 +1115,33 @@ export default function TemplateGrid({
     }
   };
 
+  // async function persistEdits(data: any) {
+  //   try {
+  //     const res = await fetch("/api/update-cv-data", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         analysisId,
+  //         templateId: selectedTemplate,
+  //         optimizedData: data,
+  //       }),
+  //     });
+  //     return res.ok;
+  //   } catch {
+  //     return false;
+  //   }
+  // };
+
   const handleSave = async () => {
     if (!selectedTemplate || !editingData) return;
+
+    // If not logged in, save to session storage and show registration modal
+    if (!userId) {
+      sessionStorage.setItem(`cv_anon_edits_${analysisId}`, JSON.stringify(editingData));
+      setShowGuestAuthModal(true);
+      return;
+    }
+
     setSaveStatus("saving");
     setTemplates((prev) =>
       prev.map((t) =>
@@ -1005,6 +1156,16 @@ export default function TemplateGrid({
   };
 
   const handleDownload = async (templateId: string) => {
+    // Force login for anonymous users before trying deduction
+    if (!userId) {
+      // Capture current edited state before showing login
+      if (editingData) {
+        sessionStorage.setItem(`cv_anon_edits_${analysisId}`, JSON.stringify(editingData));
+      }
+      setShowGuestAuthModal(true);
+      return;
+    }
+
     if (isExpired && !hasPaid) {
       setShowPaywall(true);
       return;
@@ -1061,12 +1222,14 @@ export default function TemplateGrid({
         document.body.removeChild(link);
       }
     } catch (err: any) {
-      if (err.message === "PAYWALL") {
-        if (plan === "anonymous") {
-          setShowGuestAuthModal(true);
-        } else {
-          setShowPaywall(true);
-        }
+      const isPaywallError =
+        err.message === "PAYWALL" ||
+        err.message === "Crédits insuffisants." ||
+        err.message?.startsWith("EXPIRED:") ||
+        err.message === "Utilisateur introuvable.";
+
+      if (isPaywallError) {
+        setShowPaywall(true); // Only show paywall for logged-in users
       } else {
         toast.error(err.message || "Une erreur s'est produite lors du téléchargement.");
       }
@@ -1125,23 +1288,30 @@ export default function TemplateGrid({
   const updateArr = useCallback((section: string, idx: number, field: string, value: any) => {
     setEditingData((prev: any) => {
       if (prev[section]?.[idx]?.[field] === value) return prev;
-      const arr = [...(prev[section] || [])];
+      const safeArr = Array.isArray(prev[section]) ? prev[section] : [];
+      const arr = [...safeArr];
       arr[idx] = { ...arr[idx], [field]: value };
       return { ...prev, [section]: arr };
     });
   }, []);
 
   const addArr = useCallback((section: string, item: object) =>
-    setEditingData((prev: any) => ({
-      ...prev,
-      [section]: [...(prev[section] || []), { ...item }],
-    })), []);
+    setEditingData((prev: any) => {
+      const safeArr = Array.isArray(prev[section]) ? prev[section] : [];
+      return {
+        ...prev,
+        [section]: [...safeArr, { ...item }],
+      };
+    }), []);
 
   const removeArr = useCallback((section: string, idx: number) =>
-    setEditingData((prev: any) => ({
-      ...prev,
-      [section]: (prev[section] || []).filter((_: any, i: number) => i !== idx),
-    })), []);
+    setEditingData((prev: any) => {
+      const safeArr = Array.isArray(prev[section]) ? prev[section] : [];
+      return {
+        ...prev,
+        [section]: safeArr.filter((_: any, i: number) => i !== idx),
+      };
+    }), []);
 
   const delContact = useCallback((key: string) =>
     setEditingData((prev: any) => {
@@ -1247,10 +1417,16 @@ export default function TemplateGrid({
     if (!node || !selectedTemplate) return;
 
     const updateMeasuredScale = () => {
-      const horizontalPadding = forceDesktopPreview ? 0 : 16;
+      // When in desktop preview, we don't use horizontal padding because we want to see the full sheet
+      const horizontalPadding = 16;
       const viewportWidth = window.visualViewport?.width || window.innerWidth || node.clientWidth;
-      const availableWidth = Math.max(240, Math.min(node.clientWidth, viewportWidth) - horizontalPadding);
-      setPreviewScale(forceDesktopPreview ? 1 : Math.min(1, availableWidth / 794));
+
+      // We calculate scale based on the A4 width (794px). 
+      // If forceDesktopPreview is true, we keep the layout fixed but scale it to fit the screen width.
+      const availableWidth = Math.max(240, viewportWidth - horizontalPadding);
+      const scale = Math.min(1, availableWidth / 794);
+
+      setPreviewScale(scale);
     };
 
     updateMeasuredScale();
@@ -1315,6 +1491,7 @@ export default function TemplateGrid({
                   {isGeneratingAI ? "IA en cours..." : "Générer mon CV par IA"}
                 </button>
               )}
+
             </div>
           </div>
 
@@ -1338,9 +1515,7 @@ export default function TemplateGrid({
                   </div>
                 </div>
                 <div className="p-4 flex items-center justify-between border-t border-slate-100">
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">IA Optimisé</p>
-                  </div>
+                  <div />
                   {hasPaid && (
                     <button onClick={(e) => { e.stopPropagation(); handleDownload(template.id); }} disabled={isGenerating === template.id} className="w-9 h-9 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl flex items-center justify-center transition-colors">
                       {isGenerating === template.id ? (
@@ -1382,11 +1557,16 @@ export default function TemplateGrid({
               </button>
               <button
                 onClick={async () => {
+                  if (!userId) {
+                    if (editingData) {
+                      sessionStorage.setItem(`cv_anon_edits_${analysisId}`, JSON.stringify(editingData));
+                    }
+                    setShowGuestAuthModal(true);
+                    return;
+                  }
                   if (saveStatus !== "saved" && editingData) await handleSave();
                   if (hasPaid) {
                     await handleDownload(selectedTpl.id);
-                  } else if (plan === "anonymous") {
-                    setShowGuestAuthModal(true);
                   } else {
                     setShowPaywall(true);
                   }
@@ -1413,11 +1593,16 @@ export default function TemplateGrid({
             <div className="flex sm:hidden items-center gap-2">
               <button
                 onClick={async () => {
+                  if (!userId) {
+                    if (editingData) {
+                      sessionStorage.setItem(`cv_anon_edits_${analysisId}`, JSON.stringify(editingData));
+                    }
+                    setShowGuestAuthModal(true);
+                    return;
+                  }
                   if (saveStatus !== "saved" && editingData) await handleSave();
                   if (hasPaid) {
                     await handleDownload(selectedTpl.id);
-                  } else if (plan === "anonymous") {
-                    setShowGuestAuthModal(true);
                   } else {
                     setShowPaywall(true);
                   }
@@ -1526,15 +1711,15 @@ export default function TemplateGrid({
 
               <div
                 ref={previewViewportRef}
-                className={`cv-live-preview flex-1 overflow-auto px-2 py-3 md:p-12 ${forceDesktopPreview ? "justify-start" : "justify-center"} flex items-start`}
+                className={`cv-live-preview flex-1 overflow-auto px-2 py-3 md:p-12 justify-center flex items-start bg-slate-200/50 transition-all duration-500`}
                 style={{ "--preview-scale": previewScale } as CSSProperties}
               >
                 <div
-                  className="relative bg-white shadow-2xl rounded-sm overflow-visible transform-gpu"
+                  className="relative bg-white shadow-2xl rounded-sm overflow-visible transform-gpu transition-all duration-300"
                   style={{
                     width: "calc(794px * var(--preview-scale, 1))",
                     height: "calc(1123px * var(--preview-scale, 1))",
-                    minWidth: forceDesktopPreview ? 794 : undefined,
+                    minWidth: forceDesktopPreview ? "calc(794px * var(--preview-scale, 1))" : undefined,
                   }}
                 >
                   <div className="absolute left-0 top-0 w-[794px] transform-gpu flex justify-center" style={{ transform: "scale(var(--preview-scale, 1))", transformOrigin: 'top left' }}>
@@ -1571,7 +1756,7 @@ export default function TemplateGrid({
           mobileView={mobileView}
         />
       )}
-      {showGuestAuthModal && (
+      {showGuestAuthModal && !userId && (
         <GuestAuthModal
           isOpen={showGuestAuthModal}
           onClose={() => setShowGuestAuthModal(false)}
@@ -1579,4 +1764,4 @@ export default function TemplateGrid({
       )}
     </div>
   );
-}
+};

@@ -177,7 +177,12 @@ export async function POST(req: Request) {
     if (event.type === "invoice.paid") {
       const invoice = event.data.object as any;
       const subscriptionId = invoice.subscription as string | null;
-      if (subscriptionId) {
+
+      // Skip the very first invoice: checkout.session.completed already credited those 30 credits.
+      // billing_reason === 'subscription_create' means this is the initial invoice from a new checkout.
+      const isInitialInvoice = invoice.billing_reason === 'subscription_create';
+
+      if (subscriptionId && !isInitialInvoice) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
         const periodEnd = new Date(subscription.current_period_end * 1000);
         const metadataUserId = subscription.metadata?.userId;

@@ -30,9 +30,11 @@ export function getUserPlan(user: User | null | undefined): PlanType {
       }
       return 'one_time';
     case 'monthly':
-      // A 'monthly' user with an active subscription is considered 'pro'.
-      // If the subscription is not active or expired, they revert to 'free'.
-      if (user.subscriptionStatus === 'active' && !expired) {
+      // A 'monthly' user is 'pro' if active, OR if canceled but not yet expired
+      const isActive = user.subscriptionStatus === 'active';
+      const isCanceledButValid = user.subscriptionStatus === 'canceled' && !expired;
+
+      if ((isActive || isCanceledButValid) && !expired) {
         return 'pro';
       }
       return 'free';

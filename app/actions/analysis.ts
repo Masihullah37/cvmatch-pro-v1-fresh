@@ -9,7 +9,7 @@ import { extractStructuredJobDetails, isUrl, scrapeJobDescription } from "@/lib/
 import { addCredits, deductCredit } from "@/lib/billing/credit-service";
 
 import { auth } from "@clerk/nextjs/server";
-import { eq, sql, and, inArray } from "drizzle-orm";
+import { eq, sql, and, inArray, isNull } from "drizzle-orm";
 import { getEffectiveCredits, isCreditsExpired } from "@/lib/utils/subscription";
 import { redis } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
@@ -30,17 +30,37 @@ export async function performCVAnalysis(formData: FormData) {
   if (userId) {
     // Resolve/Sync User only if logged in
     let dbUser = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId)
+      where: and(
+        eq(users.clerkId, userId),
+        isNull(users.deletedAt)
+      )
     });
 
     if (!dbUser) {
+      const cookieStore = await cookies();
+      const consent = cookieStore.get('cookie_consent')?.value || 'pending';
+
       const [newUser] = await db.insert(users).values({
         clerkId: userId,
         credits: 0,
+        cookieConsent: consent,
+        cookieConsentAt: (consent === 'accepted' || consent === 'declined') ? new Date() : null,
       }).returning();
       dbUserId = newUser.id;
     } else {
       dbUserId = dbUser.id;
+      // Proactively upgrade consent if the record exists but is still 'pending'
+      if (dbUser.cookieConsent === 'pending') {
+        const cookieStore = await cookies();
+        const consent = cookieStore.get('cookie_consent')?.value || 'pending';
+        if (consent !== 'pending') {
+          await db.update(users).set({
+            cookieConsent: consent,
+            cookieConsentAt: new Date(),
+            updatedAt: new Date()
+          }).where(eq(users.id, dbUser.id));
+        }
+      }
     }
   }
 
@@ -165,6 +185,34 @@ export async function performCVAnalysis(formData: FormData) {
 }
 
 /**
+ * Soft Deletion of a CV Analysis
+ * Marks the record with a timestamp. Retained for 30 days for user recovery/audit.
+ */
+export async function softDeleteCvAnalysis(analysisId: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const dbUser = await db.query.users.findFirst({
+    where: and(eq(users.clerkId, userId), isNull(users.deletedAt)),
+  });
+
+  if (!dbUser) throw new Error("Utilisateur introuvable.");
+
+  await db.update(cvAnalyses)
+    .set({
+      deletedAt: new Date(),
+      updatedAt: new Date()
+    })
+    .where(and(
+      eq(cvAnalyses.id, analysisId),
+      eq(cvAnalyses.userId, dbUser.id)
+    ));
+
+  revalidatePath('/[locale]/dashboard', 'page');
+  return { success: true };
+}
+
+/**
  * RULE: Credit Deduction Logic (Trigger 1)
  * Deducts 1 credit to generate an AI-optimized resume.
  * Incorporates missing points and suggestions into existing content.
@@ -174,7 +222,7 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
   if (!userId) throw new Error("Unauthorized");
 
   const dbUser = await db.query.users.findFirst({
-    where: eq(users.clerkId, userId),
+    where: and(eq(users.clerkId, userId), isNull(users.deletedAt)),
   });
 
   if (!dbUser) {
@@ -185,7 +233,10 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
   if (getEffectiveCredits(dbUser) < 1) throw new Error("Crédits insuffisants.");
 
   const analysis = await db.query.cvAnalyses.findFirst({
-    where: eq(cvAnalyses.id, analysisId),
+    where: and(
+      eq(cvAnalyses.id, analysisId),
+      isNull(cvAnalyses.deletedAt)
+    ),
   });
 
   if (!analysis) throw new Error("Analyse introuvable.");
@@ -194,7 +245,7 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
   // If AI fails, the credit deduction is rolled back automatically.
   let finalData: any;
 
-  await db.transaction(async (tx) => {
+  await db.transaction(async (tx: any) => {
     // 1. Deduct 1 credit via the credit service (validates balance inside tx)
     await deductCredit({
       userId: dbUser.id,
@@ -244,14 +295,38 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
       where: eq(cvTemplates.analysisId, analysisId)
     });
 
+    //   if (existingTemplates.length > 0) {
+    //     await tx.update(cvTemplates)
+    //       .set({ templateData: finalData, isPaid: true })
+    //       .where(eq(cvTemplates.analysisId, analysisId));
+    //   } else {
+    //     const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
+    //     const styles = [...CV_TEMPLATE_STYLES];
+    //     await tx.insert(cvTemplates).values( // Corrected: Use styles directly
+    //       styles.map((style, i) => ({
+    //         analysisId: analysis.id,
+    //         templateNumber: i + 1,
+    //         templateStyle: style,
+    //         templateData: finalData as any,
+    //         isPaid: true,
+    //       }))
+    //     );
+    //   }
+    // });
+
+
+    let allTemplateIds: string[] = [];
+
     if (existingTemplates.length > 0) {
       await tx.update(cvTemplates)
         .set({ templateData: finalData, isPaid: true })
         .where(eq(cvTemplates.analysisId, analysisId));
+
+      allTemplateIds = existingTemplates.map((t: any) => t.id);
     } else {
       const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
       const styles = [...CV_TEMPLATE_STYLES];
-      await tx.insert(cvTemplates).values(
+      const insertedTemplates = await tx.insert(cvTemplates).values( // Corrected: Use styles directly
         styles.map((style, i) => ({
           analysisId: analysis.id,
           templateNumber: i + 1,
@@ -259,7 +334,20 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
           templateData: finalData as any,
           isPaid: true,
         }))
-      );
+      ).returning({ id: cvTemplates.id });
+
+      allTemplateIds = insertedTemplates.map((t: any) => t.id);
+    }
+
+    // Grant ownership for all templates of this CV, since the AI generation
+    // credit already paid for this CV — downloading it should not charge again.
+    if (allTemplateIds.length > 0) {
+      await tx.insert(userTemplateUnlocks).values(
+        allTemplateIds.map((tId) => ({
+          userId: dbUser.id,
+          templateId: tId,
+        }))
+      ).onConflictDoNothing();
     }
   });
 
@@ -287,11 +375,8 @@ export async function deductCreditForTemplate(templateId: string) {
   const plan = getUserPlan(dbUser);
   // Pro/Monthly users get unlimited downloads without credit deduction
   if (plan === 'pro') {
-    return { success: true };
+    return { success: true, deducted: false }; // Explicitly state no deduction
   }
-
-  if (isCreditsExpired(dbUser)) throw new Error("EXPIRED: Votre plan a expiré.");
-  if (getEffectiveCredits(dbUser) < 1) throw new Error("Crédits insuffisants.");
 
   const template = await db.query.cvTemplates.findFirst({
     where: eq(cvTemplates.id, templateId),
@@ -299,16 +384,46 @@ export async function deductCreditForTemplate(templateId: string) {
 
   if (!template) throw new Error("Modèle introuvable.");
 
+  // Verify the related analysis is not soft-deleted
+  const analysis = await db.query.cvAnalyses.findFirst({
+    where: and(
+      eq(cvAnalyses.id, template.analysisId!),
+      isNull(cvAnalyses.deletedAt)
+    ),
+  });
+
+  if (!analysis) throw new Error("Modèle introuvable.");
+
+  // Check ownership FIRST, before any credits/expiry check.
+  // If the user already unlocked this CV (e.g. via AI generation,
+  // which already spent a credit), they must be allowed to download
+  // it for free, regardless of their current credit balance.
+  const allTemplates = await db.query.cvTemplates.findMany({
+    where: eq(cvTemplates.analysisId, template.analysisId!),
+  });
+  const allTemplateIds = allTemplates.map((t: typeof allTemplates[number]) => t.id);
+
+  const preCheckUnlock = allTemplateIds.length > 0 ? await db.query.userTemplateUnlocks.findFirst({
+    where: and(
+      eq(userTemplateUnlocks.userId, dbUser.id),
+      inArray(userTemplateUnlocks.templateId, allTemplateIds)
+    ),
+  }) : null;
+
+  if (preCheckUnlock) {
+    return { success: true, deducted: false };
+  }
+
+  // Only reach the credits/expiry checks if the user does NOT already own this CV.
+  if (isCreditsExpired(dbUser)) throw new Error("EXPIRED: Votre plan a expiré.");
+  if (getEffectiveCredits(dbUser) < 1) throw new Error("Crédits insuffisants.");
+
   // Run the entire flow atomically
   let deducted = false;
   try {
-    await db.transaction(async (tx) => {
-      // 1. Check ownership INSIDE the transaction to prevent race conditions
-      const allTemplates = await tx.query.cvTemplates.findMany({
-        where: eq(cvTemplates.analysisId, template.analysisId!)
-      });
-      const allTemplateIds = allTemplates.map(t => t.id);
-
+    await db.transaction(async (tx: any) => {
+      // Re-check ownership INSIDE the transaction to prevent race conditions
+      // (e.g. two simultaneous download clicks racing each other).
       const existingUnlock = allTemplateIds.length > 0 ? await tx.query.userTemplateUnlocks.findFirst({
         where: and(
           eq(userTemplateUnlocks.userId, dbUser.id),
@@ -316,8 +431,8 @@ export async function deductCreditForTemplate(templateId: string) {
         ),
       }) : null;
 
-      // Already owns it (or generated via AI) — no deduction needed
-      if (existingUnlock || template.isPaid) return;
+      // Already owns this CV set — no further deduction needed.
+      if (existingUnlock) return;
 
       // 2. Deduct 1 credit via credit service
       await deductCredit({
@@ -331,7 +446,7 @@ export async function deductCreditForTemplate(templateId: string) {
       // 3. Record ownership for ALL styles of this CV
       if (allTemplateIds.length > 0) {
         await tx.insert(userTemplateUnlocks).values(
-          allTemplateIds.map(tId => ({
+          allTemplateIds.map((tId: any) => ({
             userId: dbUser.id,
             templateId: tId,
           }))
@@ -362,7 +477,10 @@ export async function deductCreditForAnalysis(analysisId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  const dbUser = await db.query.users.findFirst({ where: eq(users.clerkId, userId) });
+  const dbUser = await db.query.users.findFirst({
+    where: and(eq(users.clerkId, userId), isNull(users.deletedAt))
+  });
+
   if (!dbUser) throw new Error("Utilisateur introuvable.");
 
   const plan = getUserPlan(dbUser);
@@ -373,7 +491,7 @@ export async function deductCreditForAnalysis(analysisId: string) {
   if (getEffectiveCredits(dbUser) < 1) throw new Error("Crédits insuffisants.");
 
   const analysis = await db.query.cvAnalyses.findFirst({
-    where: eq(cvAnalyses.id, analysisId)
+    where: and(eq(cvAnalyses.id, analysisId), isNull(cvAnalyses.deletedAt))
   });
 
   if (!analysis) throw new Error("Analyse introuvable.");
@@ -386,7 +504,7 @@ export async function deductCreditForAnalysis(analysisId: string) {
   if (existingPaidTemplate) return { success: true, alreadyPaid: true };
 
   // For legacy compatibility: deduct 1 credit and mark all templates in the analysis as paid
-  await db.transaction(async (tx) => {
+  await db.transaction(async (tx: any) => {
     await deductCredit({
       userId: dbUser.id,
       amount: 1,
@@ -399,10 +517,24 @@ export async function deductCreditForAnalysis(analysisId: string) {
       where: eq(cvTemplates.analysisId, analysisId)
     });
 
+    // if (existingTemplates.length === 0) {
+    //   const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
+    //   const styles = [...CV_TEMPLATE_STYLES];
+    //   await tx.insert(cvTemplates).values( // Corrected: Use styles directly
+    //     styles.map((style, i) => ({
+    //       analysisId,
+    //       templateNumber: i + 1,
+    //       templateStyle: style,
+    //       templateData: analysis.optimizedData as any,
+    //       isPaid: true,
+    //     }))
+    //   );
+    // } else {
+
     if (existingTemplates.length === 0) {
       const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
       const styles = [...CV_TEMPLATE_STYLES];
-      await tx.insert(cvTemplates).values(
+      const insertedTemplates = await tx.insert(cvTemplates).values( // Corrected: Use styles directly
         styles.map((style, i) => ({
           analysisId,
           templateNumber: i + 1,
@@ -410,7 +542,14 @@ export async function deductCreditForAnalysis(analysisId: string) {
           templateData: analysis.optimizedData as any,
           isPaid: true,
         }))
-      );
+      ).returning({ id: cvTemplates.id });
+
+      await tx.insert(userTemplateUnlocks).values(
+        insertedTemplates.map((t: any) => ({
+          userId: dbUser.id,
+          templateId: t.id,
+        }))
+      ).onConflictDoNothing();
     } else {
       await tx.update(cvTemplates)
         .set({ isPaid: true })
@@ -418,7 +557,7 @@ export async function deductCreditForAnalysis(analysisId: string) {
 
       // Also record individual ownership for each template
       await tx.insert(userTemplateUnlocks).values(
-        existingTemplates.map((t) => ({
+        existingTemplates.map((t: any) => ({
           userId: dbUser.id,
           templateId: t.id,
         }))
@@ -436,7 +575,7 @@ export async function generateRewritePreview(analysisId: string, currentCVData: 
   let dbUser = null;
   if (userId) {
     dbUser = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
+      where: and(eq(users.clerkId, userId), isNull(users.deletedAt)),
     });
   }
 
@@ -486,7 +625,7 @@ export async function generateRewritePreview(analysisId: string, currentCVData: 
   }
 
   const analysis = await db.query.cvAnalyses.findFirst({
-    where: eq(cvAnalyses.id, analysisId),
+    where: and(eq(cvAnalyses.id, analysisId), isNull(cvAnalyses.deletedAt)),
   });
 
   if (!analysis) throw new Error("Analyse introuvable.");
@@ -545,7 +684,7 @@ export async function acceptRewrite(analysisId: string) {
   let dbUser = null;
   if (userId) {
     dbUser = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
+      where: and(eq(users.clerkId, userId), isNull(users.deletedAt)),
     });
   }
 
@@ -576,17 +715,34 @@ export async function createQuickCVAnalysis() {
 
   if (userId) {
     let dbUser = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId),
+      where: and(eq(users.clerkId, userId), isNull(users.deletedAt)),
     });
 
     if (!dbUser) {
+      const cookieStore = await cookies();
+      const consent = cookieStore.get('cookie_consent')?.value || 'pending';
+
       const [newUser] = await db.insert(users).values({
         clerkId: userId,
         credits: 0,
+        cookieConsent: consent,
+        cookieConsentAt: (consent === 'accepted' || consent === 'declined') ? new Date() : null,
       }).returning();
       dbUserId = newUser.id;
     } else {
       dbUserId = dbUser.id;
+      // Proactively upgrade consent if the record exists but is still 'pending'
+      if (dbUser.cookieConsent === 'pending') {
+        const cookieStore = await cookies();
+        const consent = cookieStore.get('cookie_consent')?.value || 'pending';
+        if (consent !== 'pending') {
+          await db.update(users).set({
+            cookieConsent: consent,
+            cookieConsentAt: new Date(),
+            updatedAt: new Date()
+          }).where(eq(users.id, dbUser.id));
+        }
+      }
     }
   }
 

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "install-browsers": "npm ci && PUPPETEER_PRODUCT=chrome npm install puppeteer@24.41.0 --save"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.78",

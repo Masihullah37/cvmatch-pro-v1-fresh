@@ -7,15 +7,21 @@ export default function CookieConsent() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    const consent = localStorage.getItem('cookie-consent-v2');
+    const consent = localStorage.getItem('cookie_consent');
     if (!consent) {
       const timer = setTimeout(() => setShow(true), 1000);
       return () => clearTimeout(timer);
+    } else {
+      // Ensure cookie is in sync with localStorage for server-side visibility
+      if (!document.cookie.includes('cookie_consent=')) {
+        document.cookie = `cookie_consent=${consent}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+      }
     }
   }, []);
 
   const accept = async () => {
-    localStorage.setItem('cookie-consent-v2', 'accepted');
+    localStorage.setItem('cookie_consent', 'accepted');
+    document.cookie = `cookie_consent=accepted; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax; Secure`;
     await fetch('/api/user/consent', {
       method: 'POST',
       body: JSON.stringify({ consent: 'accepted' }),
@@ -25,7 +31,8 @@ export default function CookieConsent() {
   };
 
   const decline = async () => {
-    localStorage.setItem('cookie-consent-v2', 'declined');
+    localStorage.setItem('cookie_consent', 'declined');
+    document.cookie = `cookie_consent=declined; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax; Secure`;
     await fetch('/api/user/consent', {
       method: 'POST',
       body: JSON.stringify({ consent: 'declined' }),

@@ -67,13 +67,6 @@ export async function POST(req: Request) {
       );
     }
 
-    if (plan === "anonymous") {
-      return NextResponse.json(
-        { error: "Téléchargement bloqué. Connectez-vous.", action: "login" },
-        { status: 401 },
-      );
-    }
-
     // ✅ Access Logic: Allow if user is Pro, has credits, or already owns/unlocked the template
     const hasAccess = plan === "pro" || hasCredits || !!existingUnlock || template.isPaid;
 
@@ -171,10 +164,20 @@ export async function POST(req: Request) {
         headless: chromium.headless,
       });
     } else {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      });
+      // Dev mode: use local Puppeteer with Chromium
+      try {
+        const executablePath = puppeteer.executablePath();
+        console.log("[PDF] Puppeteer executable path:", executablePath);
+
+        browser = await puppeteer.launch({
+          headless: true,
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+          timeout: 60000, // Increase timeout to 60s for slower systems
+        });
+      } catch (err: any) {
+        console.error("[PDF] Puppeteer launch error:", err.message);
+        throw new Error(`Chromium not available. Run: npm run install-browsers`);
+      }
     }
 
     const page = await browser.newPage();
@@ -267,8 +270,12 @@ export async function POST(req: Request) {
     // ✅ Set content and wait for load
     await page.setContent(htmlContent, { waitUntil: "load", timeout: 30000 });
 
-    // ✅ Wait for fonts to be fully loaded and rendered before generating the PDF
-    await page.evaluateHandle('document.fonts.ready');
+    // ✅ Wait for fonts to be fully loaded, with a safety timeout
+    // to prevent slow CDN responses from stalling PDF generation
+    await Promise.race([
+      page.evaluateHandle('document.fonts.ready'),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
 
     // ✅ SHRINK TO FIT & FILL WIDTH LOGIC
     await page.evaluate(() => {

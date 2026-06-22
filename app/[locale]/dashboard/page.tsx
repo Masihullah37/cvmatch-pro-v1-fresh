@@ -403,17 +403,23 @@ import { eq, desc, inArray } from "drizzle-orm";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/routing";
-import { cancelMonthlySubscription } from "@/app/actions/stripe";
+import { cancelSubscription } from "@/app/actions/stripe";
 import {
   FileText, ArrowRight, Sparkles, TrendingUp,
   CreditCard, Clock, Zap, Plus, History,
   CheckCircle2, XCircle, AlertCircle,
 } from "lucide-react";
-import Image from "next/image";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { userId } = await auth();
   const user = await currentUser();
+  const { locale } = await params;
 
   if (!userId || !user) redirect("/sign-in");
 
@@ -434,10 +440,10 @@ export default async function DashboardPage() {
 
   if (!dbUser) return null;
 
+  const resolvedSearchParams = await searchParams; // Await the searchParams promise
   async function handleCancelSubscription() {
     "use server";
-    await cancelMonthlySubscription();
-    redirect("/dashboard");
+    await cancelSubscription(locale);
   }
 
   const analyses = await db.query.cvAnalyses.findMany({
@@ -461,7 +467,7 @@ export default async function DashboardPage() {
   const planLabel = dbUser.plan === 'monthly' ? 'Pro' : dbUser.plan === 'one_time' ? 'Starter' : 'Gratuit';
   const planColor = dbUser.plan === 'monthly' ? 'text-purple-600 bg-purple-50 border-purple-200' :
     dbUser.plan === 'one_time' ? 'text-amber-600 bg-amber-50 border-amber-200' :
-    'text-slate-500 bg-slate-50 border-slate-200';
+      'text-slate-500 bg-slate-50 border-slate-200';
 
   // Group cv templates by analysisId — one card per analysis
   const uniqueCvsByAnalysis = Array.from(
@@ -470,6 +476,13 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Success Notification */}
+      {resolvedSearchParams?.cancellation === 'success' && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-emerald-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+          <CheckCircle2 size={20} />
+          <span className="font-black uppercase tracking-widest text-xs">Abonnement résilié avec succès</span>
+        </div>
+      )}
 
       {/* Page header */}
       <div className="bg-white border-b border-slate-100">
@@ -562,7 +575,7 @@ export default async function DashboardPage() {
                 </div>
               ))}
             </div>
-            {dbUser.plan === 'monthly' && dbUser.subscriptionStatus !== 'canceled' && (
+            {dbUser.plan === 'monthly' && dbUser.subscriptionStatus !== 'canceled' && dbUser.stripeSubscriptionId && (
               <form action={handleCancelSubscription}>
                 <button type="submit" className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all">
                   Annuler l'abonnement
@@ -573,7 +586,25 @@ export default async function DashboardPage() {
               <p className="text-xs text-slate-400 font-medium">Pack Starter — aucun renouvellement automatique.</p>
             )}
             {dbUser.subscriptionStatus === 'canceled' && (
-              <p className="text-xs text-amber-600 font-semibold mt-2">Abonnement annulé — actif jusqu'à la fin de période.</p>
+              <div className="mt-4 p-5 bg-amber-50 border border-amber-200 rounded-[2rem] flex items-start gap-4 animate-in fade-in slide-in-from-top-2 duration-700">
+                <div className="w-10 h-10 bg-amber-100 rounded-2xl flex items-center justify-center shrink-0">
+                  {credits > 0 ? <AlertCircle className="text-amber-600" size={20} /> : <CheckCircle2 className="text-emerald-600" size={20} />}
+                </div>
+                <div className="flex-1">
+                  <h4 className={`text-sm font-black uppercase tracking-tight ${credits > 0 ? 'text-amber-900' : 'text-emerald-900'}`}>
+                    {credits > 0 ? 'Abonnement résilié' : 'Plan clôturé'}
+                  </h4>
+                  {credits > 0 ? (
+                    <p className="text-xs text-amber-700 font-medium leading-relaxed mt-1">
+                      Votre demande a été prise en compte. Vous conservez votre accès <span className="font-black text-amber-900">PRO</span> et pouvez utiliser vos <span className="font-black text-amber-900">{credits} crédits</span> restants jusqu'au {dbUser.subscriptionEndsAt ? new Date(dbUser.subscriptionEndsAt).toLocaleDateString('fr-FR') : 'terme de votre période actuelle'}.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-emerald-700 font-medium leading-relaxed mt-1">
+                      Votre abonnement a été annulé avec succès. Vous ne serez plus prélevé. Votre compte est désormais repassé en mode <span className="font-black">Gratuit</span>.
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         )}

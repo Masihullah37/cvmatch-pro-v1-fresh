@@ -27,11 +27,12 @@ export const users = pgTable('users', {
   cookieConsentAt: timestamp('cookie_consent_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+  deletedAt: timestamp('deleted_at'), // Added for soft delete
 });
 
 export const cvAnalyses = pgTable('cv_analyses', {
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }), // GDPR: Delete analyses when user is deleted
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }), // Change to set null to prevent hard delete cascade
   guestSessionId: text('guest_session_id'),
   originalCvUrl: varchar('original_cv_url'),
   jobUrl: varchar('job_url'),
@@ -48,6 +49,8 @@ export const cvAnalyses = pgTable('cv_analyses', {
   status: analysisStatusEnum('status').default('processing'),
   detectedPlatform: varchar('detected_platform', { length: 100 }),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(), // Added for consistency and update operations
+  deletedAt: timestamp('deleted_at'), // Added for soft delete
 });
 
 export const cvTemplates = pgTable('cv_templates', {
@@ -89,7 +92,7 @@ export const guestSessions = pgTable('guest_sessions', {
 
 export const cvGenerations = pgTable('cv_generations', {
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
   analysisId: uuid('analysis_id').references(() => cvAnalyses.id, { onDelete: 'cascade' }),
   templateId: uuid('template_id').references(() => cvTemplates.id, { onDelete: 'cascade' }),
   templateStyle: varchar('template_style'),
@@ -100,7 +103,7 @@ export const cvGenerations = pgTable('cv_generations', {
 
 export const usageLogs = pgTable('usage_logs', {
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }), // Change to set null for soft-delete strategy
   scansCompletedCount: integer('scans_completed_count').notNull(),
   cycleEndedAt: timestamp('cycle_ended_at').defaultNow(),
   planAtThatTime: varchar('plan_at_that_time'),
@@ -117,9 +120,9 @@ export const siteSettings = pgTable('site_settings', {
 // Tracks which templates a specific user has "purchased" (i.e. spent 1 credit on).
 // First download costs 1 credit; subsequent downloads are free.
 // Ownership removes the watermark only for that user + that template.
-export const userTemplateUnlocks = pgTable('user_template_unlocks', {
+export const userTemplateUnlocks = pgTable('user_template_unlocks', { // Changed onDelete to 'set null'
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }), // Make nullable
   templateId: uuid('template_id').notNull().references(() => cvTemplates.id, { onDelete: 'cascade' }),
   unlockedAt: timestamp('unlocked_at').defaultNow(),
 });
@@ -127,9 +130,9 @@ export const userTemplateUnlocks = pgTable('user_template_unlocks', {
 // ── NEW: Credit Ledger ───────────────────────────────────────────────────────
 // Immutable, append-only log of every credit addition and deduction.
 // This is the source of truth for auditing — users.credits is the running total.
-export const creditTransactions = pgTable('credit_transactions', {
+export const creditTransactions = pgTable('credit_transactions', { // Changed onDelete to 'set null'
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }), // Make nullable
   // Positive = credit added, negative = credit deducted
   amount: integer('amount').notNull(),
   reason: creditReasonEnum('reason').notNull(),
@@ -143,4 +146,5 @@ export const stripeEvents = pgTable('stripe_events', {
   eventId: varchar('id').primaryKey(), // Stripe event ID (evt_xxx)
   type: varchar('type').notNull(),
   processedAt: timestamp('processed_at').defaultNow(),
+  skippedReason: varchar('skipped_reason', { length: 255 }), // Added for audit trail
 });

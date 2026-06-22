@@ -14,7 +14,8 @@ import { Link } from "@/i18n/routing";
 import { PlanType } from "@/lib/billing/get-user-plan";
 import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 
-const STYLES = [...CV_TEMPLATE_STYLES];
+// Revert to original unique templates
+const STYLES = [...CV_TEMPLATE_STYLES]; // 20 templates
 
 const DEMO_FALLBACK = {
   userName: "Votre Nom",
@@ -101,11 +102,25 @@ export default async function TemplatesPage({
   const isExpired = dbUser ? isUserExpired(dbUser) : false;
   const plan = getUserPlan(dbUser);
 
+  // Determine if a real ATS analysis was performed (not a quick/blank CV creation).
+  // Quick CVs are created with a placeholder jobDescription and no real scoring.
+  const hasRealAnalysis = Boolean(
+    analysis.jobDescription &&
+    analysis.jobDescription !== "Création rapide de CV" &&
+    analysis.optimizedData &&
+    (analysis.optimizedData as any)._originalCvText
+  );
+
   // const isJustPaid = payment === "success" || searchParams.then(s => s.payment === "success");
   const isJustPaid = payment === "success";
 
   // ── Fetch templates ───────────────────────────────────────────────────────
   const templates = await ensureTemplatesExist(analysisId, analysis);
+  // ✅ Deduplicate templates by style to prevent UI duplication from DB race conditions
+  const uniqueTemplates = Array.from(
+    new Map(templates.map((t) => [t.templateStyle, t])).values()
+  ).sort((a, b) => (a.templateNumber ?? 0) - (b.templateNumber ?? 0));
+
   const initialTemplate = templateParam ? parseInt(templateParam, 10) : 1;
 
   // ── Ownership & Watermark Logic ───────────────────────────────────────────
@@ -115,15 +130,13 @@ export default async function TemplatesPage({
   }
 
   const hasAvailableCredits = userCredits > 0 && !isExpired;
-  // ✅ Fix: Include 'trial' and 'one_time' plans in paid access calculation ONLY if they have credits.
-  // 'pro' and 'monthly' have unlimited access.
   const isPlanPaid = plan === 'pro' || plan === 'monthly';
   const hasStructuralAccess = isJustPaid || hasAvailableCredits || isPlanPaid;
 
   // ✅ Fix: Check if user owns ANY template for this specific analysis
-  const ownsAnyInAnalysis = templates.some(t => ownedTemplateIds.has(t.id) || t.isPaid);
+  const ownsAnyInAnalysis = uniqueTemplates.some(t => ownedTemplateIds.has(t.id) || t.isPaid);
 
-  const safeTemplates = templates.map((t) => {
+  const safeTemplates = uniqueTemplates.map((t) => {
     // Treat as owned if they explicitly own it, OR if they own any template in this analysis, OR if it's marked as paid via AI generation
     const templateOwned = ownedTemplateIds.has(t.id) || ownsAnyInAnalysis || t.isPaid;
     const hideWatermark = templateOwned || hasStructuralAccess;
@@ -176,8 +189,8 @@ export default async function TemplatesPage({
 
       {/* Grid */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
-        <TemplateGrid
-          templates={safeTemplates as any}
+        {/* <TemplateGrid
+          templates={safeTemplates}
           isPaid={isPaid}
           userCredits={userCredits}
           isExpired={isExpired}
@@ -185,6 +198,18 @@ export default async function TemplatesPage({
           analysisData={analysis}
           initialTemplate={initialTemplate}
           plan={plan}
+        /> */}
+
+        <TemplateGrid
+          templates={safeTemplates}
+          isPaid={isPaid}
+          userCredits={userCredits}
+          isExpired={isExpired}
+          analysisId={analysisId}
+          analysisData={analysis}
+          initialTemplate={initialTemplate}
+          plan={plan}
+          hasRealAnalysis={hasRealAnalysis}
         />
       </div>
     </div>

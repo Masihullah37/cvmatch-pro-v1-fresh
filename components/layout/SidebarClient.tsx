@@ -277,11 +277,12 @@ export default function SidebarClient({ credits = 0, planName = 'Gratuit' }: Sid
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm transition-all antialiased ${
                     item.accent
                       ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      : 'hover:bg-slate-50'
                   }`}
+                  style={item.accent ? undefined : { color: '#0b0f19' }}
                 >
                   <item.icon size={18} />
                   {item.label}
@@ -298,9 +299,9 @@ export default function SidebarClient({ credits = 0, planName = 'Gratuit' }: Sid
                 </div>
                 <div className="flex items-center gap-2 mb-1">
                   <Zap size={14} className="text-amber-500 fill-amber-500" />
-                  <span className="text-sm font-black text-slate-900">{credits} Crédits</span>
+                  <span className="text-sm font-semibold antialiased" style={{ color: '#0b0f19' }}>{credits} Crédits</span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium">Restants pour générer vos CVs</p>
+                <p className="text-[10px] text-slate-400 font-medium antialiased">Restants pour générer vos CVs</p>
               </div>
             </div>
           </aside>
@@ -349,13 +350,14 @@ export default function SidebarClient({ credits = 0, planName = 'Gratuit' }: Sid
               key={item.label}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              className={`flex items-center gap-3 px-3 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${
+              className={`flex items-center gap-3 px-3 py-3 rounded-2xl font-semibold text-xs uppercase tracking-widest transition-all antialiased ${
                 collapsed ? 'justify-center' : ''
               } ${
                 item.accent
                   ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  : 'hover:bg-slate-50'
               }`}
+              style={item.accent ? undefined : { color: '#0b0f19' }}
             >
               <item.icon size={17} className="shrink-0" />
               {!collapsed && <span className="truncate">{item.label}</span>}
@@ -373,9 +375,9 @@ export default function SidebarClient({ credits = 0, planName = 'Gratuit' }: Sid
               </div>
               <div className="flex items-center gap-1.5 mb-1">
                 <Zap size={12} className="text-amber-500 fill-amber-500" />
-                <span className="text-sm font-black text-slate-900">{credits} Crédits</span>
+                <span className="text-sm font-semibold antialiased" style={{ color: '#0b0f19' }}>{credits} Crédits</span>
               </div>
-              <p className="text-[9px] text-slate-400 font-medium">Restants pour générer vos CVs</p>
+              <p className="text-[9px] text-slate-400 font-medium antialiased">Restants pour générer vos CVs</p>
             </div>
           </div>
         )}

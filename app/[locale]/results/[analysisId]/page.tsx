@@ -82,9 +82,7 @@ export default async function ResultsPage({
               locale={locale}
               className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all shrink-0"
             >
-              <Sparkles size={14} className="fill-white" />
               Voir mes CVs
-              <ArrowRight size={14} />
             </Link>
           ) : !isGuest ? (
             <UnlockButton analysisId={analysisId} credits={userCredits} isGuest={isGuest} />
