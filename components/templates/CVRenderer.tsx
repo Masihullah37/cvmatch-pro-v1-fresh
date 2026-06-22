@@ -368,7 +368,7 @@ export const CVRenderer = ({
           if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Cosmos", "Astra", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure"].includes(templateStyle)) return null;
 
           if (key === "experience") return <ExperienceSection key={key} headerClass={headerClass} experiences={sectionExperiences} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
-          if (key === "education" && ["Rose"].includes(templateStyle)) return null; // Rose template has education in sidebar
+          // Rose education now renders in main column — no exclusion needed
           if (key === "education") return <EducationSection key={key} headerClass={headerClass} education={sectionEducation} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
           if (key === "projects") return <ProjectsSection key={key} headerClass={headerClass} itemClass={itemClass} projects={sectionProjects} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
           if (key === "languages") return <LanguagesSection key={key} headerClass={headerClass} itemClass={itemClass} languages={sectionLanguages} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
@@ -384,12 +384,14 @@ export const CVRenderer = ({
 
             return (
               <DraggableSection key={key} id={key} isInteractive={interactive} onDelete={deleteHandler}>
-                <SectionTitle sectionKey={key} className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-                {Array.isArray(items) ? (
-                  <div className="space-y-1 mt-3">{items.map((it: any, i: number) => (<p key={i} className={`${itemClass} break-words min-w-0`}><InlineEdit value={it} path={`${key}.${i}`} isInteractive={interactive} onUpdate={updateHandler} /></p>))}</div>
-                ) : (
-                  <p className={`${itemClass} mt-3 whitespace-pre-wrap break-words min-w-0`}><InlineEdit value={items} path={key} isInteractive={interactive} onUpdate={updateHandler} multiline /></p>
-                )}
+                <div className="mt-2 mb-2">
+                  <SectionTitle sectionKey={key} className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
+                  {Array.isArray(items) ? (
+                    <div className="space-y-1 mt-3">{items.map((it: any, i: number) => (<p key={i} className={`${itemClass} break-words min-w-0`}><InlineEdit value={it} path={`${key}.${i}`} isInteractive={interactive} onUpdate={updateHandler} /></p>))}</div>
+                  ) : (
+                    <p className={`${itemClass} mt-3 whitespace-pre-wrap break-words min-w-0`}><InlineEdit value={items} path={key} isInteractive={interactive} onUpdate={updateHandler} multiline /></p>
+                  )}
+                </div>
               </DraggableSection>
             );
           }
@@ -625,17 +627,11 @@ export const CVRenderer = ({
             showIcons={false}
           />
           <div className="grid grid-cols-12 gap-12">
+            {/* Left Column */}
             <div className="col-span-8 flex flex-col gap-10">
-              {["skills", "experience", "education", "projects"]
-                .sort((a, b) => {
-                  const order = data.sectionOrder || [];
-                  const ai = order.indexOf(a), bi = order.indexOf(b);
-                  if (ai === -1 && bi === -1) return 0;
-                  if (ai === -1) return 1;
-                  if (bi === -1) return -1;
-                  return ai - bi;
-                })
-                .map((key) => {
+              {Array.from(new Set<string>(data.sectionOrder || ["skills", "experience", "education", "projects"]))
+                .filter((key: string) => !["summary", "languages", "contact"].includes(key))
+                .map((key: string) => {
                   if (data.sectionOrder && !data.sectionOrder.includes(key)) return null;
 
                   if (key === "skills") {
@@ -659,10 +655,12 @@ export const CVRenderer = ({
                         <SectionTitle sectionKey="experience" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
                         {experiences.map((exp: any, i: number) => (
                           <div key={i} className="mb-6">
-                            <p className="font-black text-base">
-                              <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} /> | <InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                            <p className="font-black text-base break-words">
+                              <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              {" | "}
+                              <InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={isInteractive} onUpdate={onUpdate} />
                             </p>
-                            <p className="text-xs text-gray-400 font-bold mb-2">
+                            <p className="text-xs text-gray-400 font-bold mb-2 break-words">
                               <InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={isInteractive} onUpdate={onUpdate} />
                             </p>
                             <p className="text-sm text-gray-600 leading-relaxed break-words whitespace-pre-wrap">
@@ -677,17 +675,22 @@ export const CVRenderer = ({
                   if (key === "education" && education.length > 0) {
                     return (
                       <DraggableSection key={key} id="education" isInteractive={isInteractive} onDelete={onDeleteSection}>
-                        <SectionTitle sectionKey="education" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4"
-                          headers={headers}
-                          isInteractive={isInteractive}
-                          onUpdate={onUpdate}
-                        />
+                        <SectionTitle sectionKey="education" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
                         {education.map((edu: any, i: number) => (
                           <div key={i} className="mb-4">
-                            <p className="font-black text-base"><InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>
-                            <p className="text-xs text-gray-500">
-                              {edu.school} • {edu.year}
+                            <p className="font-black text-base break-words">
+                              <InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
                             </p>
+                            <p className="text-xs text-gray-500 break-words">
+                              <InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              {" • "}
+                              <InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                            </p>
+                            {edu.details && (
+                              <p className="text-xs text-gray-600 mt-1 break-words whitespace-pre-wrap">
+                                <InlineEdit value={edu.details} path={`education.${i}.details`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                              </p>
+                            )}
                           </div>
                         ))}
                       </DraggableSection>
@@ -708,32 +711,48 @@ export const CVRenderer = ({
                     );
                   }
 
+                  // Custom sections
+                  const standardKeys = ["summary", "experience", "education", "skills", "languages", "projects", "contact", "headers", "photourl", "username", "jobtitle", "_originalcvtext", "sectionorder"];
+                  if (!standardKeys.includes(key.toLowerCase()) && key in data) {
+                    const items = data[key];
+                    const isEmpty = !items || (Array.isArray(items) && items.length === 0) || (typeof items === 'string' && items.trim() === '');
+                    if (!isInteractive && isEmpty) return null;
+                    return (
+                      <DraggableSection key={key} id={key} isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <SectionTitle sectionKey={key} className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
+                        {Array.isArray(items) ? (
+                          <div className="space-y-1 mt-3">
+                            {items.map((it: any, i: number) => (
+                              <p key={i} className="text-xs break-words min-w-0">
+                                • <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs mt-3 whitespace-pre-wrap break-words min-w-0 text-gray-600 leading-relaxed">
+                            <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                          </p>
+                        )}
+                      </DraggableSection>
+                    );
+                  }
                   return null;
                 })}
             </div>
+
+            {/* Right Column */}
             <div className="col-span-4 flex flex-col gap-8">
-              {["summary", "languages"]
-                .sort((a, b) => {
-                  const order = data.sectionOrder || [];
-                  const ai = order.indexOf(a), bi = order.indexOf(b);
-                  if (ai === -1 && bi === -1) return 0;
-                  if (ai === -1) return 1;
-                  if (bi === -1) return -1;
-                  return ai - bi;
-                })
-                .map((key) => {
+              {Array.from(new Set<string>(data.sectionOrder || ["summary", "languages"]))
+                .filter((key: string) => ["summary", "languages"].includes(key))
+                .map((key: string) => {
                   if (data.sectionOrder && !data.sectionOrder.includes(key)) return null;
 
                   if (key === "summary") {
                     return (
                       <DraggableSection key={key} id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
-                        <SectionTitle sectionKey="summary" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4"
-                          headers={headers}
-                          isInteractive={isInteractive}
-                          onUpdate={onUpdate}
-                        />
+                        <SectionTitle sectionKey="summary" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
                         <p className="text-xs text-gray-600 leading-relaxed italic break-words whitespace-pre-wrap">
-                          "<InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />"
+                          <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
                         </p>
                       </DraggableSection>
                     );
@@ -753,7 +772,6 @@ export const CVRenderer = ({
                       />
                     );
                   }
-
                   return null;
                 })}
             </div>
@@ -890,7 +908,7 @@ export const CVRenderer = ({
                 sidebarKeys={["languages", "skills"]}
                 configs={{
                   languages: { headerClass: "text-sm font-black uppercase text-indigo-900 mb-6", itemClass: "text-xs" },
-                  skills: { headerClass: "text-sm font-black uppercase text-indigo-900 mb-6", itemClass: "text-xs font-bold text-indigo-700" },
+                  skills: { headerClass: "text-sm font-black uppercase text-indigo-900 mb-6", itemClass: "text-xs font-bold text-gray-600" },
                 }}
               />
             </div>
@@ -911,10 +929,10 @@ export const CVRenderer = ({
             showIcons={false}
           />
           <div className="grid grid-cols-2 gap-16">
-            <section className="flex flex-col gap-8">
+            <section className="flex flex-col gap-8 min-w-0 overflow-hidden">
               <DynamicMainSections
                 headerClass="text-lg font-black uppercase border-b-2 border-slate-100 pb-2"
-                itemClass="text-xs leading-relaxed text-slate-500"
+                itemClass="text-xs leading-relaxed text-slate-500 break-words"
               />
             </section>
             <div className="flex flex-col gap-12">
@@ -1093,7 +1111,7 @@ export const CVRenderer = ({
             <DynamicSidebarSections
               sidebarKeys={["contact", "languages", "skills"]}
               configs={{
-                contact: { headerClass: "text-[10px] font-black uppercase tracking-widest text-slate-700 border-b border-slate-300 pb-2", itemClass: "text-[10px] text-slate-600" },
+                contact: { headerClass: "text-[10px] font-black uppercase tracking-widest text-pink-600 border-b border-pink-300 pb-2", itemClass: "text-[10px] text-slate-600" },
                 languages: { headerClass: "text-[10px] font-black uppercase tracking-widest text-pink-600 border-b border-pink-300 pb-2", itemClass: "text-[10px] text-slate-600" },
                 skills: { headerClass: "text-[10px] font-black uppercase tracking-widest text-pink-600 border-b border-pink-300 pb-2", itemClass: "text-[9px] text-slate-700 font-bold" },
               }}
@@ -1127,13 +1145,20 @@ export const CVRenderer = ({
       {style === "Meridian" && (
         <div className="min-h-[297mm] font-sans bg-white p-12">
           <header className="border-b-4 border-[#2563eb] pb-6 mb-10 flex justify-between items-end gap-6">
-            <div>
-              <h1 className="text-4xl font-black text-[#1e40af] tracking-tight">
-                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} /> {/* Added key for SectionTitle */}
-              </h1>
-              <p className="text-lg font-bold text-[#3b82f6] mt-1">
-                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
-              </p>
+            <div className="flex items-center gap-6">
+              {hasPhotoSlot && (
+                <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[#2563eb]/30 shrink-0 shadow-sm">
+                  <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div>
+                <h1 className="text-4xl font-black text-[#1e40af] tracking-tight">
+                  <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+                </h1>
+                <p className="text-lg font-bold text-[#3b82f6] mt-1">
+                  <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
+                </p>
+              </div>
             </div>
             {headers.contact && (
               <div className="text-right text-[10px] font-bold text-slate-500 space-y-1 shrink-0">
@@ -1147,10 +1172,7 @@ export const CVRenderer = ({
             headerClass="text-sm font-black uppercase text-[#2563eb] mb-6 border-l-4 border-[#2563eb] pl-3"
             itemClass="text-sm text-slate-600 leading-relaxed"
           />
-          <div className="mt-10 grid grid-cols-2 gap-10">
-            <SkillsSection headerClass="text-sm font-black uppercase text-[#2563eb] mb-4" itemClass="text-xs font-bold text-slate-700" />
-            <LanguagesSection headerClass="text-sm font-black uppercase text-[#2563eb] mb-4" itemClass="text-xs text-slate-600" />
-          </div>
+
         </div>
       )}
 
@@ -1188,10 +1210,7 @@ export const CVRenderer = ({
               headerClass="text-center text-xs font-bold uppercase tracking-[0.35em] border-b border-slate-300 pb-2 mb-6 mt-8"
               itemClass="text-sm text-slate-700 leading-relaxed"
             />
-            <div className="grid grid-cols-2 gap-12 mt-8 pt-6 border-t border-slate-200">
-              <SkillsSection headerClass="text-center text-xs font-bold uppercase tracking-[0.35em] border-b border-slate-300 pb-2 mb-4" itemClass="text-xs text-slate-600 block text-center" layout="list" />
-              <LanguagesSection headerClass="text-center text-xs font-bold uppercase tracking-[0.35em] border-b border-slate-300 pb-2 mb-4" itemClass="text-xs text-slate-600 text-center" />
-            </div>
+
           </div>
         </div>
       )}
@@ -1284,7 +1303,7 @@ export const CVRenderer = ({
                 sidebarKeys={["languages", "skills"]}
                 configs={{
                   languages: { headerClass: "text-xs font-black uppercase text-[#1e3a8a] mb-3", itemClass: "text-xs text-slate-600" },
-                  skills: { headerClass: "text-xs font-black uppercase text-[#1e3a8a] mb-3", itemClass: "text-[10px] text-blue-800 font-bold" },
+                  skills: { headerClass: "text-xs font-black uppercase text-[#1e3a8a] mb-3", itemClass: "text-xs text-slate-600 font-bold" },
                 }}
               />
             </div>
@@ -1327,7 +1346,7 @@ export const CVRenderer = ({
               </p>
             </section>
             <DynamicMainSections
-              headerClass="text-sm font-black uppercase text-[#16a34a] mb-6 border-b-2 border-green-100 pb-2"
+              headerClass="text-sm font-black uppercase text-[#16a34a] mb-6 border-b-2 border-green-100 pb-2 mt-4"
               itemClass="text-sm text-slate-600 leading-relaxed"
             />
             <div className="mt-8 grid grid-cols-2 gap-8">
@@ -1348,18 +1367,17 @@ export const CVRenderer = ({
               </div>
             )}
             <DynamicSidebarSections
-              sidebarKeys={["contact", "education", "skills", "languages"]}
+              sidebarKeys={["contact", "skills", "languages"]}
               configs={{
                 contact: { headerClass: "text-xs font-black uppercase text-[#ec4899] border-b-2 border-pink-200 pb-2", itemClass: "text-[11px] text-slate-600 text-current" },
-                education: { headerClass: "text-xs font-black uppercase text-[#ec4899] border-b-2 border-pink-200 pb-2", itemClass: "text-[11px] text-slate-600 mb-4" },
                 skills: { headerClass: "text-xs font-black uppercase text-[#ec4899] border-b-2 border-pink-200 pb-2", itemClass: "text-[10px] font-bold text-slate-700" },
                 languages: { headerClass: "text-xs font-black uppercase text-[#ec4899] border-b-2 border-pink-200 pb-2", itemClass: "text-[11px] text-slate-600" },
               }}
             />
           </div>
-          <div className="flex-1 p-10 flex flex-col gap-8">
+          <div className="flex-1 p-10 flex flex-col gap-8 min-w-0 overflow-hidden">
             <header>
-              <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">
+              <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter break-words">
                 <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
               </h1>
               <div className="h-1 w-24 bg-[#ec4899] my-3" />
@@ -1370,7 +1388,7 @@ export const CVRenderer = ({
             <SummarySection headerClass="text-sm font-black uppercase text-[#ec4899] border-b-2 border-pink-200 pb-2 mb-4" itemClass="text-sm text-slate-600 leading-relaxed" />
             <DynamicMainSections
               headerClass="text-sm font-black uppercase text-[#ec4899] mb-6 border-b-2 border-pink-200 pb-2"
-              itemClass="text-sm text-slate-600 leading-relaxed"
+              itemClass="text-sm text-slate-600 leading-relaxed break-words"
             />
           </div>
         </div>
