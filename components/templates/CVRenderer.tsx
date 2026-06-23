@@ -223,9 +223,9 @@ export const CVRenderer = ({
           {asRecordArray(sectionProjects).map((proj: any, i: number) => (
             <div key={i} className={itemClass}>
               <p className="font-bold break-words"><InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={interactive} onUpdate={updateHandler} /></p>
-              {proj.technologies && (
-                <p className="text-xs opacity-60 break-words">
-                  <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : proj.technologies} path={`projects.${i}.technologies`} isInteractive={interactive} onUpdate={(path: string, val: any) => updateHandler(path, val.split(",").map((s: string) => s.trim()))} />
+              {(proj.technologies || interactive) && (
+                <p className="text-xs opacity-60 break-words italic">
+                  <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={interactive} onUpdate={(path: string, val: any) => updateHandler(path, val.split(",").map((s: string) => s.trim()))} />
                 </p>
               )}
               <p className="text-xs mt-1 break-words whitespace-pre-wrap"><InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={interactive} onUpdate={updateHandler} multiline /></p>
@@ -272,9 +272,11 @@ export const CVRenderer = ({
             <div key={i} className="flex gap-6 relative">
               <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
               <div className="flex-1 pb-4 min-w-0">
-                <div className="flex justify-between items-start mb-2 gap-4">
-                  <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={interactive} onUpdate={updateHandler} /></h4>
-                  <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right"><InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={interactive} onUpdate={updateHandler} /></p>
+                <div className="flex flex-col gap-1 mb-2">
+                  <div className="flex justify-between items-start gap-2 min-w-0">
+                    <h4 className="flex-1 min-w-0 text-[12px] font-black text-slate-900 uppercase break-all leading-tight"><InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={interactive} onUpdate={updateHandler} /></h4>
+                    <p className="shrink-0 max-w-[45%] text-[11px] font-black text-slate-700 break-words text-right leading-tight"><InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={interactive} onUpdate={updateHandler} /></p>
+                  </div>
                 </div>
                 <p className="text-[11px] text-slate-400 break-words"><InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={interactive} onUpdate={updateHandler} /></p>
                 {edu.details && <p className="text-[11px] text-slate-500 mt-1 break-words whitespace-pre-wrap"><InlineEdit value={edu.details} path={`education.${i}.details`} isInteractive={interactive} onUpdate={updateHandler} multiline /></p>}
@@ -362,11 +364,18 @@ export const CVRenderer = ({
     return ( // Added key for DynamicMainSections map
       <>
         {order.map((key) => {
-          if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic"].includes(templateStyle)) return null;
+          // if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic"].includes(templateStyle)) return null;
+          // if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
+          // if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
+          if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Patterson"].includes(templateStyle)) return null;
           if (key === "contact") return null;
-          if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Cosmos", "Astra", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure"].includes(templateStyle)) return null;
-          if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Cosmos", "Astra", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure"].includes(templateStyle)) return null;
-
+          // if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Cosmos", "Astra", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure"].includes(templateStyle)) return null;
+          // if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Cosmos", "Astra", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure"].includes(templateStyle)) return null;
+          if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
+          if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
+          // if (key === "experience" && ["Patterson"].includes(templateStyle)) return null;
+          if (key === "experience" && ["Patterson"].includes(templateStyle)) return null;
+          if (key === "education" && ["Patterson"].includes(templateStyle)) return null;
           if (key === "experience") return <ExperienceSection key={key} headerClass={headerClass} experiences={sectionExperiences} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
           // Rose education now renders in main column — no exclusion needed
           if (key === "education") return <EducationSection key={key} headerClass={headerClass} education={sectionEducation} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
@@ -1568,6 +1577,483 @@ export const CVRenderer = ({
                   education: { headerClass: "text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4", itemClass: "text-[11px] text-slate-600" }
                 }}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- STYLE: PAMELA --- */}
+      {style === "Pamela" && (
+        <div className="flex min-h-[297mm] font-sans bg-white text-slate-800">
+          {/* Left sidebar */}
+          <div className="w-[32%] bg-[#f5f0e8] flex flex-col">
+            {/* Geometric header with circular photo */}
+            <div className="relative h-44 bg-[#c9b99a] overflow-hidden shrink-0">
+              <div
+                className="absolute bottom-0 left-0 w-full h-full bg-[#f5f0e8]"
+                style={{ clipPath: "polygon(0 55%, 100% 100%, 0 100%)" }}
+              />
+              {hasPhotoSlot && (
+                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-lg z-10">
+                  <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+            <div className="p-7 flex flex-col gap-7 flex-1 overflow-hidden">
+              <DynamicSidebarSections
+                sidebarKeys={["contact", "skills", "languages"]}
+                configs={{
+                  contact: {
+                    headerClass: "text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 border-b border-slate-300 pb-1 mb-2",
+                    itemClass: "text-[9px] text-slate-600 text-current break-words",
+                  },
+                  skills: {
+                    headerClass: "text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 border-b border-slate-300 pb-1 mb-2",
+                    itemClass: "text-[9px] text-slate-600 break-words",
+                    layout: "list",
+                  },
+                  languages: {
+                    headerClass: "text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 border-b border-slate-300 pb-1 mb-2",
+                    itemClass: "text-[9px] text-slate-600 break-words",
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Right main content */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            {/* Beige header band — name top right */}
+            <div className="bg-[#c9b99a] px-8 py-6 flex items-center justify-end min-h-[7rem] shrink-0">
+              <div className="text-right">
+                <h1 className="text-2xl font-black uppercase tracking-widest text-white break-words">
+                  <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+                </h1>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/80 mt-1 break-words">
+                  <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
+                </p>
+              </div>
+            </div>
+
+            <div className="flex-1 p-8 flex flex-col gap-8 overflow-hidden">
+              <DynamicMainSections
+                headerClass="text-[9px] font-black uppercase tracking-[0.25em] text-slate-600 border-b border-slate-200 pb-1 mb-3"
+                itemClass="text-[10px] text-slate-600 leading-relaxed break-words"
+                languages={languages}
+                isInteractive={isInteractive}
+                onDeleteSection={onDeleteSection}
+                onUpdate={onUpdate}
+                headers={headers}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- STYLE: LIVERPOOL --- */}
+      {style === "Liverpool" && (
+        <div className="flex min-h-[297mm] font-sans bg-white text-slate-800">
+          {/* Left sidebar */}
+          {/* <div className="w-[34%] bg-[#f0f7f7] flex flex-col p-8 gap-8"> */}
+          <div className="w-[34%] bg-[#f0f7f7] flex flex-col p-8 gap-8 overflow-hidden min-w-0">
+            {hasPhotoSlot && (
+              <div className="w-full aspect-square overflow-hidden mb-2">
+                <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+              </div>
+            )}
+            <DynamicSidebarSections
+              sidebarKeys={["contact", "skills", "languages"]}
+              configs={{
+                contact: {
+                  headerClass: "text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-3",
+                  itemClass: "text-[9px] text-slate-600 break-words min-w-0 overflow-hidden text-current",
+                },
+                skills: {
+                  headerClass: "text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-3",
+                  itemClass: "text-[11px] text-slate-700",
+                  layout: "list",
+                },
+                languages: {
+                  headerClass: "text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-3",
+                  itemClass: "text-[11px] text-slate-700 font-bold",
+                },
+              }}
+            />
+          </div>
+
+          {/* Right main content */}
+          <div className="flex-1 p-10 flex flex-col gap-8">
+            <header className="border-b-2 border-[#4ab5b0] pb-6">
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight break-words">
+                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </h1>
+              <p className="text-sm font-bold text-slate-500 mt-2 uppercase tracking-widest break-words">
+                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </p>
+            </header>
+
+            {/* Summary inline */}
+            {(data.sectionOrder ? data.sectionOrder.includes("summary") : true) && (
+              <DraggableSection id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                <p className="text-sm text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                  <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                </p>
+              </DraggableSection>
+            )}
+
+            <DynamicMainSections
+              headerClass="text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-4"
+              itemClass="text-[11px] text-slate-600 leading-relaxed"
+              languages={languages}
+              isInteractive={isInteractive}
+              onDeleteSection={onDeleteSection}
+              onUpdate={onUpdate}
+              headers={headers}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* --- STYLE: LUMIERE --- */}
+      {style === "Lumiere" && (
+        <div className="flex min-h-[297mm] font-sans bg-white text-slate-800">
+          {/* Left sidebar */}
+          <div className="w-[32%] flex flex-col">
+            {/* Top white area with name + photo */}
+            <div className="p-8 pb-4 bg-white flex flex-col gap-4">
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-tight break-words">
+                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </h1>
+              <p className="text-sm font-bold text-[#7ab3d4] break-words">
+                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </p>
+              {/* Contact items inline before the blue sidebar */}
+              <div className="space-y-2 mt-2 text-[11px] text-slate-600">
+                {contact?.location && (
+                  <p className="flex items-center gap-2 break-words">
+                    <span className="font-black text-slate-800 shrink-0">📍</span>
+                    <InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} />
+                  </p>
+                )}
+                {contact?.phone && (
+                  <p className="flex items-center gap-2 break-words">
+                    <span className="font-black text-slate-800 shrink-0">P:</span>
+                    <InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} />
+                  </p>
+                )}
+                {contact?.email && (
+                  <p className="flex items-center gap-2 break-words">
+                    <span className="font-black text-slate-800 shrink-0">E:</span>
+                    <InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} />
+                  </p>
+                )}
+                {contact?.linkedin && (
+                  <p className="flex items-center gap-2 break-words">
+                    <span className="font-black text-slate-800 shrink-0">L:</span>
+                    <InlineEdit value={contact.linkedin} path="contact.linkedin" isInteractive={isInteractive} onUpdate={onUpdate} />
+                  </p>
+                )}
+                {contact?.github && (
+                  <p className="flex items-center gap-2 break-words">
+                    <span className="font-black text-slate-800 shrink-0">G:</span>
+                    <InlineEdit value={contact.github} path="contact.github" isInteractive={isInteractive} onUpdate={onUpdate} />
+                  </p>
+                )}
+                {contact?.portfolio && (
+                  <p className="flex items-center gap-2 break-words">
+                    <span className="font-black text-slate-800 shrink-0">W:</span>
+                    <InlineEdit value={contact.portfolio} path="contact.portfolio" isInteractive={isInteractive} onUpdate={onUpdate} />
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Blue skills/education sidebar */}
+            <div className="flex-1 bg-[#d6eaf5] p-8 flex flex-col gap-8">
+              <DynamicSidebarSections
+                sidebarKeys={["skills", "languages"]}
+                configs={{
+                  skills: {
+                    headerClass: "text-sm font-black text-slate-800 mb-3",
+                    itemClass: "text-[11px] text-slate-700",
+                    layout: "list",
+                  },
+                  languages: {
+                    headerClass: "text-sm font-black text-slate-800 mb-3",
+                    itemClass: "text-[11px] text-slate-700",
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Right main content */}
+          <div className="flex-1 flex flex-col">
+            {/* Top beige/cream area with circular photo */}
+            <div className="bg-[#f5f0e8] p-8 flex justify-end items-start min-h-[12rem]">
+              {hasPhotoSlot && (
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                  <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+
+            {/* Main content */}
+            <div className="flex-1 p-8 flex flex-col gap-8">
+              {(data.sectionOrder ? data.sectionOrder.includes("summary") : true) && (
+                <DraggableSection id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                  <h3 className="text-sm font-black text-slate-800 mb-3">
+                    <InlineEdit value={headers?.summary || "Summary"} path="headers.summary" isInteractive={isInteractive} onUpdate={onUpdate} />
+                  </h3>
+                  <p className="text-[11px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                    <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                  </p>
+                </DraggableSection>
+              )}
+
+              <DynamicMainSections
+                headerClass="text-sm font-black text-slate-800 mb-4 border-b border-slate-200 pb-1"
+                itemClass="text-[11px] text-slate-600 leading-relaxed"
+                languages={languages}
+                isInteractive={isInteractive}
+                onDeleteSection={onDeleteSection}
+                onUpdate={onUpdate}
+                headers={headers}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- STYLE: HARTMANN --- */}
+      {style === "Hartmann" && (
+        <div className="flex min-h-[297mm] font-sans bg-white text-[#2c2c2c]">
+          {/* Left sidebar */}
+          <div className="w-[35%] flex flex-col">
+            {/* Large photo at top */}
+            {hasPhotoSlot ? (
+              <div className="w-full aspect-[3/4] overflow-hidden bg-[#e8e0d5]">
+                <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-full aspect-[3/4] bg-[#e8e0d5]" />
+            )}
+
+            {/* Sidebar content below photo */}
+            <div className="flex-1 bg-[#f5f0e8] p-6 flex flex-col gap-6 overflow-hidden min-w-0">
+              <DynamicSidebarSections
+                sidebarKeys={["contact", "languages", "skills"]}
+                configs={{
+                  contact: {
+                    headerClass: "text-[9px] font-black uppercase tracking-[0.15em] text-[#8c7b6b] mb-2 border-b border-[#c9b99a]/50 pb-1",
+                    itemClass: "text-[9px] text-[#4a4a4a] break-words min-w-0 text-current",
+                  },
+                  languages: {
+                    headerClass: "text-[9px] font-black uppercase tracking-[0.25em] text-[#8c7b6b] mb-3",
+                    itemClass: "text-[10px] text-[#4a4a4a] font-bold",
+                  },
+                  skills: {
+                    headerClass: "text-[9px] font-black uppercase tracking-[0.25em] text-[#8c7b6b] mb-3",
+                    itemClass: "text-[10px] text-[#4a4a4a]",
+                    layout: "list",
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Right main content */}
+          <div className="flex-1 p-10 flex flex-col gap-8 bg-white">
+            {/* Name and title header */}
+            <header className="border-b border-[#c9b99a] pb-6">
+              <h1 className="text-4xl font-black uppercase tracking-[0.15em] text-[#2c2c2c] leading-tight break-words">
+                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </h1>
+              <div className="h-px w-full bg-[#c9b99a] my-3" />
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#8c7b6b] break-words">
+                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </p>
+            </header>
+
+            <DynamicMainSections
+              headerClass="text-[10px] font-black uppercase tracking-[0.2em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-4"
+              itemClass="text-[11px] text-[#4a4a4a] leading-relaxed"
+              languages={languages}
+              isInteractive={isInteractive}
+              onDeleteSection={onDeleteSection}
+              onUpdate={onUpdate}
+              headers={headers}
+            />
+
+            {/* Summary as profile section */}
+            {/* {(data.sectionOrder ? data.sectionOrder.includes("summary") : true) && (
+              <DraggableSection id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-4">
+                  <InlineEdit value={headers?.summary || "Profil"} path="headers.summary" isInteractive={isInteractive} onUpdate={onUpdate} />
+                </h3>
+                <p className="text-[11px] text-[#4a4a4a] leading-relaxed break-words whitespace-pre-wrap">
+                  <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                </p>
+              </DraggableSection>
+            )} */}
+          </div>
+        </div>
+      )}
+
+      {/* --- STYLE: PATTERSON --- */}
+      {style === "Patterson" && (
+        <div className="flex min-h-[297mm] font-sans bg-white text-slate-800">
+          {/* Left sidebar — grey background */}
+          <div className="w-[34%] flex flex-col bg-[#e8e8e8]">
+            {/* Dark top header area with photo circle overlapping */}
+            <div className="bg-[#4a4a4a] w-full relative" style={{ height: "180px" }}>
+              {hasPhotoSlot && (
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-[-44px] w-24 h-24 rounded-full overflow-hidden border-4 border-[#e8e8e8] shadow-xl z-10">
+                  <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar sections — shifted down to clear the overlapping photo */}
+            <div className={`flex flex-col gap-7 p-7 flex-1 ${hasPhotoSlot ? "pt-16" : "pt-7"}`}>
+              <DynamicSidebarSections
+                sidebarKeys={["skills", "languages", "contact"]}
+                configs={{
+                  skills: {
+                    headerClass: "text-[10px] font-black text-slate-800 border-b border-slate-400 pb-1 mb-2 uppercase tracking-wide",
+                    itemClass: "text-[10px] text-slate-700 break-words",
+                    layout: "list",
+                  },
+                  languages: {
+                    headerClass: "text-[10px] font-black text-slate-800 border-b border-slate-400 pb-1 mb-2 uppercase tracking-wide",
+                    itemClass: "text-[10px] text-slate-700 break-words",
+                    layout: "list",
+                  },
+                  contact: {
+                    headerClass: "text-[10px] font-black text-slate-800 border-b border-slate-400 pb-1 mb-2 uppercase tracking-wide",
+                    itemClass: "text-[10px] text-slate-700 break-words text-current",
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Right main content */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Dark header with name — aligns with dark sidebar top */}
+            {/* <div className="bg-[#4a4a4a] text-white px-8 py-8 flex flex-col justify-center" style={{ minHeight: "180px" }}>
+              <h1 className="text-4xl font-black uppercase tracking-tight break-words leading-tight">
+                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </h1>
+              <p className="text-sm font-medium text-white/75 mt-2 tracking-widest break-words"> */}
+            <div className="bg-[#4a4a4a] px-8 py-8 flex flex-col justify-center" style={{ minHeight: "180px" }}>
+              <h1 className="text-4xl font-black uppercase tracking-tight break-words leading-tight text-white">
+                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </h1>
+              <p className="text-sm font-medium text-slate-300 mt-2 tracking-widest break-words">
+                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </p>
+            </div>
+
+            {/* Main body */}
+            <div className="flex-1 p-8 flex flex-col gap-7 bg-white">
+              {/* Summary / Profile Info */}
+              {(data.sectionOrder ? data.sectionOrder.includes("summary") : true) && (
+                <DraggableSection id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                  <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-3 flex items-center gap-3">
+                    <InlineEdit value={headers?.summary || "Profile Info"} path="headers.summary" isInteractive={isInteractive} onUpdate={onUpdate} />
+                    <span className="flex-1 h-px bg-slate-200 block" />
+                  </h3>
+                  <p className="text-[11px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                    <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                  </p>
+                </DraggableSection>
+              )}
+
+              {/* Experience with vertical timeline line */}
+              {(data.sectionOrder ? data.sectionOrder.includes("experience") : true) && experiences.length > 0 && (
+                <DraggableSection id="experience" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                  <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-4 flex items-center gap-3">
+                    <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
+                    <span className="flex-1 h-px bg-slate-200 block" />
+                  </h3>
+                  <div className="relative pl-5">
+                    <div className="absolute left-[5px] top-1 bottom-1 w-px bg-slate-300" />
+                    <div className="space-y-5">
+                      {experiences.map((exp: any, i: number) => (
+                        <div key={i} className="relative">
+                          <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
+                          <div className="flex justify-between items-start gap-2 mb-0.5">
+                            <div className="min-w-0">
+                              <p className="font-black text-[11px] text-slate-900 break-words">
+                                <InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                              <p className="font-bold text-[10px] text-slate-700 break-words">
+                                <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                            </div>
+                            <p className="text-[9px] text-slate-500 shrink-0 font-bold whitespace-nowrap">
+                              <InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                            </p>
+                          </div>
+                          <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                            <InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </DraggableSection>
+              )}
+
+              {/* Education — same timeline style as experience */}
+              {(data.sectionOrder ? data.sectionOrder.includes("education") : true) && education.length > 0 && (
+                <DraggableSection id="education" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                  <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-4 flex items-center gap-3">
+                    <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
+                    <span className="flex-1 h-px bg-slate-200 block" />
+                  </h3>
+                  <div className="relative pl-5">
+                    <div className="absolute left-[5px] top-1 bottom-1 w-px bg-slate-300" />
+                    <div className="space-y-4">
+                      {education.map((edu: any, i: number) => (
+                        <div key={i} className="relative">
+                          <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
+                          <div className="flex justify-between items-start gap-2 mb-0.5">
+                            <div className="min-w-0">
+                              <p className="font-black text-[11px] text-slate-900 break-words">
+                                <InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                              <p className="font-bold text-[10px] text-slate-700 break-words">
+                                <InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                            </div>
+                            <p className="text-[9px] text-slate-500 shrink-0 font-bold whitespace-nowrap">
+                              <InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                            </p>
+                          </div>
+                          {edu.details && (
+                            <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                              <InlineEdit value={edu.details} path={`education.${i}.details`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </DraggableSection>
+              )}
+
+              <DynamicMainSections
+                headerClass="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-3 flex items-center gap-3 after:content-[''] after:h-px after:bg-slate-200 after:flex-1"
+                itemClass="text-[11px] text-slate-600 leading-relaxed break-words"
+                languages={languages}
+                isInteractive={isInteractive}
+                onDeleteSection={onDeleteSection}
+                onUpdate={onUpdate}
+                headers={headers}
+              />
+
             </div>
           </div>
         </div>

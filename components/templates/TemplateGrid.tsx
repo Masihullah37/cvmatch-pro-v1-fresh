@@ -601,8 +601,9 @@ const EditorContent = ({
                   <input className={inputCls} value={proj?.name || ""} onChange={(e) => updateArr("projects", idx, "name", e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Technologies</label>
-                  <input className={inputCls} placeholder="Ex: React, Tailwind, Supabase" value={Array.isArray(proj?.technologies) ? proj.technologies.join(", ") : proj?.technologies || ""} onChange={(e) => updateArr("projects", idx, "technologies", e.target.value.split(",").map(s => s.trimStart()))} />
+                  {/* <label className={labelCls}>Technologies</label> */}
+                  <label className={labelCls}>Technologies / Outils / Méthodes</label>
+                  <input className={inputCls} placeholder="Ex: React, Tailwind — ou: Gestion de projet, Excel, Canva" value={Array.isArray(proj?.technologies) ? proj.technologies.join(", ") : proj?.technologies || ""} onChange={(e) => updateArr("projects", idx, "technologies", e.target.value.split(",").map(s => s.trimStart()))} />
                 </div>
                 <div>
                   <label className={labelCls}>Description</label>
