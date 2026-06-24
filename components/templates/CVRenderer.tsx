@@ -272,11 +272,9 @@ export const CVRenderer = ({
             <div key={i} className="flex gap-6 relative">
               <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
               <div className="flex-1 pb-4 min-w-0">
-                <div className="flex flex-col gap-1 mb-2">
-                  <div className="flex justify-between items-start gap-2 min-w-0">
-                    <h4 className="flex-1 min-w-0 text-[12px] font-black text-slate-900 uppercase break-all leading-tight"><InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={interactive} onUpdate={updateHandler} /></h4>
-                    <p className="shrink-0 max-w-[45%] text-[11px] font-black text-slate-700 break-words text-right leading-tight"><InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={interactive} onUpdate={updateHandler} /></p>
-                  </div>
+                <div className="flex justify-between items-start mb-2 gap-4">
+                  <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words overflow-hidden"><InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={interactive} onUpdate={updateHandler} /></h4>
+                  <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right overflow-hidden"><InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={interactive} onUpdate={updateHandler} /></p>
                 </div>
                 <p className="text-[11px] text-slate-400 break-words"><InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={interactive} onUpdate={updateHandler} /></p>
                 {edu.details && <p className="text-[11px] text-slate-500 mt-1 break-words whitespace-pre-wrap"><InlineEdit value={edu.details} path={`education.${i}.details`} isInteractive={interactive} onUpdate={updateHandler} multiline /></p>}
@@ -367,15 +365,20 @@ export const CVRenderer = ({
           // if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic"].includes(templateStyle)) return null;
           // if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
           // if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
-          if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Patterson"].includes(templateStyle)) return null;
+          // if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Patterson"].includes(templateStyle)) return null;
+          if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Patterson", "Bremen", "Sevilla", "Munich"].includes(templateStyle)) return null;
           if (key === "contact") return null;
           // if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Cosmos", "Astra", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure"].includes(templateStyle)) return null;
           // if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Cosmos", "Astra", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure"].includes(templateStyle)) return null;
-          if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
-          if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
+          // if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
+          // if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson"].includes(templateStyle)) return null;
+          if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich"].includes(templateStyle)) return null;
+          if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich"].includes(templateStyle)) return null;
           // if (key === "experience" && ["Patterson"].includes(templateStyle)) return null;
-          if (key === "experience" && ["Patterson"].includes(templateStyle)) return null;
-          if (key === "education" && ["Patterson"].includes(templateStyle)) return null;
+          // if (key === "experience" && ["Patterson"].includes(templateStyle)) return null;
+          // if (key === "education" && ["Patterson"].includes(templateStyle)) return null;
+          if (key === "experience" && ["Patterson", "Sevilla", "Munich", "Bremen"].includes(templateStyle)) return null;
+          if (key === "education" && ["Patterson", "Sevilla", "Munich", "Bremen"].includes(templateStyle)) return null;
           if (key === "experience") return <ExperienceSection key={key} headerClass={headerClass} experiences={sectionExperiences} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
           // Rose education now renders in main column — no exclusion needed
           if (key === "education") return <EducationSection key={key} headerClass={headerClass} education={sectionEducation} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
@@ -1138,7 +1141,7 @@ export const CVRenderer = ({
               </p>
             </header>
             <DynamicMainSections
-              headerClass="text-[10px] font-black uppercase tracking-[0.3em] text-pink-600 mb-6 border-b-2 border-pink-200 pb-2"
+              headerClass="text-[12px] font-black uppercase tracking-[0.3em] text-pink-600 mb-6 border-b-2 border-pink-200 pb-2 pt-8"
               itemClass="text-[11px] leading-relaxed text-slate-600"
               languages={languages}
               isInteractive={isInteractive}
@@ -1885,17 +1888,6 @@ export const CVRenderer = ({
               headers={headers}
             />
 
-            {/* Summary as profile section */}
-            {/* {(data.sectionOrder ? data.sectionOrder.includes("summary") : true) && (
-              <DraggableSection id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-4">
-                  <InlineEdit value={headers?.summary || "Profil"} path="headers.summary" isInteractive={isInteractive} onUpdate={onUpdate} />
-                </h3>
-                <p className="text-[11px] text-[#4a4a4a] leading-relaxed break-words whitespace-pre-wrap">
-                  <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
-                </p>
-              </DraggableSection>
-            )} */}
           </div>
         </div>
       )}
@@ -1955,105 +1947,787 @@ export const CVRenderer = ({
               </p>
             </div>
 
-            {/* Main body */}
+            {/* Main body — all sections rendered in sectionOrder for full drag support */}
             <div className="flex-1 p-8 flex flex-col gap-7 bg-white">
-              {/* Summary / Profile Info */}
-              {(data.sectionOrder ? data.sectionOrder.includes("summary") : true) && (
-                <DraggableSection id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
-                  <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-3 flex items-center gap-3">
-                    <InlineEdit value={headers?.summary || "Profile Info"} path="headers.summary" isInteractive={isInteractive} onUpdate={onUpdate} />
-                    <span className="flex-1 h-px bg-slate-200 block" />
-                  </h3>
-                  <p className="text-[11px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
-                    <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
-                  </p>
-                </DraggableSection>
-              )}
+              {Array.from(new Set<string>(
+                data.sectionOrder || ["summary", "experience", "education", "projects"]
+              ))
+                .filter((k: string) => !["contact", "skills", "languages"].includes(k))
+                .map((key: string) => {
 
-              {/* Experience with vertical timeline line */}
-              {(data.sectionOrder ? data.sectionOrder.includes("experience") : true) && experiences.length > 0 && (
-                <DraggableSection id="experience" isInteractive={isInteractive} onDelete={onDeleteSection}>
-                  <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-4 flex items-center gap-3">
-                    <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
-                    <span className="flex-1 h-px bg-slate-200 block" />
-                  </h3>
-                  <div className="relative pl-5">
-                    <div className="absolute left-[5px] top-1 bottom-1 w-px bg-slate-300" />
-                    <div className="space-y-5">
-                      {experiences.map((exp: any, i: number) => (
-                        <div key={i} className="relative">
-                          <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
-                          <div className="flex justify-between items-start gap-2 mb-0.5">
-                            <div className="min-w-0">
-                              <p className="font-black text-[11px] text-slate-900 break-words">
-                                <InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={isInteractive} onUpdate={onUpdate} />
-                              </p>
-                              <p className="font-bold text-[10px] text-slate-700 break-words">
-                                <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
-                              </p>
-                            </div>
-                            <p className="text-[9px] text-slate-500 shrink-0 font-bold whitespace-nowrap">
-                              <InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={isInteractive} onUpdate={onUpdate} />
-                            </p>
+                  if (key === "summary") {
+                    if (data.sectionOrder && !data.sectionOrder.includes("summary")) return null;
+                    return (
+                      <DraggableSection key={key} id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-3 flex items-center gap-3">
+                          <InlineEdit value={headers?.summary || "Profil"} path="headers.summary" isInteractive={isInteractive} onUpdate={onUpdate} />
+                          <span className="flex-1 h-px bg-slate-200 block" />
+                        </h3>
+                        <p className="text-[11px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                          <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                        </p>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "experience") {
+                    if (data.sectionOrder && !data.sectionOrder.includes("experience")) return null;
+                    if (!isInteractive && experiences.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="experience" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-4 flex items-center gap-3">
+                          <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
+                          <span className="flex-1 h-px bg-slate-200 block" />
+                        </h3>
+                        <div className="relative pl-5">
+                          <div className="absolute left-[5px] top-1 bottom-1 w-px bg-slate-300" />
+                          <div className="space-y-5">
+                            {experiences.map((exp: any, i: number) => (
+                              <div key={i} className="relative">
+                                <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
+                                <div className="flex justify-between items-start gap-2 mb-0.5">
+                                  <div className="min-w-0">
+                                    <p className="font-black text-[11px] text-slate-900 break-words">
+                                      <InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                    </p>
+                                    <p className="font-bold text-[10px] text-slate-700 break-words">
+                                      <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                    </p>
+                                  </div>
+                                  <p className="text-[9px] text-slate-500 shrink-0 font-bold whitespace-nowrap">
+                                    <InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                  </p>
+                                </div>
+                                <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                                  <InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                                </p>
+                              </div>
+                            ))}
                           </div>
-                          <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
-                            <InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
-                          </p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </DraggableSection>
-              )}
+                      </DraggableSection>
+                    );
+                  }
 
-              {/* Education — same timeline style as experience */}
-              {(data.sectionOrder ? data.sectionOrder.includes("education") : true) && education.length > 0 && (
-                <DraggableSection id="education" isInteractive={isInteractive} onDelete={onDeleteSection}>
-                  <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-4 flex items-center gap-3">
-                    <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
-                    <span className="flex-1 h-px bg-slate-200 block" />
-                  </h3>
-                  <div className="relative pl-5">
-                    <div className="absolute left-[5px] top-1 bottom-1 w-px bg-slate-300" />
-                    <div className="space-y-4">
-                      {education.map((edu: any, i: number) => (
-                        <div key={i} className="relative">
-                          <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
-                          <div className="flex justify-between items-start gap-2 mb-0.5">
-                            <div className="min-w-0">
+                  if (key === "education") {
+                    if (data.sectionOrder && !data.sectionOrder.includes("education")) return null;
+                    if (!isInteractive && education.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="education" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-4 flex items-center gap-3">
+                          <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
+                          <span className="flex-1 h-px bg-slate-200 block" />
+                        </h3>
+                        <div className="relative pl-5">
+                          <div className="absolute left-[5px] top-1 bottom-1 w-px bg-slate-300" />
+                          <div className="space-y-4">
+                            {education.map((edu: any, i: number) => (
+                              <div key={i} className="relative">
+                                <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
+                                <div className="flex justify-between items-start gap-2 mb-0.5">
+                                  <div className="min-w-0">
+                                    <p className="font-black text-[11px] text-slate-900 break-words">
+                                      <InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                    </p>
+                                    <p className="font-bold text-[10px] text-slate-700 break-words">
+                                      <InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                    </p>
+                                  </div>
+                                  <p className="text-[9px] text-slate-500 shrink-0 font-bold whitespace-nowrap">
+                                    <InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                  </p>
+                                </div>
+                                {edu.details && (
+                                  <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                                    <InlineEdit value={edu.details} path={`education.${i}.details`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "projects") {
+                    if (data.sectionOrder && !data.sectionOrder.includes("projects")) return null;
+                    if (!isInteractive && projects.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="projects" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-4 flex items-center gap-3">
+                          <InlineEdit value={headers?.projects || "Projets"} path="headers.projects" isInteractive={isInteractive} onUpdate={onUpdate} />
+                          <span className="flex-1 h-px bg-slate-200 block" />
+                        </h3>
+                        <div className="space-y-4">
+                          {projects.map((proj: any, i: number) => (
+                            <div key={i} className="relative pl-5">
+                              <div className="absolute left-[5px] top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
+                              <p className="font-black text-[11px] text-slate-900 break-words">
+                                <InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                              {(proj.technologies || isInteractive) && (
+                                <p className="text-[9px] text-slate-500 italic break-words">
+                                  <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={isInteractive} onUpdate={(path: string, val: any) => onUpdate(path, val.split(",").map((s: string) => s.trim()))} />
+                                </p>
+                              )}
+                              {proj.description && (
+                                <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap mt-1">
+                                  <InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  // Custom sections added by user
+                  const standardKeys = ["summary", "experience", "education", "skills", "languages", "projects", "contact", "headers", "photourl", "username", "jobtitle", "_originalcvtext", "sectionorder"];
+                  if (!standardKeys.includes(key.toLowerCase()) && key in data) {
+                    const items = data[key];
+                    const isEmpty = !items || (Array.isArray(items) && items.length === 0) || (typeof items === 'string' && items.trim() === '');
+                    if (!isInteractive && isEmpty) return null;
+                    return (
+                      <DraggableSection key={key} id={key} isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-3 flex items-center gap-3">
+                          <InlineEdit value={headers?.[key] || key} path={`headers.${key}`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                          <span className="flex-1 h-px bg-slate-200 block" />
+                        </h3>
+                        {Array.isArray(items) ? (
+                          <div className="space-y-1">
+                            {items.map((it: any, i: number) => (
+                              <p key={i} className="text-[11px] text-slate-600 break-words">
+                                • <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-slate-600 whitespace-pre-wrap break-words">
+                            <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                          </p>
+                        )}
+                      </DraggableSection>
+                    );
+                  }
+
+                  return null;
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- STYLE: BREMEN --- */}
+      {/* Reference: Liverpool-style teal sidebar, square photo top-left,
+          language progress bars, contact icons, work experience with 
+          rotated date labels on left spine */}
+      {/* --- STYLE: BREMEN --- */}
+      {style === "Bremen" && (
+        <div className="flex min-h-[297mm] font-sans bg-white text-slate-800">
+          {/* Left sidebar */}
+          <div className="w-[33%] bg-[#eaf6f6] flex flex-col overflow-hidden min-w-0">
+            {hasPhotoSlot && (
+              <div className="w-full aspect-square overflow-hidden shrink-0">
+                <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+              </div>
+            )}
+            {!hasPhotoSlot && <div className="w-full aspect-square bg-[#d0eded] shrink-0" />}
+
+            <div className="p-7 flex flex-col gap-7 flex-1 overflow-hidden">
+              <DynamicSidebarSections
+                sidebarKeys={["contact", "skills", "languages"]}
+                configs={{
+                  contact: {
+                    headerClass: "text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-3",
+                    itemClass: "text-[10px] text-slate-700 break-words min-w-0 text-current",
+                  },
+                  skills: {
+                    headerClass: "text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-3",
+                    itemClass: "text-[10px] text-slate-700 break-words min-w-0",
+                    layout: "list",
+                  },
+                  languages: {
+                    headerClass: "text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-3",
+                    itemClass: "text-[10px] text-slate-700 break-words min-w-0",
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Right main content */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <div className="px-8 pt-8 pb-6 border-b border-slate-100">
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight break-words leading-tight">
+                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </h1>
+              <p className="text-sm font-bold text-slate-500 mt-1 uppercase tracking-widest break-words">
+                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </p>
+            </div>
+
+            <div className="flex-1 px-8 py-6 flex flex-col gap-8 overflow-hidden">
+              {/* All sections via unified sectionOrder loop */}
+              {Array.from(new Set<string>(
+                data.sectionOrder || ["summary", "experience", "education", "projects"]
+              ))
+                .filter((k: string) => !["contact", "skills", "languages"].includes(k))
+                .map((key: string) => {
+                  if (data.sectionOrder && !data.sectionOrder.includes(key)) return null;
+
+                  if (key === "summary") {
+                    return (
+                      <DraggableSection key={key} id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <p className="text-[11px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                          <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                        </p>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "experience") {
+                    if (!isInteractive && experiences.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="experience" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-4">
+                          <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <div className="space-y-5">
+                          {asRecordArray(experiences).map((exp: any, i: number) => (
+                            <div key={i} className="flex gap-4 relative">
+                              <div className="w-px bg-slate-200 relative shrink-0">
+                                <div className="absolute top-1.5 -left-1 w-2.5 h-2.5 bg-[#4ab5b0] rounded-full" />
+                              </div>
+                              <div className="flex-1 min-w-0 pb-2">
+                                <div className="flex justify-between items-start gap-2 mb-1">
+                                  <p className="font-black text-[11px] text-slate-900 break-words min-w-0 flex-1">
+                                    <InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                  </p>
+                                  <p className="text-[9px] text-slate-500 shrink-0 font-bold whitespace-nowrap">
+                                    <InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                  </p>
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-600 break-words mb-1">
+                                  <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                </p>
+                                <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                                  <InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "education") {
+                    if (!isInteractive && education.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="education" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-4">
+                          <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <div className="space-y-3">
+                          {asRecordArray(education).map((edu: any, i: number) => (
+                            <div key={i}>
                               <p className="font-black text-[11px] text-slate-900 break-words">
                                 <InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
                               </p>
-                              <p className="font-bold text-[10px] text-slate-700 break-words">
+                              <p className="text-[10px] text-slate-600 break-words">
                                 <InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                {edu.year && <span className="text-slate-400"> • <InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
                               </p>
                             </div>
-                            <p className="text-[9px] text-slate-500 shrink-0 font-bold whitespace-nowrap">
-                              <InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={isInteractive} onUpdate={onUpdate} />
-                            </p>
-                          </div>
+                          ))}
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "projects") {
+                    if (!isInteractive && projects.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="projects" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-4">
+                          <InlineEdit value={headers?.projects || "Projets"} path="headers.projects" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <div className="space-y-3">
+                          {asRecordArray(projects).map((proj: any, i: number) => (
+                            <div key={i}>
+                              <p className="font-black text-[11px] text-slate-900 break-words">
+                                <InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                              {(proj.technologies || isInteractive) && (
+                                <p className="text-[9px] text-slate-500 italic break-words">
+                                  <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={isInteractive} onUpdate={(path: string, val: any) => onUpdate(path, val.split(",").map((s: string) => s.trim()))} />
+                                </p>
+                              )}
+                              {proj.description && (
+                                <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                                  <InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  // Custom sections
+                  const standardKeys = ["summary", "experience", "education", "skills", "languages", "projects", "contact", "headers", "photourl", "username", "jobtitle", "_originalcvtext", "sectionorder"];
+                  if (!standardKeys.includes(key.toLowerCase()) && key in data) {
+                    const items = data[key];
+                    const isEmpty = !items || (Array.isArray(items) && items.length === 0) || (typeof items === 'string' && items.trim() === '');
+                    if (!isInteractive && isEmpty) return null;
+                    return (
+                      <DraggableSection key={key} id={key} isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-3">
+                          <InlineEdit value={headers?.[key] || key} path={`headers.${key}`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        {Array.isArray(items) ? (
+                          <div className="space-y-1">{items.map((it: any, i: number) => (
+                            <p key={i} className="text-[10px] text-slate-600 break-words">• <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>
+                          ))}</div>
+                        ) : (
+                          <p className="text-[10px] text-slate-600 whitespace-pre-wrap break-words">
+                            <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                          </p>
+                        )}
+                      </DraggableSection>
+                    );
+                  }
+                  return null;
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- STYLE: SEVILLA --- */}
+      {/* Reference: Dark grey header full-width, large name top-right,
+          circular photo overlapping header into sidebar,
+          left sidebar grey with education/skills/languages/contact,
+          right main with open circle timeline for experience */}
+      {/* --- STYLE: SEVILLA --- */}
+      {style === "Sevilla" && (
+        <div className="flex min-h-[297mm] font-sans bg-white text-slate-800">
+          {/* Left sidebar */}
+          <div className="w-[35%] flex flex-col bg-[#e8e8e8] min-w-0 overflow-hidden">
+            <div className="bg-[#5a5a5a] relative shrink-0" style={{ height: "200px" }}>
+              {hasPhotoSlot && (
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-[-52px] w-28 h-28 rounded-full overflow-hidden border-4 border-[#e8e8e8] shadow-xl z-10">
+                  <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar — Education optimized for vertical stack, others via DynamicSidebarSections */}
+            <div className={`flex flex-col gap-7 p-7 flex-1 ${hasPhotoSlot ? "pt-16" : "pt-7"}`}>
+
+              {/* Formation — Integrated cleanly into the flex layout using CSS order positioning */}
+              {((data.sectionOrder ? data.sectionOrder.includes("education") : true) && education?.length > 0) && (
+                <div style={{ order: data.sectionOrder?.indexOf("education") ?? 0 }} className="flex flex-col w-full">
+                  <DraggableSection id="education" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                    <h3 className="text-xs font-black text-slate-800 border-b border-slate-500 pb-1 mb-3 uppercase tracking-wide">
+                      <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
+                    </h3>
+                    <div className="space-y-4">
+                      {education.map((edu: any, i: number) => (
+                        <div key={i} className="flex flex-col gap-0.5 min-w-0 text-left">
+                          {/* 1. Date ABOVE school */}
+                          <p className="text-[9px] text-slate-500 font-bold whitespace-nowrap">
+                            <InlineEdit value={edu.year || edu.period} path={`education.${i}.year`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                          </p>
+                          {/* 2. School Name (e.g., AFPA PARIS) */}
+                          <h4 className="font-black text-[11px] text-slate-900 uppercase break-words pr-2">
+                            <InlineEdit value={edu.school || edu.company} path={`education.${i}.school`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                          </h4>
+                          {/* 3. Content / Degree BELOW school */}
+                          <p className="font-bold text-[10px] text-slate-700 break-words pr-2">
+                            <InlineEdit value={edu.degree || edu.title} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                          </p>
                           {edu.details && (
-                            <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                            <p className="text-[9px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap mt-0.5 pr-2">
                               <InlineEdit value={edu.details} path={`education.${i}.details`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
                             </p>
                           )}
                         </div>
                       ))}
                     </div>
-                  </div>
-                </DraggableSection>
+                  </DraggableSection>
+                </div>
               )}
 
-              <DynamicMainSections
-                headerClass="text-sm font-black text-slate-800 border-b border-slate-200 pb-1 mb-3 flex items-center gap-3 after:content-[''] after:h-px after:bg-slate-200 after:flex-1"
-                itemClass="text-[11px] text-slate-600 leading-relaxed break-words"
-                languages={languages}
-                isInteractive={isInteractive}
-                onDeleteSection={onDeleteSection}
-                onUpdate={onUpdate}
-                headers={headers}
-              />
+              {/* Other sidebar elements mapped with individual order styles to preserve interchangeable dragging */}
+              {Array.from(new Set<string>(data.sectionOrder || ["skills", "languages", "contact"]))
+                .filter((key) => ["skills", "languages", "contact"].includes(key))
+                .map((key) => (
+                  <div key={key} style={{ order: data.sectionOrder?.indexOf(key) ?? 1 }} className="flex flex-col w-full">
+                    <DynamicSidebarSections
+                      sidebarKeys={[key as any]}
+                      configs={{
+                        skills: {
+                          headerClass: "text-xs font-black text-slate-800 border-b border-slate-500 pb-1 mb-3 uppercase tracking-wide",
+                          itemClass: "text-[10px] text-slate-700 break-words min-w-0",
+                          layout: "list",
+                        },
+                        languages: {
+                          headerClass: "text-xs font-black text-slate-800 border-b border-slate-500 pb-1 mb-3 uppercase tracking-wide",
+                          itemClass: "text-[10px] text-slate-700 break-words min-w-0",
+                          layout: "list",
+                        },
+                        contact: {
+                          headerClass: "text-xs font-black text-slate-800 border-b border-slate-500 pb-1 mb-3 uppercase tracking-wide",
+                          itemClass: "text-[10px] text-slate-700 break-words min-w-0 text-current",
+                        },
+                      }}
+                    />
+                  </div>
+                ))}
+            </div>
+          </div>
 
+          {/* Right main content */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="bg-[#5a5a5a] text-white px-10 flex flex-col justify-center" style={{ minHeight: "200px" }}>
+              <h1 className="text-4xl font-black uppercase tracking-tight break-words leading-tight text-white">
+                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </h1>
+              <p className="text-sm font-medium text-white/80 mt-2 tracking-widest break-words">
+                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </p>
+            </div>
+
+            <div className="flex-1 p-8 flex flex-col gap-8 bg-white">
+              {/* All main sections via unified sectionOrder loop */}
+              {Array.from(new Set<string>(
+                data.sectionOrder || ["summary", "experience", "projects"]
+              ))
+                .filter((k: string) => !["contact", "skills", "languages", "education"].includes(k))
+                .map((key: string) => {
+                  if (data.sectionOrder && !data.sectionOrder.includes(key)) return null;
+
+                  if (key === "summary") {
+                    return (
+                      <DraggableSection key={key} id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-sm font-black text-slate-800 border-b-2 border-slate-200 pb-1 mb-3 uppercase tracking-wide">
+                          <InlineEdit value={headers?.summary || "Profil"} path="headers.summary" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <p className="text-[11px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                          <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                        </p>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "experience") {
+                    if (!isInteractive && experiences.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="experience" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-sm font-black text-slate-800 border-b-2 border-slate-200 pb-1 mb-5 uppercase tracking-wide">
+                          <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <div className="space-y-6">
+                          {asRecordArray(experiences).map((exp: any, i: number) => (
+                            <div key={i} className="flex gap-4">
+                              <div className="flex flex-col items-center shrink-0">
+                                <div className="w-4 h-4 rounded-full border-2 border-slate-400 bg-white mt-0.5 shrink-0" />
+                                {i < experiences.length - 1 && <div className="w-px flex-1 bg-slate-200 mt-1" />}
+                              </div>
+                              <div className="flex-1 min-w-0 pb-2">
+                                <div className="flex justify-between items-start gap-2 mb-1">
+                                  <div className="min-w-0">
+                                    <p className="font-black text-[11px] text-slate-900 break-words uppercase">
+                                      <InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                    </p>
+                                    <p className="font-bold text-[10px] text-slate-600 break-words">
+                                      <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                    </p>
+                                  </div>
+                                  <p className="text-[9px] text-slate-500 shrink-0 font-bold whitespace-nowrap">
+                                    <InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                  </p>
+                                </div>
+                                <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                                  <InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "projects") {
+                    if (!isInteractive && projects.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="projects" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-sm font-black text-slate-800 border-b-2 border-slate-200 pb-1 mb-4 uppercase tracking-wide">
+                          <InlineEdit value={headers?.projects || "Projets"} path="headers.projects" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <div className="space-y-3">
+                          {asRecordArray(projects).map((proj: any, i: number) => (
+                            <div key={i} className="flex gap-4">
+                              <div className="flex flex-col items-center shrink-0">
+                                <div className="w-4 h-4 rounded-full border-2 border-slate-400 bg-white mt-0.5 shrink-0" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-black text-[11px] text-slate-900 break-words">
+                                  <InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                </p>
+                                {(proj.technologies || isInteractive) && (
+                                  <p className="text-[9px] text-slate-500 italic break-words">
+                                    <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={isInteractive} onUpdate={(path: string, val: any) => onUpdate(path, val.split(",").map((s: string) => s.trim()))} />
+                                  </p>
+                                )}
+                                {proj.description && (
+                                  <p className="text-[10px] text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+                                    <InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  // Custom sections
+                  const standardKeys = ["summary", "experience", "education", "skills", "languages", "projects", "contact", "headers", "photourl", "username", "jobtitle", "_originalcvtext", "sectionorder"];
+                  if (!standardKeys.includes(key.toLowerCase()) && key in data) {
+                    const items = data[key];
+                    const isEmpty = !items || (Array.isArray(items) && items.length === 0) || (typeof items === 'string' && items.trim() === '');
+                    if (!isInteractive && isEmpty) return null;
+                    return (
+                      <DraggableSection key={key} id={key} isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-sm font-black text-slate-800 border-b-2 border-slate-200 pb-1 mb-3 uppercase tracking-wide">
+                          <InlineEdit value={headers?.[key] || key} path={`headers.${key}`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        {Array.isArray(items) ? (
+                          <div className="space-y-1">{items.map((it: any, i: number) => (
+                            <p key={i} className="text-[10px] text-slate-600 break-words">• <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>
+                          ))}</div>
+                        ) : (
+                          <p className="text-[10px] text-slate-600 whitespace-pre-wrap break-words">
+                            <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                          </p>
+                        )}
+                      </DraggableSection>
+                    );
+                  }
+                  return null;
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- STYLE: MUNICH --- */}
+      {/* Reference: Large photo fills entire top-left quadrant,
+          minimal serif typography, wide letter-spacing headers,
+          beige/warm white palette, signature line at bottom,
+          left sidebar: contact icons + languages + skills categories,
+          right: experience with bullet points, education bottom */}
+      {/* --- STYLE: MUNICH --- */}
+      {style === "Munich" && (
+        <div className="flex min-h-[297mm] font-sans bg-white text-[#2c2c2c]">
+          {/* Left sidebar */}
+          <div className="w-[36%] flex flex-col min-w-0 overflow-hidden">
+            {hasPhotoSlot ? (
+              <div className="w-full overflow-hidden shrink-0" style={{ height: "260px" }}>
+                <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-full bg-[#e8e0d5] shrink-0" style={{ height: "260px" }} />
+            )}
+
+            <div className="w-4/5 h-px bg-[#c9b99a] my-4 mx-auto" />
+
+            <div className="px-8 pb-8 flex flex-col gap-7 flex-1 overflow-hidden">
+              <DynamicSidebarSections
+                sidebarKeys={["contact", "languages", "skills"]}
+                configs={{
+                  contact: {
+                    headerClass: "text-[9px] font-black uppercase tracking-[0.3em] text-[#8c7b6b] mb-3",
+                    itemClass: "text-[10px] text-[#3a3a3a] break-words min-w-0 text-current",
+                  },
+                  languages: {
+                    headerClass: "text-[9px] font-black uppercase tracking-[0.3em] text-[#8c7b6b] mb-3",
+                    itemClass: "text-[10px] text-[#2c2c2c] font-bold break-words min-w-0",
+                  },
+                  skills: {
+                    headerClass: "text-[9px] font-black uppercase tracking-[0.3em] text-[#8c7b6b] mb-3",
+                    itemClass: "text-[10px] text-[#3a3a3a] break-words min-w-0",
+                    layout: "list",
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Right main content */}
+          <div className="flex-1 flex flex-col min-w-0 bg-white">
+            <div className="px-10 pt-10 pb-6 flex flex-col justify-center" style={{ minHeight: "260px" }}>
+              <h1 className="text-4xl font-black uppercase tracking-[0.1em] text-[#2c2c2c] leading-tight break-words">
+                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </h1>
+              <div className="h-px bg-[#c9b99a] my-3 w-full" />
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8c7b6b] break-words">
+                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
+              </p>
+            </div>
+
+            <div className="flex-1 px-10 pb-8 flex flex-col gap-8 overflow-hidden">
+              {/* All main sections via unified sectionOrder loop */}
+              {Array.from(new Set<string>(
+                data.sectionOrder || ["experience", "education", "summary", "projects"]
+              ))
+                .filter((k: string) => !["contact", "skills", "languages"].includes(k))
+                .map((key: string) => {
+                  if (data.sectionOrder && !data.sectionOrder.includes(key)) return null;
+
+                  if (key === "summary") {
+                    return (
+                      <DraggableSection key={key} id="summary" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-3">
+                          <InlineEdit value={headers?.summary || "Profil"} path="headers.summary" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <p className="text-[10px] text-[#4a4a4a] leading-relaxed break-words whitespace-pre-wrap">
+                          <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                        </p>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "experience") {
+                    if (!isInteractive && experiences.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="experience" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-4">
+                          <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <div className="space-y-5">
+                          {asRecordArray(experiences).map((exp: any, i: number) => (
+                            <div key={i}>
+                              <p className="text-[10px] font-black text-[#2c2c2c] uppercase tracking-wide break-words">
+                                <InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                              <p className="text-[10px] text-[#8c7b6b] break-words mb-1">
+                                <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                {exp.period && <span className="text-slate-400"> | <InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
+                              </p>
+                              <p className="text-[10px] text-[#4a4a4a] leading-relaxed break-words whitespace-pre-wrap flex gap-1.5">
+                                <span className="shrink-0">•</span>
+                                <InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "education") {
+                    if (!isInteractive && education.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="education" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-4">
+                          <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <div className="space-y-4">
+                          {asRecordArray(education).map((edu: any, i: number) => (
+                            <div key={i}>
+                              <p className="text-[10px] font-black text-[#2c2c2c] uppercase tracking-wide break-words">
+                                <InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                              <p className="text-[10px] text-[#8c7b6b] break-words">
+                                <InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                                {edu.year && <span className="text-slate-400"> | <InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
+                              </p>
+                              {edu.details && (
+                                <p className="text-[9px] text-[#5a5a5a] mt-1 break-words">
+                                  <InlineEdit value={edu.details} path={`education.${i}.details`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  if (key === "projects") {
+                    if (!isInteractive && projects.length === 0) return null;
+                    return (
+                      <DraggableSection key={key} id="projects" isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-3">
+                          <InlineEdit value={headers?.projects || "Projets"} path="headers.projects" isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        <div className="space-y-3">
+                          {asRecordArray(projects).map((proj: any, i: number) => (
+                            <div key={i}>
+                              <p className="font-black text-[10px] text-[#2c2c2c] break-words">
+                                <InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                              </p>
+                              {(proj.technologies || isInteractive) && (
+                                <p className="text-[9px] text-[#8c7b6b] italic break-words">
+                                  <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={isInteractive} onUpdate={(path: string, val: any) => onUpdate(path, val.split(",").map((s: string) => s.trim()))} />
+                                </p>
+                              )}
+                              {proj.description && (
+                                <p className="text-[10px] text-[#4a4a4a] leading-relaxed break-words whitespace-pre-wrap flex gap-1.5">
+                                  <span className="shrink-0">•</span>
+                                  <InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </DraggableSection>
+                    );
+                  }
+
+                  // Custom sections
+                  const standardKeys = ["summary", "experience", "education", "skills", "languages", "projects", "contact", "headers", "photourl", "username", "jobtitle", "_originalcvtext", "sectionorder"];
+                  if (!standardKeys.includes(key.toLowerCase()) && key in data) {
+                    const items = data[key];
+                    const isEmpty = !items || (Array.isArray(items) && items.length === 0) || (typeof items === 'string' && items.trim() === '');
+                    if (!isInteractive && isEmpty) return null;
+                    return (
+                      <DraggableSection key={key} id={key} isInteractive={isInteractive} onDelete={onDeleteSection}>
+                        <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-3">
+                          <InlineEdit value={headers?.[key] || key} path={`headers.${key}`} isInteractive={isInteractive} onUpdate={onUpdate} />
+                        </h3>
+                        {Array.isArray(items) ? (
+                          <div className="space-y-1">{items.map((it: any, i: number) => (
+                            <p key={i} className="text-[10px] text-[#4a4a4a] break-words">• <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>
+                          ))}</div>
+                        ) : (
+                          <p className="text-[10px] text-[#4a4a4a] whitespace-pre-wrap break-words">
+                            <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
+                          </p>
+                        )}
+                      </DraggableSection>
+                    );
+                  }
+                  return null;
+                })}
+
+              {/* Signature line */}
+              <div className="mt-auto pt-6 border-t border-[#c9b99a] flex justify-between items-end">
+                <p className="text-[9px] text-[#8c7b6b] italic">
+                  {contact?.location || ""}
+                </p>
+                <p className="text-lg italic text-[#4a4a4a] font-light" style={{ fontFamily: "Georgia, serif" }}>
+                  <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -10,11 +10,11 @@ interface JobInputPanelProps {
   setJobDescription: (val: string) => void;
 }
 
-export default function JobInputPanel({ 
-  jobTitle, 
-  setJobTitle, 
-  jobDescription, 
-  setJobDescription 
+export default function JobInputPanel({
+  jobTitle,
+  setJobTitle,
+  jobDescription,
+  setJobDescription
 }: JobInputPanelProps) {
   const t = useTranslations('Index.job_panel');
 
@@ -42,7 +42,7 @@ export default function JobInputPanel({
             <label className="text-xs font-black text-gray-900 uppercase tracking-widest">{t('title_label')}</label>
             <span className="text-[9px] font-bold text-gray-500 uppercase">{t('title_optional')}</span>
           </div>
-          <input 
+          <input
             type="text"
             placeholder={t('title_placeholder')}
             value={jobTitle}
@@ -56,7 +56,7 @@ export default function JobInputPanel({
             <label className="text-xs font-black text-gray-900 uppercase tracking-widest">{t('description_label')}</label>
             <span className="text-[9px] font-bold text-gray-500 uppercase">{t('description_optional')}</span>
           </div>
-          <textarea 
+          <textarea
             placeholder={t('description_placeholder')}
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}

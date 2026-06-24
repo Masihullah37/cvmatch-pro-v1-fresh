@@ -230,8 +230,8 @@ export default function SidebarClient({ credits = 0, planName = 'Gratuit' }: Sid
 
   const planColor =
     planName === 'Pro' ? 'text-purple-600 bg-purple-50' :
-    planName === 'Starter' ? 'text-amber-600 bg-amber-50' :
-    'text-slate-500 bg-slate-100';
+      planName === 'Starter' ? 'text-amber-600 bg-amber-50' :
+        'text-slate-500 bg-slate-100';
 
   const navItems = [
     { href: '/#analyze', label: 'Nouvelle Analyse', icon: Plus, accent: true },
@@ -277,11 +277,10 @@ export default function SidebarClient({ credits = 0, planName = 'Gratuit' }: Sid
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm transition-all antialiased ${
-                    item.accent
-                      ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                      : 'hover:bg-slate-50'
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm transition-all antialiased ${item.accent
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                    : 'hover:bg-slate-50'
+                    }`}
                   style={item.accent ? undefined : { color: '#0b0f19' }}
                 >
                   <item.icon size={18} />
@@ -310,9 +309,8 @@ export default function SidebarClient({ credits = 0, planName = 'Gratuit' }: Sid
 
       {/* ── Desktop: fixed sidebar ─────────────────────────────────── */}
       <aside
-        className={`hidden md:flex flex-col fixed top-0 left-0 bottom-0 z-[60] bg-white border-r border-slate-100 transition-all duration-300 no-print ${
-          collapsed ? 'w-20' : 'w-64'
-        }`}
+        className={`hidden md:flex flex-col fixed top-0 left-0 bottom-0 z-[60] bg-white border-r border-slate-100 transition-all duration-300 no-print ${collapsed ? 'w-20' : 'w-64'
+          }`}
       >
         {/* Orange toggle button — improved visibility */}
         <button
@@ -326,17 +324,17 @@ export default function SidebarClient({ credits = 0, planName = 'Gratuit' }: Sid
         {/* Logo */}
         <div className={`flex items-center gap-3 p-5 border-b border-slate-100 ${collapsed ? 'justify-center' : ''}`}>
           <motion.div
-            animate={{ 
+            animate={{
               filter: ["drop-shadow(0 0 0px rgba(16, 185, 129, 0))", "drop-shadow(0 0 12px rgba(16, 185, 129, 0.3))", "drop-shadow(0 0 0px rgba(16, 185, 129, 0))"]
             }}
             transition={{ duration: 4, repeat: Infinity }}
             className="relative"
           >
-            <Image 
-              src="/ouicvlogo.png" 
-              alt="Logo" 
-              width={collapsed ? 40 : 140} 
-              height={collapsed ? 40 : 46} 
+            <Image
+              src="/ouicvlogo.png"
+              alt="Logo"
+              width={collapsed ? 40 : 140}
+              height={collapsed ? 40 : 46}
               className="object-contain shrink-0 mix-blend-multiply"
               priority
             />
@@ -350,13 +348,11 @@ export default function SidebarClient({ credits = 0, planName = 'Gratuit' }: Sid
               key={item.label}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              className={`flex items-center gap-3 px-3 py-3 rounded-2xl font-semibold text-xs uppercase tracking-widest transition-all antialiased ${
-                collapsed ? 'justify-center' : ''
-              } ${
-                item.accent
+              className={`flex items-center gap-3 px-3 py-3 rounded-2xl font-semibold text-xs uppercase tracking-widest transition-all antialiased ${collapsed ? 'justify-center' : ''
+                } ${item.accent
                   ? 'bg-primary text-white shadow-lg shadow-primary/20'
                   : 'hover:bg-slate-50'
-              }`}
+                }`}
               style={item.accent ? undefined : { color: '#0b0f19' }}
             >
               <item.icon size={17} className="shrink-0" />
