@@ -27,7 +27,7 @@
 
 :root {
   --background: 0 0% 100%;
-  --foreground: 224 71% 2%; /* Absolute deep black */
+  --foreground: 224 71% 2%;
   --card: 0 0% 100%;
   --card-foreground: 224 71% 2%;
   --popover: 0 0% 100%;
@@ -37,7 +37,7 @@
   --secondary: 210 40% 96%;
   --secondary-foreground: 224 71% 2%;
   --muted: 210 40% 96%;
-  --muted-foreground: 215 25% 20%; /* Darker muted text */
+  --muted-foreground: 215 25% 20%;
   --accent: 32 100% 50%;
   --accent-foreground: 210 40% 98%;
   --destructive: 0 84% 60%;
@@ -46,18 +46,25 @@
   --input: 214 32% 91%;
   --ring: 142 71% 45%;
   --radius: 1.5rem;
-  /* Sidebar offset — updated by SidebarClient JS */
   --sidebar-width: 256px;
 }
 
 @layer base {
-  * { @apply border-slate-100; }
+  * {
+    @apply border-slate-100;
+  }
+
   body {
     @apply bg-white text-foreground font-sans antialiased overflow-x-hidden selection:bg-emerald-100 selection:text-emerald-900;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-bold tracking-tight text-slate-950;
   }
 
@@ -65,19 +72,31 @@
     @apply text-slate-900 leading-relaxed font-medium;
   }
 
-  /* Functional text (links/interactive) */
-  a, .clickable, button {
+  a,
+  .clickable,
+  button {
     @apply transition-all duration-300 hover:text-emerald-600 active:text-emerald-700 cursor-pointer;
   }
 }
 
 @layer components {
+
+  /* 🌟 FIXED: Moved the shadows into standard CSS format so Tailwind's parser doesn't choke on commas */
   .glass-card {
-    @apply bg-white border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all rounded-[2rem];
+    @apply bg-white border border-slate-100 transition-all rounded-[2rem];
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+
+    &:hover {
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+    }
   }
+
   .btn-primary {
-    @apply bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold transition-all
-      hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-500/20 active:scale-95 active:bg-emerald-800;
+    @apply bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold transition-all hover:bg-emerald-700 active:scale-95 active:bg-emerald-800;
+
+    &:hover {
+      box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.2);
+    }
   }
 }
 
@@ -85,6 +104,7 @@
 .sidebar-offset {
   margin-left: 0;
 }
+
 @media (min-width: 768px) {
   .sidebar-offset {
     margin-left: var(--sidebar-width, 256px);
@@ -93,38 +113,204 @@
 
 /* ── Hero float animation ─────────────────────────────────── */
 @keyframes heroFloat {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
-.hero-float       { animation: heroFloat 3s ease-in-out infinite; }
-.hero-float-delay { animation: heroFloat 3.5s ease-in-out infinite 0.8s; }
+
+.hero-float {
+  animation: heroFloat 3s ease-in-out infinite;
+}
+
+.hero-float-delay {
+  animation: heroFloat 3.5s ease-in-out infinite 0.8s;
+}
+
+/* ── Shining Text Keyframes ─────────────────────────────── */
+@keyframes textShine {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.animate-shine {
+  background: linear-gradient(90deg,
+      #64748b 0%,
+      /* slate-500 */
+      #059669 25%,
+      /* emerald-600 */
+      #34d399 50%,
+      /* emerald-400 */
+      #059669 75%,
+      /* emerald-600 */
+      #64748b 100%
+      /* slate-500 */
+    );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  text-fill-color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: textShine 4s linear infinite;
+}
 
 /* ── CV Carousel ──────────────────────────────────────────── */
 @keyframes carousel-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
+
 .carousel-track {
   animation: carousel-scroll 28s linear infinite;
   width: max-content;
   display: flex;
   gap: 1.5rem;
 }
-.carousel-track:hover { animation-play-state: paused; }
+
+.carousel-track:hover {
+  animation-play-state: paused;
+}
 
 /* ── How it works step line ───────────────────────────────── */
 @keyframes stepPulse {
-  0%, 100% { opacity: 0.4; transform: scaleX(1); }
-  50%       { opacity: 1;   transform: scaleX(1.02); }
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scaleX(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scaleX(1.02);
+  }
 }
-.step-line { animation: stepPulse 2s ease-in-out infinite; }
+
+.step-line {
+  animation: stepPulse 2s ease-in-out infinite;
+}
 
 /* ── Page fade-in ─────────────────────────────────────────── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.fade-in { animation: fadeIn 0.5s ease-out forwards; }
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* ── Interactive Back Button Shine ──────────────────────── */
+@keyframes linkShine {
+  0% {
+    background-position: 200% center;
+  }
+
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.hover-glow-link {
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+
+    .shine-text {
+      background: linear-gradient(120deg,
+          #94a3b8 0%,
+          #10b981 40%,
+          #34d399 50%,
+          #10b981 60%,
+          #94a3b8 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: linkShine 2.5s linear infinite;
+    }
+  }
+}
 
 /* ── No print ─────────────────────────────────────────────── */
-@media print { .no-print { display: none !important; } }
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ── Clerk Custom Interface Overrides ─────────────────────── */
+.clerk-custom-container {
+
+  & .cl-rootBox,
+  & .cl-cardBox,
+  & .cl-card {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  & .cl-header,
+  & .cl-headerTitle,
+  & .cl-headerSubtitle,
+  & .cl-internal-16g8f69 {
+    display: none !important;
+  }
+
+  & .cl-footer {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-top: none !important;
+
+    & .cl-footerPages,
+    & .cl-internal-1m8z6w7 {
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+  }
+
+  & .cl-formFieldInput {
+    background-color: rgba(248, 250, 252, 0.6) !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+
+    &:focus {
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+    }
+  }
+
+  & .cl-formButtonPrimary {
+    background-color: #059669 !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #047857 !important;
+    }
+  }
+}

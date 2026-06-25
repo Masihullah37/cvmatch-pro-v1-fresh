@@ -1,6 +1,3 @@
-// 
-
-
 'use client';
 
 import { Link } from '@/i18n/routing';
@@ -18,7 +15,16 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();
-  const isHome = pathname === '/' || pathname === '/fr' || pathname === '/en';
+
+  // 🌟 Enhanced home check to safely catch your localized root paths
+  const isHome =
+    pathname === '/' ||
+    pathname === '/fr' ||
+    pathname === '/en' ||
+    pathname === `/${locale}` ||
+    pathname.includes('/sign-in') ||
+    pathname.includes('/sign-up');
+
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -26,23 +32,22 @@ export default function Header() {
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll);
-    
+
     if (userId) {
       fetch('/api/user/role')
         .then(res => res.json())
         .then(data => setIsAdmin(data.isAdmin))
-        .catch(() => {});
+        .catch(() => { });
     }
 
     return () => window.removeEventListener('scroll', onScroll);
   }, [userId]);
 
   return (
-    <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-      scrolled
-        ? 'bg-white/90 backdrop-blur-xl shadow-sm border-b border-slate-100'
-        : 'bg-transparent'
-    }`}>
+    <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${scrolled
+      ? 'bg-white/90 backdrop-blur-xl shadow-sm border-b border-slate-100'
+      : 'bg-transparent'
+      }`}>
       <div className="flex h-16 items-center justify-between px-6 max-w-7xl mx-auto">
 
         {/* Logo */}
@@ -53,15 +58,17 @@ export default function Header() {
               {locale === 'en' ? 'Home' : 'Accueil'}
             </span>
           </Link>
-
-
         </div>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="/#analyze" className="flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-600 active:bg-pink-700 transition-all shadow-lg shadow-pink-200">
-            <Plus size={14} /> Nouvelle Analyse
-          </Link>
+          {/* 🌟 Button will now only display if we are NOT on the homepage */}
+          {!isHome && (
+            <Link href="/#analyze" className="flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-600 active:bg-pink-700 transition-all shadow-lg shadow-pink-200">
+              <Plus size={14} /> Nouvelle Analyse
+            </Link>
+          )}
+
           {userId && (
             <div className="flex items-center gap-6">
               {isAdmin && (
@@ -90,9 +97,13 @@ export default function Header() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-slate-100 px-6 py-6 space-y-4 shadow-xl">
-          <Link href="/#analyze" className="flex items-center justify-center gap-2 bg-pink-500 text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-600 active:bg-pink-700 transition-all" onClick={() => setMobileOpen(false)}>
-            <Plus size={14} /> Nouvelle Analyse
-          </Link>
+          {/* 🌟 Hides from mobile navigation view as well on the homepage */}
+          {!isHome && (
+            <Link href="/#analyze" className="flex items-center justify-center gap-2 bg-pink-500 text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-600 active:bg-pink-700 transition-all" onClick={() => setMobileOpen(false)}>
+              <Plus size={14} /> Nouvelle Analyse
+            </Link>
+          )}
+
           {userId && (
             <>
               {isAdmin && (

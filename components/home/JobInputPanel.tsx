@@ -20,7 +20,9 @@ export default function JobInputPanel({
 
   return (
     <div className="glass-card rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl flex flex-col h-full animate-in fade-in duration-700 delay-150">
-      <div className="flex items-center justify-between mb-8">
+      {/* <div className="flex items-center justify-between mb-8"> */}
+      {/* FIXED: Formatted to stack into columns on mobile screen widths */}
+      <div className="flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8 w-full">
         <div className="flex items-center gap-4">
           <div className="bg-primary/10 text-primary p-3 rounded-2xl">
             <Briefcase size={24} />

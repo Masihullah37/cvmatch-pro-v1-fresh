@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ArrowDown, Sparkles, Zap, CheckCircle2, Upload, Cpu, BarChart3, Download } from "lucide-react";
 
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl"; // 🌟 Imported useTranslations
 import { createQuickCVAnalysis } from "@/app/actions/analysis";
 
 const FLIP_WORDS = ["recrutements", "CV", "candidatures", "carrière"];
@@ -21,6 +21,7 @@ const STEPS = [
 export default function HeroSection() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("Index"); // 🌟 Connects to the "Index" object in your JSON
   const [wordIndex, setWordIndex] = useState(0);
   const [flipping, setFlipping] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
@@ -212,7 +213,8 @@ export default function HeroSection() {
                 }}
               >
                 <Zap size={18} />
-                Analyser mon CV
+                {/* 🌟 Pulls the text dynamically from your locale JSON file */}
+                {t("analyze_button")}
               </a>
               <button
                 id="hero-btn-create-cv"
@@ -278,7 +280,17 @@ export default function HeroSection() {
           </div>
 
           {/* Right — Character image & Animation */}
-          <div className="relative flex items-center justify-center scale-[0.75] sm:scale-[0.9] lg:scale-110 mt-8 lg:mt-0">
+          <div
+            className="
+    relative flex items-center justify-center
+    scale-[0.67] sm:scale-[0.85] lg:scale-95
+    mt-8 lg:mt-0
+    w-full
+    max-w-[250px] sm:max-w-[380px] lg:max-w-[450px]
+    h-[440px] sm:h-[520px] lg:h-[560px]
+    mx-auto
+  "
+          >
             {/* Steps circular animation */}
             <div className="absolute inset-0 z-20 pointer-events-none">
               {STEPS.map((step, i) => {
@@ -362,8 +374,6 @@ export default function HeroSection() {
           50% { opacity: 0.8; transform: scale(1.05); }
         }
       `}</style>
-
-
 
       {/* Float animation */}
       <style>{`
