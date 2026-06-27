@@ -1,118 +1,264 @@
+// "use client";
+
+// import { SignUp } from "@clerk/nextjs";
+// import AnimatedBackground from "@/components/layout/AnimatedBackground";
+// import { Link } from "@/i18n/routing";
+// import { useSearchParams } from "next/navigation";
+// import { useLocale } from "next-intl";
+// import { useEffect, useState } from "react";
+// import Image from "next/image";
+
+// export default function CustomSignUpPage() {
+//   const searchParams = useSearchParams();
+//   const locale = useLocale();
+
+//   // Changed default state to point to home page instead of dashboard
+//   const [redirectTo, setRedirectTo] = useState(`/${locale}`);
+//   const [signInUrl, setSignInUrl] = useState(`/${locale}/sign-in`);
+//   const [mounted, setMounted] = useState(false);
+
+//   useEffect(() => {
+//     setMounted(true);
+//     const redirectToParam = searchParams.get("redirectTo") || searchParams.get("redirect_url");
+
+//     // Force redirect back to the home page instead of the dashboard
+//     if (redirectToParam && (redirectToParam.includes("trigger=one-time") || redirectToParam === `/${locale}`)) {
+//       setRedirectTo(`${window.location.origin}/${locale}`);
+//       setSignInUrl(`/${locale}/sign-in?redirectTo=${encodeURIComponent(`/${locale}`)}`);
+//       return;
+//     }
+
+//     if (!redirectToParam) {
+//       setRedirectTo(`${window.location.origin}/${locale}`);
+//       return;
+//     }
+
+//     try {
+//       const decoded = decodeURIComponent(redirectToParam);
+//       const parsed = new URL(decoded, window.location.origin);
+
+//       if (parsed.origin !== window.location.origin) {
+//         setRedirectTo(`${window.location.origin}/${locale}`);
+//         return;
+//       }
+
+//       const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+//       const encoded = encodeURIComponent(safePath);
+
+//       setRedirectTo(`${window.location.origin}${safePath}`);
+//       setSignInUrl(`/${locale}/sign-in?redirectTo=${encoded}`);
+
+//       fetch("/api/set-redirect-cookie", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ redirectTo: encoded }),
+//       });
+//     } catch {
+//       setRedirectTo(`${window.location.origin}/${locale}`);
+//     }
+//   }, [searchParams, locale]);
+
+//   return (
+//     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-slate-50">
+//       <AnimatedBackground />
+//       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+//       <div className="w-full max-w-[480px] relative z-10">
+
+//         {/* ── Header ─────────────────────────────────────── */}
+//         <div className="flex flex-col items-center gap-5 mb-8">
+//           {/* Logo */}
+//           <Image
+//             src="/ouicvlogo.png"
+//             alt="OuiCV"
+//             width={360}
+//             height={110}
+//             style={{ width: "auto", height: "clamp(80px, 14vw, 110px)" }}
+//             className="object-contain"
+//             priority
+//           />
+
+//           {/* Subtitle */}
+//           <p className="text-base font-black tracking-widest uppercase text-center animate-shine">
+//             Optimisez votre carrière dès aujourd'hui
+//           </p>
+//         </div>
+
+//         {/* ── Clerk Card ─────────────────────────────────── */}
+//         <div className="w-full bg-white/85 backdrop-blur-xl border border-white shadow-2xl shadow-slate-200/60 rounded-[2rem]">
+//           {mounted ? (
+//             <SignUp
+//               forceRedirectUrl={redirectTo}
+//               fallbackRedirectUrl={`/${locale}`}
+//               signInUrl={signInUrl}
+//               appearance={{
+//                 elements: {
+//                   rootBox: "!w-full !max-w-full block",
+//                   cardBox: "!w-full !max-w-full !shadow-none block",
+//                   card: "!bg-transparent !shadow-none !border-none !w-full !max-w-full !rounded-none px-6 py-6",
+//                   headerTitle: "hidden",
+//                   headerSubtitle: "hidden",
+//                   badge: "hidden",
+//                   footer: "!bg-slate-50/80 border-t border-slate-100 !w-full !max-w-full px-6",
+//                   footerPages: "!bg-transparent !w-full",
+//                   formFields: "!w-full",
+//                   formFieldRow: "!w-full",
+//                   form: "!w-full",
+//                   formButtonPrimary: "!w-full",
+//                   socialButtonsBlockButton: "!w-full",
+//                   socialButtons: "!w-full",
+//                   dividerRow: "!w-full",
+//                 },
+//               }}
+//             />
+//           ) : (
+//             <div className="h-[440px] flex items-center justify-center">
+//               <div className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-600 rounded-full animate-spin" />
+//             </div>
+//           )}
+//         </div>
+
+//         {/* ── Terms ──────────────────────────────────────── */}
+//         <p className="text-center text-[11px] text-slate-400 font-medium mt-5">
+//           En créant un compte, vous acceptez nos{" "}
+//           <Link
+//             href="/terms"
+//             className="underline hover:text-emerald-600 transition-colors"
+//           >
+//             Conditions d'utilisation
+//           </Link>
+//         </p>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
 "use client";
 
-import { SignUp, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 import AnimatedBackground from "@/components/layout/AnimatedBackground";
 import { Link } from "@/i18n/routing";
-import { ArrowLeft } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
 export default function CustomSignUpPage() {
   const searchParams = useSearchParams();
   const locale = useLocale();
-  const redirectToParam = searchParams.get("redirectTo");
+
+  const [redirectTo, setRedirectTo] = useState(`/${locale}`);
+  const [signInUrl, setSignInUrl] = useState(`/${locale}/sign-in`);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (redirectToParam) {
+    setMounted(true);
+    const redirectToParam = searchParams.get("redirectTo") || searchParams.get("redirect_url");
+
+    if (redirectToParam && (redirectToParam.includes("trigger=one-time") || redirectToParam === `/${locale}`)) {
+      setRedirectTo(`/${locale}`);
+      setSignInUrl(`/${locale}/sign-in?redirectTo=${encodeURIComponent(`/${locale}`)}`);
+      return;
+    }
+
+    if (!redirectToParam) {
+      setRedirectTo(`/${locale}`);
+      return;
+    }
+
+    try {
+      const decoded = decodeURIComponent(redirectToParam);
+      const parsed = new URL(decoded, window.location.origin);
+
+      if (parsed.origin !== window.location.origin) {
+        setRedirectTo(`/${locale}`);
+        return;
+      }
+
+      const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      const encoded = encodeURIComponent(safePath);
+
+      setRedirectTo(safePath);
+      setSignInUrl(`/${locale}/sign-in?redirectTo=${encoded}`);
+
       fetch("/api/set-redirect-cookie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ redirectTo: redirectToParam }),
+        body: JSON.stringify({ redirectTo: encoded }),
       });
+    } catch {
+      setRedirectTo(`/${locale}`);
     }
-  }, [redirectToParam]);
-
-  const redirectTo =
-    typeof window !== "undefined"
-      ? redirectToParam
-        ? `${window.location.origin}${decodeURIComponent(redirectToParam)}`
-        : `${window.location.origin}/${locale}/dashboard`
-      : `/${locale}/dashboard`;
+  }, [searchParams, locale]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-slate-50">
-      {/* 🌟 Custom Background Elements */}
       <AnimatedBackground />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[rgba(16,185,129,0.1)] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10 space-y-6">
-        <div className="text-center space-y-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2.5 px-4 py-2 text-slate-400 rounded-full bg-slate-900/[0.02] border border-slate-900/[0.04] backdrop-blur-md transition-all duration-300 hover:text-emerald-600 hover:bg-emerald-500/[0.03] hover:border-emerald-500/20 hover:shadow-[0_4px_12px_rgba(16,185,129,0.08)] text-xs font-black tracking-widest uppercase group hover-glow-link"
-          >
-            <ArrowLeft
-              size={14}
-              className="transform transition-all duration-300 ease-out group-hover:-translate-x-1 group-hover:text-emerald-500 filter drop-shadow-[0_0_2px_rgba(16,185,129,0)] group-hover:drop-shadow-[0_0_4px_rgba(16,185,129,0.4)]"
-            />
-            <span className="shine-text transition-colors duration-300">
-              Retour à l'accueil
-            </span>
-          </Link>
+      <div className="w-full max-w-[480px] relative z-10">
 
-          {/* 🌟 Your Verified Brand Logo */}
-          <div className="flex items-center justify-center">
-            <Image
-              src="/ouicvlogo.png"
-              alt="Oui CV Logo"
-              width={180}
-              height={50}
-              className="object-contain"
-              priority
-            />
-          </div>
+        {/* ── Header ─────────────────────────────────────── */}
+        <div className="flex flex-col items-center gap-5 mb-8">
+          <Image
+            src="/ouicvlogo.png"
+            alt="OuiCV"
+            width={360}
+            height={110}
+            style={{ width: "auto", height: "auto" }} // Added height: auto to fix the console warning layout issue!
+            className="object-contain"
+            priority
+          />
 
-          {/* 🌟 Animated Shining Subtitle */}
-          <p className="text-base font-bold tracking-wide uppercase animate-shine">
-            Créez votre compte pour optimiser votre carrière
+          <p className="text-base font-black tracking-widest uppercase text-center animate-shine">
+            Optimisez votre carrière dès aujourd'hui
           </p>
         </div>
 
-        {/* 🌟 Expanded frame size to seamlessly lock borders and fields together */}
-        <div className="clerk-custom-container w-[440px] max-w-full mx-auto bg-white/70 backdrop-blur-xl border border-white shadow-2xl rounded-[2.5rem] p-1 overflow-hidden min-h-[440px] flex flex-col items-center justify-center relative">
-
-          <ClerkLoading>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/50 z-20">
-              <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-600 rounded-full animate-spin" />
-              <p className="text-sm font-black text-slate-400 uppercase tracking-widest">
-                Chargement...
-              </p>
-            </div>
-          </ClerkLoading>
-
-          <ClerkLoaded>
+        {/* ── Clerk Card ─────────────────────────────────── */}
+        <div className="w-full bg-white/85 backdrop-blur-xl border border-white shadow-2xl shadow-slate-200/60 rounded-[2rem]">
+          {mounted ? (
             <SignUp
               forceRedirectUrl={redirectTo}
-              fallbackRedirectUrl={`/${locale}/dashboard`}
-              signInUrl={
-                redirectToParam
-                  ? `/${locale}/sign-in?redirectTo=${redirectToParam}`
-                  : `/${locale}/sign-in`
-              }
+              fallbackRedirectUrl={`/${locale}`}
+              signInUrl={signInUrl}
               appearance={{
-                layout: {
-                  socialButtonsPlacement: "top",
-                  socialButtonsVariant: "blockButton",
-                  shimmer: false,
-                },
                 elements: {
-                  rootBox: "w-full !max-w-full",
-                  cardBox: "w-full !max-w-full",
-                  card: "bg-transparent shadow-none w-full border-none p-6 !max-w-full",
+                  rootBox: "!w-full !max-w-full block",
+                  cardBox: "!w-full !max-w-full !shadow-none block",
+                  card: "!bg-transparent !shadow-none !border-none !w-full !max-w-full !rounded-none px-6 py-6",
                   headerTitle: "hidden",
                   headerSubtitle: "hidden",
                   badge: "hidden",
+                  footer: "!bg-slate-50/80 border-t border-slate-100 !w-full !max-w-full px-6",
+                  footerPages: "!bg-transparent !w-full",
+                  formFields: "!w-full",
+                  formFieldRow: "!w-full",
+                  form: "!w-full",
+                  formButtonPrimary: "!w-full",
+                  socialButtonsBlockButton: "!w-full",
+                  socialButtons: "!w-full",
+                  dividerRow: "!w-full",
                 },
               }}
             />
-          </ClerkLoaded>
+          ) : (
+            <div className="h-[440px] flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-600 rounded-full animate-spin" />
+            </div>
+          )}
         </div>
 
-        <p className="text-center text-xs text-slate-400 font-medium">
+        {/* ── Terms ──────────────────────────────────────── */}
+        <p className="text-center text-[11px] text-slate-400 font-medium mt-5">
           En créant un compte, vous acceptez nos{" "}
-          <Link href="/terms" className="underline hover:text-emerald-600">
+          <Link
+            href="/terms"
+            className="underline hover:text-emerald-600 transition-colors"
+          >
             Conditions d'utilisation
           </Link>
         </p>

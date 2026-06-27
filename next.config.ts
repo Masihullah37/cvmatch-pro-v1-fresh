@@ -13,6 +13,16 @@ const devOrigins = [
   '192.168.1.12:3000',
 ];
 
+// Define production origins — update after Railway deploy
+const prodOrigins = [
+  'ouicv.fr',
+  'www.ouicv.fr',
+  // Railway URL added automatically via env var below
+  ...(process.env.RAILWAY_PUBLIC_DOMAIN
+    ? [process.env.RAILWAY_PUBLIC_DOMAIN]
+    : []),
+];
+
 const cspHeader = `
     default-src 'self';
     script-src 'self' ${isProd ? "" : "'unsafe-eval'"} 'unsafe-inline' blob: https://clerk.com https://*.clerk.accounts.dev https://js.stripe.com https://cdn.tailwindcss.com https://challenges.cloudflare.com;
@@ -45,12 +55,21 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['pdf2json', 'mammoth', 'underscore', 'lop'],
   images: {
     formats: ['image/webp'],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'img.clerk.com' },
+      { protocol: 'https', hostname: 'utfs.io' },
+      { protocol: 'https', hostname: '*.uploadthing.com' },
+    ],
   },
 
   // This must be here to stop the "Blocked cross-origin" error
   experimental: {
     serverActions: {
-      allowedOrigins: isProd ? [] : devOrigins,
+      allowedOrigins: isProd ? prodOrigins : devOrigins,
+    },
+    staleTimes: {
+      dynamic: 0,
+      static: 180,
     },
   },
 

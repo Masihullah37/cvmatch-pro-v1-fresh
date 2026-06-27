@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { CVRenderer } from '@/components/templates/CVRenderer';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 
 const DEMO_DATA = {
   userName: "Marie Dupont",
@@ -23,8 +24,6 @@ const DEMO_DATA = {
   projects: [{ name: "OuiCV Platform", description: "Application SaaS d'optimisation de CV avec IA générative", technologies: ["Next.js", "OpenAI", "Stripe"] }],
   interests: ["Open Source", "UX Design", "Intelligence Artificielle"],
 };
-
-import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 
 const STYLES = [...CV_TEMPLATE_STYLES];
 
@@ -62,7 +61,8 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
         </div>
 
         {/* Template Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* ✨ FIX 2a: Dropped to grid-cols-1 on mobile so layout handles wider rendering space safely */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {demoTemplates.map((template) => (
             <button
               key={template.id}
@@ -70,7 +70,8 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
               className="group bg-white rounded-2xl border border-slate-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-1 hover:border-emerald-200 transition-all duration-300 text-left"
             >
               {/* Preview */}
-              <div className="relative bg-slate-50 overflow-hidden flex justify-center" style={{ height: 280 }}>
+              {/* ✨ FIX 2b: Changed to use layout height classes h-56 mobile to improve visible space */}
+              <div className="relative bg-slate-50 overflow-hidden flex justify-center h-56 sm:h-[280px]">
                 <div className="absolute inset-0 flex justify-center items-start pt-4">
                   <div className="scale-[0.25] sm:scale-[0.28] origin-top transform-gpu pointer-events-none transition-transform">
                     <CVRenderer template={template} isPaid={true} analysisData={null} />

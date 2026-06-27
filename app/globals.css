@@ -23,6 +23,8 @@
   --radius-xl: var(--radius);
   --radius-2xl: calc(var(--radius) + 4px);
   --radius-3xl: calc(var(--radius) + 8px);
+  /* 🌟 ADD THESE TWO LINES FOR TAILWIND v4 ANIMATION UTILITIES */
+  --animate-shimmer-bridge: cross-shimmer 2.5s ease-in-out infinite;
 }
 
 :root {
@@ -135,32 +137,29 @@
 /* ── Shining Text Keyframes ─────────────────────────────── */
 @keyframes textShine {
   0% {
-    background-position: 0% 50%;
+    background-position: 0% center;
   }
 
   100% {
-    background-position: 200% 50%;
+    background-position: 200% center;
   }
 }
 
+/* Used by sign-in / sign-up subtitle text */
 .animate-shine {
   background: linear-gradient(90deg,
       #64748b 0%,
-      /* slate-500 */
       #059669 25%,
-      /* emerald-600 */
       #34d399 50%,
-      /* emerald-400 */
       #059669 75%,
-      /* emerald-600 */
-      #64748b 100%
-      /* slate-500 */
-    );
+      #64748b 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
-  text-fill-color: transparent;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
+  color: transparent;
   animation: textShine 4s linear infinite;
+  display: inline-block;
 }
 
 /* ── CV Carousel ──────────────────────────────────────────── */
@@ -261,56 +260,38 @@
   }
 }
 
-/* ── Clerk Custom Interface Overrides ─────────────────────── */
-.clerk-custom-container {
+/* ── Clerk UserProfile Modal — mobile safe ────────────── */
+.cl-userProfile-root,
+.cl-modalContent {
+  max-width: min(560px, calc(100vw - 1rem)) !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
 
-  & .cl-rootBox,
-  & .cl-cardBox,
-  & .cl-card {
-    background: transparent !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
+/* Prevent modal content from overflowing on mobile */
+.cl-scrollBox {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.cl-profileSectionContent,
+.cl-profileSection {
+  max-width: 100% !important;
+}
+
+/* Ensure form inputs in UserProfile don't overflow */
+.cl-formFieldInput {
+  max-width: 100% !important;
+}
+
+
+@keyframes cross-shimmer {
+  0% {
+    transform: translateX(-100%);
   }
 
-  & .cl-header,
-  & .cl-headerTitle,
-  & .cl-headerSubtitle,
-  & .cl-internal-16g8f69 {
-    display: none !important;
-  }
-
-  & .cl-footer {
-    background: transparent !important;
-    background-color: transparent !important;
-    border-top: none !important;
-
-    & .cl-footerPages,
-    & .cl-internal-1m8z6w7 {
-      background: transparent !important;
-      background-color: transparent !important;
-    }
-  }
-
-  & .cl-formFieldInput {
-    background-color: rgba(248, 250, 252, 0.6) !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 12px !important;
-
-    &:focus {
-      border-color: #10b981 !important;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
-    }
-  }
-
-  & .cl-formButtonPrimary {
-    background-color: #059669 !important;
-    border-radius: 12px !important;
-    font-weight: 700 !important;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background-color: #047857 !important;
-    }
+  100% {
+    transform: translateX(100%);
   }
 }

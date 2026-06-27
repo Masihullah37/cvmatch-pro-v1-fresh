@@ -1,105 +1,257 @@
+// "use client";
+
+// import { SignIn } from "@clerk/nextjs";
+// import AnimatedBackground from "@/components/layout/AnimatedBackground";
+// import { Link } from "@/i18n/routing";
+// import { useSearchParams } from "next/navigation";
+// import { useLocale } from "next-intl";
+// import { useEffect, useState } from "react";
+// import Image from "next/image";
+
+// export default function CustomSignInPage() {
+//   const searchParams = useSearchParams();
+//   const locale = useLocale();
+
+//   // Changed default state to point to home page instead of dashboard
+//   const [redirectTo, setRedirectTo] = useState(`/${locale}`);
+//   const [signUpUrl, setSignUpUrl] = useState(`/${locale}/sign-up`);
+//   const [mounted, setMounted] = useState(false);
+
+//   useEffect(() => {
+//     setMounted(true);
+//     const redirectToParam = searchParams.get("redirectTo") || searchParams.get("redirect_url");
+
+//     // Force redirect back to the home page instead of the dashboard
+//     if (redirectToParam && (redirectToParam.includes("trigger=one-time") || redirectToParam === `/${locale}`)) {
+//       setRedirectTo(`${window.location.origin}/${locale}`);
+//       setSignUpUrl(`/${locale}/sign-up?redirectTo=${encodeURIComponent(`/${locale}`)}`);
+//       return;
+//     }
+
+//     if (!redirectToParam) {
+//       setRedirectTo(`${window.location.origin}/${locale}`);
+//       return;
+//     }
+
+//     try {
+//       const decoded = decodeURIComponent(redirectToParam);
+//       const parsed = new URL(decoded, window.location.origin);
+//       if (parsed.origin !== window.location.origin) {
+//         setRedirectTo(`${window.location.origin}/${locale}`);
+//         return;
+//       }
+//       const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+//       const encoded = encodeURIComponent(safePath);
+//       setRedirectTo(`${window.location.origin}${safePath}`);
+//       setSignUpUrl(`/${locale}/sign-up?redirectTo=${encoded}`);
+//       fetch("/api/set-redirect-cookie", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ redirectTo: encoded }),
+//       });
+//     } catch {
+//       setRedirectTo(`${window.location.origin}/${locale}`);
+//     }
+//   }, [searchParams, locale]);
+
+//   return (
+//     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-slate-50">
+//       <AnimatedBackground />
+//       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+//       <div className="w-full max-w-[480px] relative z-10">
+
+//         {/* ── Header ─────────────────────────────────────── */}
+//         <div className="flex flex-col items-center gap-5 mb-8">
+//           <Image
+//             src="/ouicvlogo.png"
+//             alt="OuiCV"
+//             width={360}
+//             height={110}
+//             style={{ width: "auto", height: "clamp(80px, 14vw, 110px)" }}
+//             className="object-contain"
+//             priority
+//           />
+
+//           <p className="text-base font-black tracking-widest uppercase text-center animate-shine">
+//             Débloquez votre plein potentiel
+//           </p>
+//         </div>
+
+//         {/* ── Clerk Card ─────────────────────────────────── */}
+//         <div className="w-full bg-white/85 backdrop-blur-xl border border-white shadow-2xl shadow-slate-200/60 rounded-[2rem]">
+//           {mounted ? (
+//             <SignIn
+//               forceRedirectUrl={redirectTo}
+//               fallbackRedirectUrl={`/${locale}`}
+//               signUpUrl={signUpUrl}
+//               appearance={{
+//                 elements: {
+//                   rootBox: "!w-full !max-w-full block",
+//                   cardBox: "!w-full !max-w-full !shadow-none block",
+//                   card: "!bg-transparent !shadow-none !border-none !w-full !max-w-full !rounded-none px-6 py-6",
+//                   headerTitle: "hidden",
+//                   headerSubtitle: "hidden",
+//                   badge: "hidden",
+//                   footer: "!bg-slate-50/80 border-t border-slate-100 !w-full !max-w-full px-6",
+//                   footerPages: "!bg-transparent !w-full",
+//                   formFields: "!w-full",
+//                   formFieldRow: "!w-full",
+//                   form: "!w-full",
+//                   formButtonPrimary: "!w-full",
+//                   socialButtonsBlockButton: "!w-full",
+//                   socialButtons: "!w-full",
+//                   dividerRow: "!w-full",
+//                 },
+//               }}
+//             />
+//           ) : (
+//             <div className="h-[400px] flex items-center justify-center">
+//               <div className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-600 rounded-full animate-spin" />
+//             </div>
+//           )}
+//         </div>
+
+//         {/* ── Terms ──────────────────────────────────────── */}
+//         <p className="text-center text-[11px] text-slate-400 font-medium mt-5">
+//           En vous connectant, vous acceptez nos{" "}
+//           <Link
+//             href="/terms"
+//             className="underline hover:text-emerald-600 transition-colors"
+//           >
+//             Conditions d'utilisation
+//           </Link>
+//         </p>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
+
 "use client";
 
-import { SignIn, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
+import { SignIn } from "@clerk/nextjs";
 import AnimatedBackground from "@/components/layout/AnimatedBackground";
 import { Link } from "@/i18n/routing";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export default function CustomSignInPage() {
   const searchParams = useSearchParams();
   const locale = useLocale();
 
-  const redirectToParam = searchParams.get("redirectTo") || searchParams.get("redirect_url");
-  const getSafeRedirectPath = () => {
-    if (typeof window === "undefined" || !redirectToParam) return null;
+  // Using a relative path string string safely prevents Clerk from clashing with Next.js RSC fetch sequences
+  const [redirectTo, setRedirectTo] = useState(`/${locale}`);
+  const [signUpUrl, setSignUpUrl] = useState(`/${locale}/sign-up`);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const redirectToParam = searchParams.get("redirectTo") || searchParams.get("redirect_url");
+
+    if (redirectToParam && (redirectToParam.includes("trigger=one-time") || redirectToParam === `/${locale}`)) {
+      setRedirectTo(`/${locale}`);
+      setSignUpUrl(`/${locale}/sign-up?redirectTo=${encodeURIComponent(`/${locale}`)}`);
+      return;
+    }
+
+    if (!redirectToParam) {
+      setRedirectTo(`/${locale}`);
+      return;
+    }
 
     try {
       const decoded = decodeURIComponent(redirectToParam);
+      // We parse against location.origin to ensure safety, but pass relative routes to Clerk
       const parsed = new URL(decoded, window.location.origin);
-      if (parsed.origin !== window.location.origin) return null;
-      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-    } catch {
-      return null;
-    }
-  };
-  const safeRedirectPath = getSafeRedirectPath();
-  const encodedSafeRedirectPath = safeRedirectPath ? encodeURIComponent(safeRedirectPath) : null;
-
-  useEffect(() => {
-    if (encodedSafeRedirectPath) {
+      if (parsed.origin !== window.location.origin) {
+        setRedirectTo(`/${locale}`);
+        return;
+      }
+      const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      const encoded = encodeURIComponent(safePath);
+      setRedirectTo(safePath);
+      setSignUpUrl(`/${locale}/sign-up?redirectTo=${encoded}`);
       fetch("/api/set-redirect-cookie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ redirectTo: encodedSafeRedirectPath }),
+        body: JSON.stringify({ redirectTo: encoded }),
       });
+    } catch {
+      setRedirectTo(`/${locale}`);
     }
-  }, [encodedSafeRedirectPath]);
-
-  const redirectTo =
-    typeof window !== "undefined"
-      ? safeRedirectPath
-        ? `${window.location.origin}${safeRedirectPath}`
-        : `${window.location.origin}/${locale}/dashboard`
-      : `/${locale}/dashboard`;
+  }, [searchParams, locale]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-slate-50">
       <AnimatedBackground />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[rgba(16,185,129,0.1)] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10 space-y-6">
-        <div className="text-center space-y-2">
-          {/* 🌟 Pristine Animated Shining Text */}
-          <p className="text-base font-bold tracking-wide uppercase animate-shine">
-            Connectez-vous pour débloquer votre plein potentiel
+      <div className="w-full max-w-[480px] relative z-10">
+
+        {/* ── Header ─────────────────────────────────────── */}
+        <div className="flex flex-col items-center gap-5 mb-8">
+          <Image
+            src="/ouicvlogo.png"
+            alt="OuiCV"
+            width={360}
+            height={110}
+            style={{ width: "auto", height: "auto" }} // Added height: auto to fix the console warning layout issue!
+            className="object-contain"
+            priority
+          />
+
+          <p className="text-base font-black tracking-widest uppercase text-center animate-shine">
+            Débloquez votre plein potentiel
           </p>
         </div>
 
-        {/* 🌟 Widened background container to perfectly fit expanded Clerk components without clipping */}
-        <div className="clerk-custom-container w-[440px] max-w-full mx-auto bg-white/70 backdrop-blur-xl border border-white shadow-2xl rounded-[2.5rem] p-1 overflow-hidden min-h-[440px] flex flex-col items-center justify-center relative">
-
-          <ClerkLoading>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/50 z-20">
-              <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-600 rounded-full animate-spin" />
-              <p className="text-sm font-black text-slate-400 uppercase tracking-widest">
-                Chargement...
-              </p>
-            </div>
-          </ClerkLoading>
-
-          <ClerkLoaded>
+        {/* ── Clerk Card ─────────────────────────────────── */}
+        <div className="w-full bg-white/85 backdrop-blur-xl border border-white shadow-2xl shadow-slate-200/60 rounded-[2rem]">
+          {mounted ? (
             <SignIn
               forceRedirectUrl={redirectTo}
-              fallbackRedirectUrl={`/${locale}/dashboard`}
-              signUpUrl={
-                encodedSafeRedirectPath
-                  ? `/${locale}/sign-up?redirectTo=${encodedSafeRedirectPath}`
-                  : `/${locale}/sign-up`
-              }
+              fallbackRedirectUrl={`/${locale}`}
+              signUpUrl={signUpUrl}
               appearance={{
-                layout: {
-                  socialButtonsPlacement: "top",
-                  socialButtonsVariant: "blockButton",
-                  shimmer: false,
-                },
                 elements: {
-                  rootBox: "w-full !max-w-full",
-                  cardBox: "w-full !max-w-full",
-                  card: "bg-transparent shadow-none w-full border-none p-6 !max-w-full",
+                  rootBox: "!w-full !max-w-full block",
+                  cardBox: "!w-full !max-w-full !shadow-none block",
+                  card: "!bg-transparent !shadow-none !border-none !w-full !max-w-full !rounded-none px-6 py-6",
                   headerTitle: "hidden",
                   headerSubtitle: "hidden",
                   badge: "hidden",
+                  footer: "!bg-slate-50/80 border-t border-slate-100 !w-full !max-w-full px-6",
+                  footerPages: "!bg-transparent !w-full",
+                  formFields: "!w-full",
+                  formFieldRow: "!w-full",
+                  form: "!w-full",
+                  formButtonPrimary: "!w-full",
+                  socialButtonsBlockButton: "!w-full",
+                  socialButtons: "!w-full",
+                  dividerRow: "!w-full",
                 },
               }}
             />
-          </ClerkLoaded>
+          ) : (
+            <div className="h-[400px] flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-600 rounded-full animate-spin" />
+            </div>
+          )}
         </div>
 
-        <p className="text-center text-xs text-slate-400 font-medium">
+        {/* ── Terms ──────────────────────────────────────── */}
+        <p className="text-center text-[11px] text-slate-400 font-medium mt-5">
           En vous connectant, vous acceptez nos{" "}
-          <Link href="/terms" className="underline hover:text-emerald-600">
+          <Link
+            href="/terms"
+            className="underline hover:text-emerald-600 transition-colors"
+          >
             Conditions d'utilisation
           </Link>
         </p>
