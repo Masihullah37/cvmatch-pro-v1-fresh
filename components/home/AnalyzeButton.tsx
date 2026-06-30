@@ -146,29 +146,30 @@ export default function AnalyzeButton({
       <button
         onClick={handleAnalyze}
         disabled={isAnalyzing}
-        className={`group flex items-center justify-center gap-3 sm:gap-4 w-full max-w-[500px] py-4 sm:py-6 rounded-2xl sm:rounded-[2.5rem] text-base sm:text-xl font-black shadow-2xl transition-all ${isAnalyzing
-            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            : 'bg-primary text-white hover:bg-emerald-600 hover:scale-[1.03] hover:shadow-emerald-500/30 active:scale-95 transition-all duration-200 shadow-emerald-500/20'
-          }`}
+        className="group flex items-center justify-center gap-3 sm:gap-4 w-full max-w-[500px] h-[64px] sm:h-[80px] rounded-2xl sm:rounded-[2.5rem] text-base sm:text-xl font-black shadow-2xl transition-all bg-primary text-white hover:bg-emerald-600 hover:scale-[1.03] hover:shadow-emerald-500/30 active:scale-95 duration-200 shadow-emerald-500/20 disabled:cursor-not-allowed"
       >
+
         {isAnalyzing ? (
-          <div className="relative flex items-center justify-center">
+          <div className="relative flex items-center justify-center h-full w-full">
             <img
               src="/ouicvlogo.png"
               alt="OuiCV Logo Loading"
-              className="mix-blend-multiply"
+              className="select-none pointer-events-none bg-transparent"
               style={{
-                width: "90px",
-                height: "auto",
+                height: "32px",
+                width: "auto",
                 animation: "heartPump 0.6s infinite ease-in-out"
               }}
             />
           </div>
         ) : (
-          <Sparkles size={24} className="group-hover:animate-pulse" />
+          <>
+            <Sparkles size={24} className="group-hover:animate-pulse" />
+            <span>Optimiser mon CV maintenant</span>
+          </>
         )}
-        {isAnalyzing ? '' : 'Optimiser mon CV maintenant'}
       </button>
+
 
       {isAnalyzing && (
         <p className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] animate-pulse">

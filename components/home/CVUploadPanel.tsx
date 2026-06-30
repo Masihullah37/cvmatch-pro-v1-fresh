@@ -1,172 +1,4 @@
-// 'use client';
-
-// import { FileUp, FileText, UserPlus, ArrowUpDown } from 'lucide-react';
-// import { useCallback, useState } from 'react';
-// import { useDropzone } from 'react-dropzone';
-
-// interface CVUploadPanelProps {
-//   cvFile: File | null;
-//   setCvFile: (file: File | null) => void;
-//   cvUrl: string;
-//   setCvUrl: (url: string) => void;
-//   profileDescription?: string;
-//   setProfileDescription?: (desc: string) => void;
-// }
-
-// export default function CVUploadPanel({
-//   cvFile,
-//   setCvFile,
-//   cvUrl,
-//   setCvUrl,
-//   profileDescription = '',
-//   setProfileDescription
-// }: CVUploadPanelProps) {
-//   const [mode, setMode] = useState<'upload' | 'profile'>('upload');
-
-//   const onDrop = useCallback((acceptedFiles: File[]) => {
-//     if (acceptedFiles.length > 0) {
-//       setCvFile(acceptedFiles[0]);
-//     }
-//   }, [setCvFile]);
-
-//   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-//     onDrop,
-//     accept: {
-//       'application/pdf': ['.pdf'],
-//       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
-//     },
-//     maxFiles: 1
-//   });
-
-//   return (
-//     /* We use a outer relative container for the entire side-by-side structure on desktop,
-//        but this component handles its own layout flow inside.
-//     */
-//     <div className="relative w-full max-w-full flex flex-col sm:flex-row sm:items-stretch sm:gap-6">
-
-//       {/* ── HIGHLY PROFESSIONAL ANIMATED GLOWING CROSS ARROW BRIDGE ────────────────── */}
-//       {/* This container bridges both layouts perfectly and places the arrow at the dead center.
-//           On mobile, it's above the card. On desktop, it's to the left of the card.
-//           Using a negative -margin to center it dynamically.
-//       */}
-//       <div className="
-//         flex flex-col items-center justify-center pointer-events-none z-30 shrink-0
-//         /* Mobile settings (Vertical) */
-//         w-full h-12 -mb-6 relative left-1/2 -translate-x-1/2
-//         /* Desktop settings (Horizontal side-by-side) */
-//         sm:relative sm:w-6 sm:h-full sm:m-0 sm:left-0 sm:translate-x-0 sm:top-1/2 sm:-translate-y-1/2"
-//       >
-//         {/* UPPER/LEFT CONNECTION LINE (localized per layout flow) */}
-//         <div className="w-[2px] h-3 bg-gradient-to-b from-transparent to-slate-200
-//           sm:h-[2px] sm:w-3 sm:bg-gradient-to-r"
-//         />
-
-//         {/* Glowing Badge Container Housing */}
-//         <div className="relative flex items-center justify-center w-9 h-9 bg-white border border-slate-100 rounded-full shadow-lg shadow-slate-200/80 overflow-hidden shrink-0">
-//           {/* Shimmer effect reflection driven by Tailwind v4 @theme keyframe definition */}
-//           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/25 to-transparent animate-shimmer-bridge" />
-
-//           {/* Professional Inter-box Link Icon */}
-//           <ArrowUpDown
-//             size={16}
-//             className="text-emerald-500 animate-[bounce_2s_infinite] drop-shadow-[0_0_5px_rgba(16,185,129,0.3)]
-//               transform rotate-0 sm:rotate-90"
-//           />
-//         </div>
-
-//         {/* LOWER/RIGHT CONNECTION LINE (localized per layout flow) */}
-//         <div className="w-[2px] h-3 bg-gradient-to-b from-slate-200 to-transparent
-//           sm:h-[2px] sm:w-3 sm:bg-gradient-to-r"
-//         />
-//       </div>
-
-//       {/* ── MAIN GLASS PANEL CONTAINER ─────────────────────────────────────────── */}
-//       <div className="glass-card flex-1 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 shadow-2xl flex flex-col h-full animate-in fade-in duration-700 w-full max-w-full overflow-hidden">
-//         {/* Header content section containing title and action toggle buttons */}
-//         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8 w-full">
-//           <div className="flex items-center gap-3 sm:gap-4 max-w-full">
-//             <div className="bg-primary/10 text-primary p-2.5 sm:p-3 rounded-2xl shrink-0">
-//               {mode === 'upload' ? <FileText size={20} className="sm:w-6 sm:h-6" /> : <UserPlus size={20} className="sm:w-6 sm:h-6" />}
-//             </div>
-//             <div className="min-w-0">
-//               <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight truncate">
-//                 {mode === 'upload' ? 'Votre CV' : 'Votre Profil'}
-//               </h2>
-//               <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest truncate">
-//                 {mode === 'upload' ? 'Importation' : 'Saisie Manuelle'}
-//               </p>
-//             </div>
-//           </div>
-
-//           <div className="flex bg-slate-100 p-1 rounded-xl self-stretch sm:self-auto justify-center">
-//             <button
-//               onClick={() => setMode('upload')}
-//               className={`flex-1 sm:flex-none text-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-black transition-all whitespace-nowrap ${mode === 'upload' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-//             >
-//               Fichier
-//             </button>
-//             <button
-//               onClick={() => setMode('profile')}
-//               className={`flex-1 sm:flex-none text-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-black transition-all whitespace-nowrap ${mode === 'profile' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-//             >
-//               Texte
-//             </button>
-//           </div>
-//         </div>
-
-//         {mode === 'upload' ? (
-//           <div
-//             {...getRootProps()}
-//             className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-xl sm:rounded-[2rem] p-4 sm:p-10 transition-all w-full ${isDragActive ? 'border-primary bg-primary/5 scale-[0.98]' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'
-//               } cursor-pointer group`}
-//           >
-//             <input {...getInputProps()} />
-//             <div className="bg-white text-primary p-4 sm:p-6 rounded-full mb-4 sm:mb-6 shadow-xl group-hover:scale-110 transition-transform">
-//               <FileUp size={32} className="sm:w-10 sm:h-10" />
-//             </div>
-
-//             {cvFile ? (
-//               <div className="text-center space-y-2 px-2 max-w-full">
-//                 <p className="font-black text-primary text-base sm:text-lg break-all">{cvFile.name}</p>
-//                 <p className="text-xs sm:text-sm font-bold text-slate-400">Fichier prêt pour l'analyse.</p>
-//               </div>
-//             ) : (
-//               <div className="text-center space-y-2 px-2">
-//                 <h3 className="font-black text-slate-900 text-lg sm:text-xl tracking-tight">Glissez votre CV ici</h3>
-//                 <p className="text-xs sm:text-sm font-medium text-slate-400 max-w-[280px] mx-auto leading-relaxed">
-//                   Ou cliquez pour parcourir vos dossiers. PDF ou DOCX acceptés.
-//                 </p>
-//               </div>
-//             )}
-
-//             <button className="mt-4 sm:mt-8 bg-primary text-white font-black px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap">
-//               Sélectionner un fichier
-//             </button>
-//           </div>
-//         ) : (
-//           <div className="flex-1 flex flex-col space-y-4 w-full">
-//             <div className="relative flex-1 w-full">
-//               <textarea
-//                 value={profileDescription}
-//                 onChange={(e) => setProfileDescription?.(e.target.value)}
-//                 placeholder="Décrivez votre parcours, vos expériences et vos compétences ici... L'IA s'occupera de générer un CV parfaitement adapté."
-//                 className="w-full h-full min-h-[200px] sm:min-h-[300px] p-4 sm:p-6 bg-slate-50 border-none rounded-xl sm:rounded-[2rem] text-sm font-medium focus:ring-4 focus:ring-primary/10 outline-none resize-none leading-relaxed text-slate-700"
-//               />
-//             </div>
-//             <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 text-center px-4 italic">
-//               L'IA utilisera ces détails pour créer un CV compatible avec l'offre d'emploi.
-//             </p>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-'use client';
-
+'use client'
 import { FileUp, FileText, UserPlus, ArrowUpDown } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -212,25 +44,28 @@ export default function CVUploadPanel({
       <div className="
         flex flex-col items-center justify-center pointer-events-none z-30 shrink-0
         /* Mobile: Positions absolutely outside and above the card bounds to hit the dead center gap */
-        absolute -top-4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto h-auto
+        absolute -top-8 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto h-auto
         /* Desktop settings (Horizontal side-by-side) */
         sm:relative sm:top-1/2 sm:left-0 sm:translate-x-0 sm:-translate-y-1/2 sm:w-6 sm:h-full sm:m-0"
       >
         {/* UPPER/LEFT CONNECTION LINE */}
-        <div className="w-[2px] h-3 bg-gradient-to-b from-transparent via-slate-200 to-slate-200
+        <div className="w-[2px] h-5 sm:h-[2px] sm:w-3 bg-gradient-to-b from-transparent via-slate-200 to-slate-200
           sm:h-[2px] sm:w-3 sm:bg-gradient-to-r"
         />
 
         {/* Glowing Badge Container Housing */}
-        <div className="relative flex items-center justify-center w-9 h-9 bg-white border border-slate-100 rounded-full shadow-lg shadow-slate-200/80 overflow-hidden shrink-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/25 to-transparent animate-shimmer-bridge" />
+        <div className="py-4 flex justify-center w-full">
+          <div className="relative flex items-center justify-center w-9 h-9 bg-white border border-slate-100 rounded-full shadow-lg shadow-slate-200/80 overflow-hidden shrink-0 ">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/25 to-transparent animate-shimmer-bridge" />
 
-          <ArrowUpDown
-            size={16}
-            className="text-emerald-500 animate-[bounce_2s_infinite] drop-shadow-[0_0_5px_rgba(16,185,129,0.3)]
+            <ArrowUpDown
+              size={16}
+              className="text-emerald-500 animate-[bounce_2s_infinite] drop-shadow-[0_0_5px_rgba(16,185,129,0.3)]
               transform rotate-0 sm:rotate-90 relative z-10"
-          />
+            />
+          </div>
         </div>
+
 
         {/* LOWER/RIGHT CONNECTION LINE */}
         <div className="w-[2px] h-3 bg-gradient-to-b from-slate-200 via-slate-200 to-transparent
@@ -317,6 +152,6 @@ export default function CVUploadPanel({
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }

@@ -159,7 +159,7 @@ export default function PricingSection() {
   }, [userId, handlePlanClick]);
 
   return (
-    <section id="pricing" className="py-24 px-6 bg-transparent">
+    <section id="pricing" className="py-2 px-6 bg-transparent">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-full text-slate-500 text-xs font-bold uppercase tracking-widest mb-6">

@@ -3,16 +3,16 @@
 import Image from 'next/image';
 
 const MOCK_CVS = [
-  { id: 1,  src: '/cv-mocks/mock-cv-1.jpg',  style: 'Galaxy',   color: '#4f46e5' },
-  { id: 2,  src: '/cv-mocks/mock-cv-2.jpg',  style: 'Eclipse',  color: '#1e293b' },
-  { id: 3,  src: '/cv-mocks/mock-cv-3.jpg',  style: 'Europass', color: '#0065a2' },
-  { id: 4,  src: '/cv-mocks/mock-cv-4.jpg',  style: 'Solar',    color: '#d97706' },
-  { id: 5,  src: '/cv-mocks/mock-cv-5.jpg',  style: 'Nebula',   color: '#e11d48' },
-  { id: 6,  src: '/cv-mocks/mock-cv-6.jpg',  style: 'Stellar',  color: '#7c3aed' },
-  { id: 7,  src: '/cv-mocks/mock-cv-7.jpg',  style: 'Hyperion', color: '#059669' },
-  { id: 8,  src: '/cv-mocks/mock-cv-8.jpg',  style: 'Aether',   color: '#475569' },
-  { id: 9,  src: '/cv-mocks/mock-cv-9.jpg',  style: 'Cosmos',   color: '#0f172a' },
-  { id: 10, src: '/cv-mocks/mock-cv-10.jpg', style: 'Lunar',    color: '#0284c7' },
+  { id: 1, src: '/cv-mocks/mock-cv-1.jpg', style: 'Galaxy', color: '#4f46e5' },
+  { id: 2, src: '/cv-mocks/mock-cv-2.jpg', style: 'Eclipse', color: '#1e293b' },
+  { id: 3, src: '/cv-mocks/mock-cv-3.jpg', style: 'Europass', color: '#0065a2' },
+  { id: 4, src: '/cv-mocks/mock-cv-4.jpg', style: 'Solar', color: '#d97706' },
+  { id: 5, src: '/cv-mocks/mock-cv-5.jpg', style: 'Nebula', color: '#e11d48' },
+  { id: 6, src: '/cv-mocks/mock-cv-6.jpg', style: 'Stellar', color: '#7c3aed' },
+  { id: 7, src: '/cv-mocks/mock-cv-7.jpg', style: 'Hyperion', color: '#059669' },
+  { id: 8, src: '/cv-mocks/mock-cv-8.jpg', style: 'Aether', color: '#475569' },
+  { id: 9, src: '/cv-mocks/mock-cv-9.jpg', style: 'Cosmos', color: '#0f172a' },
+  { id: 10, src: '/cv-mocks/mock-cv-10.jpg', style: 'Lunar', color: '#0284c7' },
 ];
 
 const ALL_CVS = [...MOCK_CVS, ...MOCK_CVS];
@@ -31,7 +31,7 @@ export default function CVCarousel({ theme = 'dark' }: CVCarouselProps) {
   const accentColor = 'hsl(142, 71%, 45%)'; // Emerald Green
 
   return (
-    <section style={{ padding: '96px 0', background: bgColor, overflow: 'hidden' }}>
+    <section style={{ padding: '35px 0', background: bgColor, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px 56px', textAlign: 'center' }}>
         <div
@@ -94,7 +94,7 @@ export default function CVCarousel({ theme = 'dark' }: CVCarouselProps) {
                   borderRadius: 24,
                   border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.05)',
                   overflow: 'hidden',
-                  background: isDark 
+                  background: isDark
                     ? `linear-gradient(135deg, ${cv.color}33, ${cv.color}11)`
                     : `white`,
                   transition: 'transform 0.3s ease, border-color 0.3s ease',

@@ -32,7 +32,7 @@ const STEPS = [
     icon: Download,
     number: '04',
     title: 'Téléchargez vos CVs',
-    desc: '5 modèles optimisés prêts au recruteur',
+    desc: 'modèles optimisés prêts au recruteur',
     color: '#10b981',
     bg: 'rgba(16,185,129,0.1)',
   },
@@ -63,7 +63,7 @@ export default function HowItWorks() {
   }, [visible]);
 
   return (
-    <section ref={ref} className="py-20 px-4 bg-transparent">
+    <section ref={ref} className="pt-2 pb-16 px-4 bg-transparent">
       <div className="max-w-5xl mx-auto">
 
         {/* Label */}
@@ -97,9 +97,8 @@ export default function HowItWorks() {
               return (
                 <div
                   key={step.number}
-                  className={`flex flex-col items-center text-center cursor-pointer transition-all duration-500 ${
-                    visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-                  }`}
+                  className={`flex flex-col items-center text-center cursor-pointer transition-all duration-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+                    }`}
                   style={{ transitionDelay: `${i * 120}ms` }}
                   onClick={() => setActiveStep(i)}
                 >

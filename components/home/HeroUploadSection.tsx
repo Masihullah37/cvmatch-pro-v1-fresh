@@ -31,7 +31,7 @@ export default function HeroUploadSection() {
   return (
     <div className="w-full mt-4 relative">
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+      <div className="grid grid-cols-1 gap-14 lg:grid-cols-2 lg:gap-8 w-full">
         <JobInputPanel
           jobTitle={jobTitle}
           setJobTitle={setJobTitle}

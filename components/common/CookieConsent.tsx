@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, ShieldCheck, Cookie } from 'lucide-react';
-
+import Link from "next/link";
 export default function CookieConsent() {
   const [show, setShow] = useState(false);
 
@@ -14,14 +14,14 @@ export default function CookieConsent() {
     } else {
       // Ensure cookie is in sync with localStorage for server-side visibility
       if (!document.cookie.includes('cookie_consent=')) {
-        document.cookie = `cookie_consent=${consent}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+        document.cookie = `cookie_consent=${consent}; path=/; max-age=${180 * 24 * 60 * 60}; SameSite=Lax; Secure`;
       }
     }
   }, []);
 
   const accept = async () => {
     localStorage.setItem('cookie_consent', 'accepted');
-    document.cookie = `cookie_consent=accepted; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+    document.cookie = `cookie_consent=accepted; path=/; max-age=${180 * 24 * 60 * 60}; SameSite=Lax; Secure`;
     await fetch('/api/user/consent', {
       method: 'POST',
       body: JSON.stringify({ consent: 'accepted' }),
@@ -32,7 +32,7 @@ export default function CookieConsent() {
 
   const decline = async () => {
     localStorage.setItem('cookie_consent', 'declined');
-    document.cookie = `cookie_consent=declined; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+    document.cookie = `cookie_consent=declined; path=/; max-age=${180 * 24 * 60 * 60}; SameSite=Lax; Secure`;
     await fetch('/api/user/consent', {
       method: 'POST',
       body: JSON.stringify({ consent: 'declined' }),
@@ -72,17 +72,49 @@ export default function CookieConsent() {
             </div>
           </div>
 
-          <p className="text-sm text-slate-600 leading-relaxed mb-8">
+          {/* <p className="text-sm text-slate-600 leading-relaxed mb-8">
             Nous utilisons des cookies pour optimiser votre expérience et analyser l'utilisation de nos outils d'IA via Google Analytics.
+          </p> */}
+
+          <p className="text-sm text-slate-600 leading-relaxed mb-8">
+            Nous utilisons des cookies strictement nécessaires au fonctionnement du site ainsi,
+            avec votre consentement, des cookies de mesure d'audience via Google Analytics.
+            Vous pouvez consulter notre{" "}
+            <Link
+              href="/politique-cookies"
+              className="font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-2"
+            >
+              Politique relative aux cookies
+            </Link>{" "}
+            pour obtenir plus d'informations sur les cookies utilisés, leur durée de conservation
+            et vos droits.
           </p>
 
-          <div className="flex flex-col gap-3">
+          {/* <div className="flex flex-col gap-3">
             <button
               onClick={accept}
               className="w-full bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 hover:scale-[1.02] active:scale-95 transition-all"
             >
               Tout accepter
             </button>
+          </div> */}
+
+          <div className="flex flex-col gap-3">
+
+            <button
+              onClick={accept}
+              className="w-full bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 hover:scale-[1.02] active:scale-95 transition-all"
+            >
+              Tout accepter
+            </button>
+
+            <button
+              onClick={decline}
+              className="w-full border border-slate-200 bg-white text-slate-700 px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+            >
+              Refuser les cookies optionnels
+            </button>
+
           </div>
         </div>
       </div>

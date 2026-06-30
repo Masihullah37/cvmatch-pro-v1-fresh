@@ -284,10 +284,10 @@ export default function HeroSection() {
             className="
     relative flex items-center justify-center
     scale-[0.67] sm:scale-[0.85] lg:scale-95
-    mt-8 lg:mt-0
+    mt-4 lg:mt-0
     w-full
     max-w-[250px] sm:max-w-[380px] lg:max-w-[450px]
-    h-[440px] sm:h-[520px] lg:h-[560px]
+    h-[290px] sm:h-[440px] lg:h-[560px]
     mx-auto
   "
           >
