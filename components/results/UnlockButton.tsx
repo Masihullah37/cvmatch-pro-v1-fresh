@@ -62,23 +62,6 @@ export default function UnlockButton({
 
   return (
     <>
-      {/* <div className="flex flex-col items-center gap-3">
-        <button
-          onClick={handleUnlock}
-          disabled={loading}
-          className="bg-primary text-primary-foreground px-10 py-6 rounded-full font-black shadow-2xl hover:shadow-primary/40 hover:scale-105 transition-all group flex items-center gap-3 text-xl disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <Loader2 className="animate-spin" size={24} />
-          ) : (
-            <Sparkles
-              className="group-hover:rotate-12 transition-transform text-white/90"
-              size={24}
-            />
-          )}
-          Générer mes CV Optimisés
-        </button>
-      </div> */}
 
       <div className="flex flex-col items-center gap-3">
         <button

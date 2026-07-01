@@ -278,24 +278,18 @@ export default function HeroSection() {
               </p>
             </div>
           </div>
-
           {/* Right — Character image & Animation */}
           <div
-            className="
-    relative flex items-center justify-center
-    scale-[0.67] sm:scale-[0.85] lg:scale-95
-    mt-4 lg:mt-0
-    w-full
-    max-w-[250px] sm:max-w-[380px] lg:max-w-[450px]
-    h-[290px] sm:h-[440px] lg:h-[560px]
-    mx-auto
-  "
+            className="relative flex items-center justify-center mt-6 lg:mt-0 w-full max-w-[410px] sm:max-w-[460px] lg:max-w-[540px] aspect-square mx-auto"
+            style={{
+              // Maximized mobile baseline to 155px and boosted viewport scaling tracking
+              "--container-radius": "clamp(155px, 38vw, 250px)",
+            } as React.CSSProperties}
           >
             {/* Steps circular animation */}
             <div className="absolute inset-0 z-20 pointer-events-none">
               {STEPS.map((step, i) => {
-                const angle = (i * 90) - 45; // Start from top-leftish
-                const radius = 240;
+                const angle = (i * 90) - 45;
                 const isActive = i === activeStep;
                 const Icon = step.icon;
 
@@ -304,25 +298,25 @@ export default function HeroSection() {
                     key={i}
                     className="absolute transition-all duration-700 ease-in-out"
                     style={{
-                      left: `calc(50% + ${radius * Math.cos((angle * Math.PI) / 180)}px)`,
-                      top: `calc(50% + ${radius * Math.sin((angle * Math.PI) / 180)}px)`,
+                      left: `calc(50% + calc(var(--container-radius) * ${Math.cos((angle * Math.PI) / 180)}))`,
+                      top: `calc(50% + calc(var(--container-radius) * ${Math.sin((angle * Math.PI) / 180)}))`,
                       transform: "translate(-50%, -50%)",
                     }}
                   >
                     <div
-                      className={`flex flex-col items-center gap-2 transition-all duration-500 ${isActive ? 'scale-110' : 'scale-90 opacity-40 blur-[1px]'}`}
+                      className={`flex flex-col items-center gap-1.5 transition-all duration-500 ${isActive ? 'scale-100 sm:scale-110' : 'scale-75 sm:scale-90 opacity-40 blur-[0.5px]'}`}
                     >
                       <div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500"
+                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500"
                         style={{
                           background: isActive ? step.color : 'rgba(148,163,184,0.1)',
                           border: `2px solid ${isActive ? 'white' : 'rgba(226,232,240,0.8)'}`,
-                          boxShadow: isActive ? `0 0 40px ${step.color}60` : 'none',
+                          boxShadow: isActive ? `0 0 30px ${step.color}60` : 'none',
                         }}
                       >
-                        <Icon size={24} color={isActive ? 'white' : '#64748b'} />
+                        <Icon className="w-5 h-5 sm:w-6 sm:h-6" color={isActive ? 'white' : '#64748b'} />
                       </div>
-                      <span className={`text-[10px] font-black uppercase tracking-widest whitespace-nowrap px-3 py-1.5 rounded-xl border ${isActive ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'text-slate-500 bg-slate-50 border-slate-200'}`}>
+                      <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest whitespace-nowrap px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border ${isActive ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'text-slate-500 bg-slate-50 border-slate-200'}`}>
                         {step.title}
                       </span>
                     </div>
@@ -330,40 +324,41 @@ export default function HeroSection() {
                 );
               })}
 
-              {/* Rotating orbit ring */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] border border-slate-200 rounded-full animate-[spin_20s_linear_infinite]" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-dashed border-primary/10 rounded-full animate-[spin_30s_linear_infinite_reverse]" />
+              {/* Dynamic Responsive Orbit Rings */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(var(--container-radius)*2)] h-[calc(var(--container-radius)*2)] border border-slate-200 rounded-full animate-[spin_20s_linear_infinite]" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(var(--container-radius)*1.6)] h-[calc(var(--container-radius)*1.6)] border border-dashed border-emerald-500/10 rounded-full animate-[spin_30s_linear_infinite_reverse]" />
             </div>
 
-            {/* Character image */}
-            <div style={{ position: "relative", width: 420, height: 480 }}>
-              {/* Glow effect background */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    "radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)",
-                  borderRadius: "50%",
-                  filter: "blur(40px)",
-                  animation: "pulse 4s ease-in-out infinite",
-                }}
-              />
+            {/* Glow effect background */}
+            <div
+              style={{
+                position: "absolute",
+                width: "85%",
+                height: "85%",
+                background: "radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 75%)",
+                borderRadius: "50%",
+                filter: "blur(30px)",
+                animation: "pulse 4s ease-in-out infinite",
+                zIndex: 1,
+              }}
+            />
 
+            {/* Character Image Wrapper - Bumped up to 85% to give the character absolute maximum height */}
+            <div className="relative w-[85%] h-[85%] z-10 transition-transform duration-300">
               <Image
                 src="/hero.png"
                 alt="OuiCV AI Character"
                 fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 480px"
+                sizes="(max-width: 768px) 85vw, 450px"
                 className="object-contain"
                 style={{
-                  zIndex: 10,
-                  filter: "drop-shadow(0 40px 80px rgba(0,0,0,0.2))",
+                  filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.15))",
                 }}
                 priority
               />
             </div>
           </div>
+
         </div>
       </div>
 

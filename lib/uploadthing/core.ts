@@ -12,9 +12,17 @@ export const ourFileRouter = {
     .middleware(async () => {
       return {};
     })
+    // .onUploadComplete(async ({ file }) => {
+    //   console.log("Upload complete for url:", file.url);
+    //   return { url: file.url };
+    // }),
+
     .onUploadComplete(async ({ file }) => {
-      console.log("Upload complete for url:", file.url);
-      return { url: file.url };
+      console.log("Upload complete:", file.ufsUrl);
+
+      return {
+        ufsUrl: file.ufsUrl,
+      };
     }),
 } satisfies FileRouter;
 

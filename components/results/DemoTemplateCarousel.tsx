@@ -91,17 +91,6 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
           ))}
         </div>
 
-        {/* CTA
-        <div className="mt-12 text-center">
-          <button
-            onClick={() => handleClick(1)}
-            className="inline-flex items-center gap-3 bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 hover:scale-[1.02] active:scale-95 transition-all"
-          >
-            <Sparkles size={18} />
-            Personnaliser avec mon vrai CV
-            <ArrowRight size={18} />
-          </button> */}
-
         {/* CTA */}
         <div className="mt-12 text-center">
           <button
