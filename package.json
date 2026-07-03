@@ -5,9 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
     "lint": "eslint",
-    "install-browsers": "npm ci && PUPPETEER_PRODUCT=chrome npm install puppeteer@24.41.0 --save"
+    "install-browsers": "npm ci && PUPPETEER_PRODUCT=chrome npm install puppeteer@24.41.0 --save",
+    "test": "jest",
+    "test:run": "jest --ci --passWithNoTests",
+    "test:coverage": "jest --coverage",
+    "start": "next start -p ${PORT:-3000}"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.78",
@@ -76,14 +79,17 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/cheerio": "^0.22.35",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.19.39",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
-    "jest": "^30.3.0",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.11",
     "typescript": "^5",
     "ws": "^8.20.0"
   }
