@@ -155,6 +155,9 @@ const cspHeader = `
         https://clerk-telemetry.com
         https://*.turnstile.cloudflareresolve.com
         https://challenges.cloudflare.com
+        https://api.groq.com
+        https://generativelanguage.googleapis.com
+        https://api.openai.com
         ${isProd ? "" : "http://localhost:3000 https://giver-molar-judiciary.ngrok-free.dev http://192.168.1.12:3000 ws://localhost:3000 ws://192.168.1.12:3000"};
     worker-src 'self' blob:;
     upgrade-insecure-requests;

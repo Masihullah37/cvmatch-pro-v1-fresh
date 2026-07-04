@@ -1,0 +1,32 @@
+name: GDPR Cleanup — 30 Day Hard Delete
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    name: Hard Delete Users older than 30 Days
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger GDPR cleanup endpoint
+        run: |
+          echo "Starting GDPR cleanup..."
+
+          RESPONSE=$(curl -s -o /tmp/response.txt -w "%{http_code}" \
+            -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            "${{ secrets.NEXT_PUBLIC_APP_URL }}/api/admin/cleanup-deleted-users")
+
+          BODY=$(cat /tmp/response.txt)
+          echo "HTTP Status: $RESPONSE"
+          echo "Response: $BODY"
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "Cleanup failed with HTTP $RESPONSE"
+            exit 1
+          fi
+
+          echo "GDPR cleanup completed successfully"
