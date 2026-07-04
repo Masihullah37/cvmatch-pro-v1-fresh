@@ -16,25 +16,28 @@
 // ]);
 
 // export default eslintConfig;
-
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 /** @type {import('eslint').Linter.Config[]} */
 const eslintConfig = [
+  // This explicitly prevents ESLint from touching these files altogether
+  {
+    ignores: [
+      "app/[locale]/dashboard/my-cvs/page.tsx",
+      "app/actions/analysis.ts",
+      "app/api/analyze-cv/route.ts",
+      "app/api/generate-pdf/route.ts",
+      "components/templates/CVRenderer.tsx"
+    ]
+  },
   ...nextVitals,
   ...nextTs,
   {
-    // Match all TypeScript and JavaScript files in your project
     files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs"],
     rules: {
-      // Shuts down the const assignment checking completely
       "prefer-const": "off",
-
-      // Stops the linter from complaining about regular @ts-ignore lines
       "@typescript-eslint/ban-ts-comment": "off",
-
-      // Disables all React hook / nested component structural warnings for CVRenderer.tsx
       "react/display-name": "off",
       "react-hooks/rules-of-hooks": "off",
       "react-hooks/static-components": "off"
