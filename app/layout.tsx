@@ -14,17 +14,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <ClerkProvider
       afterSignOutUrl="/fr"
-      afterSignInUrl={`/${process.env.NEXT_PUBLIC_DEFAULT_LOCALE || 'fr'}/dashboard`}
-      afterSignUpUrl={`/${process.env.NEXT_PUBLIC_DEFAULT_LOCALE || 'fr'}/dashboard`}
       appearance={{
         variables: {
           colorPrimary: '#059669',
-          colorTextBase: '#020617',
-          colorTextSecondary: '#64748b',
+          // colorTextBase: '#020617',
+          colorForeground: '#020617',
+          // colorTextSecondary: '#64748b',
+          colorMutedForeground: '#64748b',
           colorBackground: '#ffffff',
           borderRadius: '1rem',
         },
-        layout: {
+        options: {
           socialButtonsPlacement: "top",
           socialButtonsVariant: "blockButton",
           shimmer: false,
