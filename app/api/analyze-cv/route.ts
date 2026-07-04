@@ -242,7 +242,7 @@ export async function POST(req: Request) {
     const { cvUrl, cvName, profileDescription, jobDescription, jobUrl, guestSessionId, locale } = parsed.data;
 
     let cvText = "";
-    let originalCvUrlForDb = cvUrl || "";
+    const originalCvUrlForDb = cvUrl || "";
 
     // ✅ Parse CV
     if (cvUrl) {
@@ -356,7 +356,7 @@ export async function POST(req: Request) {
         status: "completed",
         userName: rawData?.userName || "Candidat",
         jobTitle: rawData?.jobTitle || "Poste Visé",
-        // @ts-ignore - detectedPlatform will be recognized after schema reload
+        // @ts-expect-error - detectedPlatform will be recognized after schema reload
         detectedPlatform: detectedPlatform,
       })
       .returning({ id: cvAnalyses.id });

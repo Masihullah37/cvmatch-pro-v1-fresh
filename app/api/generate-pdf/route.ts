@@ -153,9 +153,9 @@ export async function POST(req: Request) {
 
     // 2. Browser Launch
     if (process.env.NODE_ENV === 'production') {
-      // @ts-ignore
+      // @ts-expect-error
       const chromium = (await import("@sparticuz/chromium")).default as any;
-      // @ts-ignore
+      // @ts-expect-error
       const puppeteerCore = (await import("puppeteer-core")) as any;
       browser = await puppeteerCore.launch({
         args: chromium.args,

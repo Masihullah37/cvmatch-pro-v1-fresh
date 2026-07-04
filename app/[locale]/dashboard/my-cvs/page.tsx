@@ -14,7 +14,7 @@ export default async function MyCVsPage() {
 
   if (!userId || !user) redirect("/sign-in");
 
-  let dbUser = await db.query.users.findFirst({
+  const dbUser = await db.query.users.findFirst({
     where: eq(users.clerkId, userId),
   });
 
