@@ -3,10 +3,10 @@ import nextTs from "eslint-config-next/typescript";
 
 /** @type {import('eslint').Linter.Config[]} */
 const eslintConfig = [
-  // Ignore files with known acceptable patterns
   {
     ignores: [
-      "app/[locale]/dashboard/my-cvs/page.tsx",
+      // Bracket paths need glob escape with \[ and \]
+      "app/\\[locale\\]/**",
       "app/actions/analysis.ts",
       "app/api/analyze-cv/route.ts",
       "app/api/generate-pdf/route.ts",
@@ -21,15 +21,12 @@ const eslintConfig = [
   {
     files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs"],
     rules: {
-      // Disabled globally — acceptable patterns in this codebase
       "prefer-const": "off",
       "@typescript-eslint/ban-ts-comment": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "react/display-name": "off",
       "react-hooks/rules-of-hooks": "off",
-      // This rule fires for components defined inside render — CVRenderer pattern
       "react-hooks/static-components": "off",
-      // Common Next.js patterns that trigger false positives
       "@next/next/no-img-element": "off",
     },
   },
