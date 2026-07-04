@@ -15,6 +15,13 @@
       "when": 1779137476582,
       "tag": "0001_blue_scalphunter",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783176339337,
+      "tag": "0002_skinny_emma_frost",
+      "breakpoints": true
     }
   ]
 }

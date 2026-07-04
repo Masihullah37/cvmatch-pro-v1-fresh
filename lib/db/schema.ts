@@ -47,7 +47,7 @@ export const cvAnalyses = pgTable('cv_analyses', {
   keywordsFound: jsonb('keywords_found'),
   optimizedData: jsonb('optimized_data'),
   status: analysisStatusEnum('status').default('processing'),
-  detectedPlatform: varchar('detected_platform', { length: 100 }),
+  detectedPlatform: varchar('detected_platform'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(), // Added for consistency and update operations
   deletedAt: timestamp('deleted_at'), // Added for soft delete
