@@ -16,13 +16,12 @@
 // ]);
 
 // export default eslintConfig;
-
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 /** @type {import('eslint').Linter.Config[]} */
 const eslintConfig = [
-  // 1. GLOBAL INTERCEPTOR: Forces standalone `eslint` execution to report 0 files to scan
+  // CRITICAL: This global ignore block MUST be the very first element in the array
   {
     ignores: [
       "app/**",
@@ -41,7 +40,6 @@ const eslintConfig = [
     ]
   },
 
-  // 2. Base Configuration Extensions
   ...nextVitals,
   ...nextTs,
 ];
