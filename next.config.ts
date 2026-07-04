@@ -161,9 +161,7 @@ const cspHeader = `
     upgrade-insecure-requests;
 `.replace(/\s{2,}/g, ' ').trim();
 
-// Change this line from: const nextConfig: NextConfig = {
-// To an unconstrained object or explicitly cast it:
-const nextConfig = {
+const nextConfig: NextConfig = {
   serverExternalPackages: ['pdf2json', 'mammoth', 'underscore', 'lop'],
   images: {
     formats: ['image/webp'],
@@ -172,11 +170,6 @@ const nextConfig = {
       { protocol: 'https', hostname: 'utfs.io' },
       { protocol: 'https', hostname: '*.uploadthing.com' },
     ],
-  },
-
-  // This will now pass through safely!
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 
   // This must be here to stop the "Blocked cross-origin" error
@@ -217,8 +210,7 @@ const nextConfig = {
   },
 };
 
-// Cast the object to NextConfig during the export step so Sentry doesn't complain
-export default withSentryConfig(withNextIntl(nextConfig as NextConfig), {
+export default withSentryConfig(withNextIntl(nextConfig), {
   org: process.env.SENTRY_ORG || "your-org-name",
   project: "cvmatch-pro",
   silent: true,
