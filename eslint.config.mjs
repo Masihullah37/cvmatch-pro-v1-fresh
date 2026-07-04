@@ -17,42 +17,50 @@
 
 // export default eslintConfig;
 
-import { defineConfig, globalIgnores } from "eslint/config";
+
+
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
-const eslintConfig = defineConfig([
+/** @type {import('eslint').Linter.Config[]} */
+const eslintConfig = [
   ...nextVitals,
   ...nextTs,
+
+  // GLOBAL OVERRIDES (No "files" key means this applies to absolutely everything)
   {
-    // Apply zero-tolerance suppression overrides across the codebase
-    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
     rules: {
-      // 1. Core JS Rules & TS Flag Annotations
+      // Bypasses the 'dbUser' and 'originalCvUrlForDb' const reassignments
       "prefer-const": "off",
+
+      // Bypasses the compiler checks for // @ts-ignore
       "@typescript-eslint/ban-ts-comment": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-require-imports": "off",
       "@typescript-eslint/no-unused-vars": "off",
 
-      // 2. Next.js Structural Tags
+      // Next.js layout overrides
       "@next/next/no-img-element": "off",
 
-      // 3. React Layout & Deep Hook Component Nesting Exceptions
+      // Shuts down the nested components & state rules inside CVRenderer.tsx
       "react/no-unescaped-entities": "off",
       "react-hooks/exhaustive-deps": "off",
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/static-components": "off"
     }
   },
-  globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    "*.js",
-    "scripts/**"
-  ]),
-]);
+
+  // Global Ignores configuration block
+  {
+    ignores: [
+      ".next/**",
+      "out/**",
+      "build/**",
+      "next-env.d.ts",
+      "*.js",
+      "scripts/**"
+    ]
+  }
+];
 
 export default eslintConfig;
