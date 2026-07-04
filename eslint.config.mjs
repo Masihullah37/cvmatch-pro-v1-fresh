@@ -17,7 +17,6 @@
 
 // export default eslintConfig;
 
-
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
@@ -26,16 +25,16 @@ const eslintConfig = [
   ...nextVitals,
   ...nextTs,
   {
-    // Apply globally to all TypeScript and JavaScript files
+    // Match all TypeScript and JavaScript files in your project
     files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs"],
     rules: {
-      // 1. Turn off the 'const' reassignment warning
+      // Shuts down the const assignment checking completely
       "prefer-const": "off",
 
-      // 2. Turn off the ban on standard @ts-ignore comments
+      // Stops the linter from complaining about regular @ts-ignore lines
       "@typescript-eslint/ban-ts-comment": "off",
 
-      // 3. Turn off warnings about creating components inside other components (CVRenderer.tsx)
+      // Disables all React hook / nested component structural warnings for CVRenderer.tsx
       "react/display-name": "off",
       "react-hooks/rules-of-hooks": "off",
       "react-hooks/static-components": "off"

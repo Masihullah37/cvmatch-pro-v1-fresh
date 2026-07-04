@@ -61,7 +61,7 @@ jobs:
       
     - name: Lint
       # "|| true" ensures that even if ESLint finds errors, the pipeline continues smoothly
-      run: npm run lint || true
+      run: npm run lint
       
     # - name: Run Unit Tests
     #   run: npm run test
