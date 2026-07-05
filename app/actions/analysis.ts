@@ -171,7 +171,6 @@ export async function performCVAnalysis(formData: FormData) {
         ...rawData,
         _originalCvText: cvText, // Store raw text inside JSON to avoid schema changes
       },
-      // @ts-expect-error - detectedPlatform requires schema sync
       detectedPlatform: detectedPlatform,
     }).returning();
     newAnalysis = result[0];

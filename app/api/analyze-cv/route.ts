@@ -356,7 +356,6 @@ export async function POST(req: Request) {
         status: "completed",
         userName: rawData?.userName || "Candidat",
         jobTitle: rawData?.jobTitle || "Poste Visé",
-        // @ts-expect-error - detectedPlatform will be recognized after schema reload
         detectedPlatform: detectedPlatform,
       })
       .returning({ id: cvAnalyses.id });
