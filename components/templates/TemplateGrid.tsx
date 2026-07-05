@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, react-hooks/immutability, react/no-unescaped-entities */
+/* eslint-disable react-hooks/immutability */
 
 import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties, use } from "react";
 import { useSearchParams, useRouter } from "next/navigation";

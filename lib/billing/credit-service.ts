@@ -21,7 +21,7 @@ type CreditDeductReason = "ai_generation" | "manual_download";
 // A minimal subset of a Drizzle transaction that both functions accept.
 // Using `any` here avoids coupling to drizzle internals while staying typesafe
 // enough for practical use.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type DrizzleTx = any;
 
 interface AddCreditsParams {
