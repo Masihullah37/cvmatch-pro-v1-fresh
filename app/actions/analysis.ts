@@ -29,7 +29,7 @@ export async function performCVAnalysis(formData: FormData) {
 
   if (userId) {
     // Resolve/Sync User only if logged in
-    let dbUser = await db.query.users.findFirst({
+    const dbUser = await db.query.users.findFirst({
       where: and(
         eq(users.clerkId, userId),
         isNull(users.deletedAt)
@@ -171,7 +171,7 @@ export async function performCVAnalysis(formData: FormData) {
         ...rawData,
         _originalCvText: cvText, // Store raw text inside JSON to avoid schema changes
       },
-      // @ts-ignore
+      // @ts-expect-error - detectedPlatform requires schema sync
       detectedPlatform: detectedPlatform,
     }).returning();
     newAnalysis = result[0];
@@ -714,7 +714,7 @@ export async function createQuickCVAnalysis() {
   let dbUserId: string | null = null;
 
   if (userId) {
-    let dbUser = await db.query.users.findFirst({
+    const dbUser = await db.query.users.findFirst({
       where: and(eq(users.clerkId, userId), isNull(users.deletedAt)),
     });
 

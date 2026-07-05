@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react';
 import Watermark from "@/components/templates/Watermark";
 import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";

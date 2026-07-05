@@ -76,7 +76,7 @@ export default async function MyCVsPage() {
               <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <FileText size={22} className="text-slate-300" />
               </div>
-              <p className="text-slate-400 font-bold text-sm">Vous n'avez pas encore généré de CV.</p>
+              <p className="text-slate-400 font-bold text-sm">{"Vous n'avez pas encore généré de CV."}</p>
               <Link href="/" className="inline-flex items-center gap-2 mt-4 text-primary text-xs font-black uppercase tracking-widest hover:gap-3 transition-all">
                 Lancer une analyse <ArrowRight size={12} />
               </Link>
@@ -125,7 +125,7 @@ export default async function MyCVsPage() {
               <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
                 <FileText size={28} className="text-slate-300" />
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">Pas encore d'analyses</h3>
+              <h3 className="text-xl font-black text-slate-900 mb-2">{"Pas encore d'analyses"}</h3>
               <p className="text-slate-400 text-sm mb-6 max-w-xs mx-auto">
                 Analysez votre premier CV pour voir vos scores et générer des modèles optimisés.
               </p>
