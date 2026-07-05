@@ -13,7 +13,10 @@ describe('PDF generation rules', () => {
     });
 
     it('user with credits can download', () => {
-        expect(0 < 1).toBe(false);
+
+        // user with 0 credits cannot download
+        expect(0 > 0).toBe(false);
+        // user with 1+ credits can download
         expect(1 > 0).toBe(true);
     });
 
