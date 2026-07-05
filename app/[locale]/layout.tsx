@@ -16,6 +16,20 @@ const font = Quicksand({ subsets: ['latin'], weight: ['300', '400', '500', '600'
 import PromotionModal from '@/components/common/PromotionModal';
 import { getSiteSettings } from '@/lib/actions/admin';
 
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://ouicv.fr'), // Replace with your actual domain
+    title: 'OuiCV',
+    description: 'Optimize your CV and match with your dream jobs.',
+    alternates: {
+      canonical: `/${locale}`,
+    },
+  };
+}
+
 export default async function LocaleLayout({
   children,
   params,
