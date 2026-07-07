@@ -12,7 +12,8 @@ import { and, eq, isNull } from "drizzle-orm";
 import { Ratelimit } from "@upstash/ratelimit";
 import { redis } from "@/lib/rate-limit/upstash";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY || "re_dummy_key_for_build";
+const resend = new Resend(resendApiKey);
 
 // Rate limit: 5 requests per IP per hour
 const ratelimit = new Ratelimit({

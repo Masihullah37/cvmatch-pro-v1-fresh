@@ -74,5 +74,9 @@ jobs:
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           UPLOADTHING_SECRET: ${{ secrets.UPLOADTHING_SECRET }}
           UPLOADTHING_APP_ID: ${{ secrets.UPLOADTHING_APP_ID }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+          NEXT_PUBLIC_HCAPTCHA_SITE_KEY: ${{ secrets.NEXT_PUBLIC_HCAPTCHA_SITE_KEY }}
+          HCAPTCHA_SECRET_KEY: ${{ secrets.HCAPTCHA_SECRET_KEY }}
           NEXT_PUBLIC_DEFAULT_LOCALE: fr
           NODE_ENV: production
