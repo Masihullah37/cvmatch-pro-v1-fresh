@@ -1,0 +1,134 @@
+# name: Deploy to Production
+
+# on:
+#   push:
+#     branches: [main]
+
+# jobs:
+#   test-and-build:
+#     name: Test + Build Verification
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: 'npm'
+
+#       - name: Install dependencies
+#         run: npm ci
+
+#       - name: Run unit tests
+#         run: npm run test:run
+#         env:
+#           TRACKING_SALT: test-salt-32-characters-minimum-value
+#           CRON_SECRET: test-cron-secret-only
+#           NODE_ENV: test
+#           NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+#       - name: Build verification
+#         run: npm run build
+#         env:
+#           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+#           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+#           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+#           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+#           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+#           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+#           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+#           NEXT_PUBLIC_APP_URL: https://ouicv.fr
+#           TRACKING_SALT: ${{ secrets.TRACKING_SALT }}
+#           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+#           PRIMARY_LLM_API_KEY: ${{ secrets.PRIMARY_LLM_API_KEY }}
+#           PRIMARY_LLM_PROVIDER: groq
+#           PRIMARY_LLM_MODEL: llama-3.3-70b-versatile
+#           CLERK_WEBHOOK_SECRET: ${{ secrets.CLERK_WEBHOOK_SECRET }}
+#           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+#           UPLOADTHING_SECRET: ${{ secrets.UPLOADTHING_SECRET }}
+#           UPLOADTHING_APP_ID: ${{ secrets.UPLOADTHING_APP_ID }}
+#           NEXT_PUBLIC_DEFAULT_LOCALE: fr
+
+#       - name: Notify Railway deploy
+#         run: |
+#           echo "✅ Tests passed. Build verified."
+#           echo "🚀 Railway auto-deploys from this push to main."
+#           echo "Monitor at: https://railway.app"
+
+
+name: Deploy — Verify Before Railway
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # ── Runs full test + build on every merge to main ───────
+  # Railway auto-deploys from GitHub — this workflow 
+  # acts as a final gate that confirms the build is clean
+  # BEFORE Railway picks it up
+  verify-deployment:
+    name: Verify Build Before Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run unit tests
+        run: npm run test:run
+        env:
+          TRACKING_SALT: test-salt-32-characters-minimum-value
+          CRON_SECRET: test-cron-secret-only
+          NODE_ENV: test
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Build verification
+        run: npm run build
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          CLERK_WEBHOOK_SECRET: ${{ secrets.CLERK_WEBHOOK_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_ONE_TIME_PRICE_ID: ${{ secrets.STRIPE_ONE_TIME_PRICE_ID }}
+          STRIPE_SUBSCRIPTION_PRICE_ID: ${{ secrets.STRIPE_SUBSCRIPTION_PRICE_ID }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          PRIMARY_LLM_PROVIDER: groq
+          PRIMARY_LLM_MODEL: qwen/qwen3.6-27b
+          PRIMARY_LLM_API_KEY: ${{ secrets.PRIMARY_LLM_API_KEY }}
+          FALLBACK_LLM_PROVIDER: google
+          FALLBACK_LLM_MODEL: gemini-1.5-flash
+          FALLBACK_LLM_API_KEY: ${{ secrets.FALLBACK_LLM_API_KEY }}
+          # UPLOADTHING_SECRET: ${{ secrets.UPLOADTHING_SECRET }}
+          UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
+          # NEXT_PUBLIC_APP_URL: https://ouicv.fr
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          TRACKING_SALT: ${{ secrets.TRACKING_SALT }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+          NEXT_PUBLIC_HCAPTCHA_SITE_KEY: ${{ secrets.NEXT_PUBLIC_HCAPTCHA_SITE_KEY }}
+          HCAPTCHA_SECRET_KEY: ${{ secrets.HCAPTCHA_SECRET_KEY }}
+          NEXT_PUBLIC_DEFAULT_LOCALE: fr
+          NODE_ENV: production
+
+      - name: Confirm Railway will auto-deploy
+        run: |
+          echo "✅ Tests passed"
+          echo "✅ Build verified"
+          echo "🚀 Railway is now deploying automatically"
+          echo "📊 Monitor at: https://railway.app"
