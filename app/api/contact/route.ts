@@ -174,24 +174,46 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`;
 
+        // // ── Dynamic Environment Config ────────────────────────
+        // const isDevelopment = process.env.NODE_ENV === "development";
+
+        // // In dev phase, Resend requires 'onboarding@resend.dev'
+        // const fromEmail = isDevelopment
+        //     ? "OuiCV Contact <onboarding@resend.dev>"
+        //     : `OuiCV Contact <${process.env.CONTACT_EMAIL || "contact@ouicv.fr"}>`;
+
+        // // Destination target email setup
+        // const toEmail = process.env.CONTACT_EMAIL || "contact@ouicv.fr";
+
+        // // ADD THIS LINE RIGHT HERE BEFORE SENDING:
+        // const recipients = isDevelopment ? [toEmail, toEmail] : [toEmail, email];
+
+        // // ── Send email via Resend ─────────────────────────────
+        // const { error: sendError } = await resend.emails.send({
+        //     from: fromEmail,
+        //     to: recipients, // <-- This will now compile perfectly
+        //     replyTo: email,
+        //     subject: `[OuiCV Contact] ${subject}`,
+        //     html: emailHtml,
+        // });
+
         // ── Dynamic Environment Config ────────────────────────
-        const isDevelopment = process.env.NODE_ENV === "development";
+        // This pulls the sender from your environment variables, falling back to sandbox if empty
+        const fromEmail = process.env.RESEND_FROM_EMAIL || "OuiCV Contact <onboarding@resend.dev>";
 
-        // In dev phase, Resend requires 'onboarding@resend.dev'
-        const fromEmail = isDevelopment
-            ? "OuiCV Contact <onboarding@resend.dev>"
-            : `OuiCV Contact <${process.env.CONTACT_EMAIL || "contact@ouicv.fr"}>`;
+        // Destination target email setup (Pulling your verified Resend account sign up email)
+        const toEmail = process.env.CONTACT_EMAIL || "p90156705@gmail.com";
 
-        // Destination target email setup
-        const toEmail = process.env.CONTACT_EMAIL || "contact@ouicv.fr";
+        // Determine if we are running in full production mode with a custom verified domain
+        const isRealProduction = !fromEmail.includes("onboarding@resend.dev");
 
-        // ADD THIS LINE RIGHT HERE BEFORE SENDING:
-        const recipients = isDevelopment ? [toEmail, toEmail] : [toEmail, email];
+        // Sandbox only allows sending to yourself. Production sends a copy to both you and the user!
+        const recipients = isRealProduction ? [toEmail, email] : [toEmail];
 
         // ── Send email via Resend ─────────────────────────────
         const { error: sendError } = await resend.emails.send({
             from: fromEmail,
-            to: recipients, // <-- This will now compile perfectly
+            to: recipients,
             replyTo: email,
             subject: `[OuiCV Contact] ${subject}`,
             html: emailHtml,
