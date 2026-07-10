@@ -46,11 +46,11 @@ function findMissingKeywords(
 export async function validateOptimizedCV(
   optimizedCV: any,
   analysisResult: {
-    keywordsMissing?: string[];
-    keywordsFound?: string[];
-    atsScore?: number;
-    suggestions?: string[];
-    flaws?: string[];
+    keywordsMissing?: string[] | null;
+    keywordsFound?: string[] | null;
+    atsScore?: number | null;
+    suggestions?: string[] | null;
+    flaws?: string[] | null;
   }
 ) {
 
@@ -174,7 +174,7 @@ Return JSON only.
     return repaired;
 
 
-  } catch(error) {
+  } catch (error) {
 
     console.error(
       "Resume validation failed:",
