@@ -33,18 +33,16 @@ export async function POST(req: Request) {
     }
   );
 
-    const optimizedContent = await generateOptimizedCV(
-       originalText,
-       analysis.jobDescription || "",
-      {
-       atsScore: analysis.atsScore,
-       scoreBreakdown: analysis.scoreBreakdown,
-       flaws: analysis.flaws,
-       suggestions: analysis.suggestions,
-       keywordsMissing: analysis.keywordsMissing,
-       keywordsFound: analysis.keywordsFound,
-      }
-    );
+    const optimizedContent = await validateOptimizedCV(
+    generatedContent,
+   {
+    atsScore: analysis.atsScore,
+    flaws: analysis.flaws,
+    suggestions: analysis.suggestions,
+    keywordsMissing: analysis.keywordsMissing,
+    keywordsFound: analysis.keywordsFound,
+    }
+  );
 
     if (!optimizedContent) {
       throw new Error("AI Optimization failed");

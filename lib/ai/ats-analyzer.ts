@@ -308,15 +308,19 @@ Follow EVERY ATS suggestion whenever possible.
 
 Fix EVERY detected ATS weakness whenever possible.
 
-Every missing keyword that can truthfully fit MUST appear somewhere inside the optimized CV.
+Integrate as many missing ATS keywords as truthfully possible.
 
-Never invent fake experience.
+Prefer placing them in:
+- Professional Summary
+- Skills
+- Experience bullet points
+- Project technologies
 
-Never invent fake companies.
+If multiple related keywords belong to the candidate's demonstrated profession, rewrite existing content so they fit naturally.
 
-Never invent fake projects.
+Never invent employers, projects, employment dates or certifications.
 
-Only strengthen existing information.
+Strengthen and expand existing experience instead of creating new experience.
 
 `
 }
@@ -356,15 +360,63 @@ MANDATORY RULES
    - experience descriptions
    - summary
 
-13. Improve keyword density for ATS while remaining natural.
+13. Improve keyword density naturally without keyword stuffing.
 
-14. Never keyword stuff.
+14. Never invent employers, job titles, employment dates, projects, certifications or degrees.
 
-15. Never fabricate certifications, degrees or technologies the candidate clearly never used.
+15. You MAY infer closely related professional skills ONLY when ALL of the following are true:
+   - the missing keyword belongs to the same professional domain,
+   - the candidate already demonstrates closely related experience,
+   - the inferred skill is commonly associated with that role,
+   - the wording remains truthful and does not claim expert-level experience.
 
-16. Preserve the original CV language exactly (French stays French, English stays English).
+Examples:
 
-17. Return ONLY valid JSON.
+Software Engineering
+- React → TypeScript ✔
+- React → Redux ✔
+- Node.js → REST API ✔
+- Node.js → Express ✔
+- Docker → Kubernetes ✔ only if containerization/cloud deployment is already evident.
+- Git → GitHub ✔
+
+Accounting
+- Bookkeeping → Accounts Payable ✔
+- Accounts Payable → Accounts Receivable ✔
+- QuickBooks → Financial Reporting ✔ when accounting work clearly supports it.
+
+Nursing
+- Patient Care → Vital Signs ✔
+- Medication Administration → Electronic Health Records ✔
+
+Construction
+- General Construction → Site Safety ✔
+- Carpentry → Blueprint Reading ✔
+
+Electrician
+- Electrical Wiring → Circuit Testing ✔
+- Electrical Installation → Troubleshooting ✔
+
+Plumbing
+- Pipe Installation → Leak Detection ✔
+
+Administrative / Reception
+- Microsoft Office → Outlook ✔
+- Scheduling → Calendar Management ✔
+
+DO NOT infer unrelated skills.
+
+Examples of forbidden inference:
+- React → Java ✘
+- Accountant → Lawyer ✘
+- Nurse → Doctor ✘
+- Docker → AWS ✘ unless cloud experience is already demonstrated.
+
+16. If a missing keyword cannot truthfully fit, leave it out rather than forcing it into the resume.
+
+17. Preserve the original CV language exactly.
+
+18. Return ONLY valid JSON.
 
 ==================================================
 OUTPUT FORMAT
@@ -464,22 +516,27 @@ ${structuredContext}
       portfolio: parsed.contact.portfolio || "",
     };
 
-    return parsed;
-  } catch (error: any) {
-    console.error("generateOptimizedCV Error:", error?.message || error);
+    return parsed;} 
 
-    // Return structured error object (doesn't crash the UI)
-    return {
-      userName: "Erreur",
-      jobTitle: "Vérifiez les logs",
-      summary: `Erreur IA: ${error?.message || "Erreur inconnue"}`,
-      contact: { email: "", phone: "", location: "", linkedin: "", github: "", portfolio: "" },
-      experience: [],
-      education: [],
-      projects: [],
-      skills: [],
-      languages: [],
-      interests: [],
-    };
-  }
+    catch (error: any) {
+    console.error("generateOptimizedCV Error:", error?.message || error);
+    throw error;
+    }
+    // catch (error: any) {
+  //   console.error("generateOptimizedCV Error:", error?.message || error);
+
+  //   // Return structured error object (doesn't crash the UI)
+  //   return {
+  //     userName: "Erreur",
+  //     jobTitle: "Vérifiez les logs",
+  //     summary: `Erreur IA: ${error?.message || "Erreur inconnue"}`,
+  //     contact: { email: "", phone: "", location: "", linkedin: "", github: "", portfolio: "" },
+  //     experience: [],
+  //     education: [],
+  //     projects: [],
+  //     skills: [],
+  //     languages: [],
+  //     interests: [],
+  //   };
+  // }
 }
