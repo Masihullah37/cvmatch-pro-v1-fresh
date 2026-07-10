@@ -749,16 +749,6 @@ const EditorContent = ({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-// export default function TemplateGrid({
-//   templates: initialTemplates,
-//   userCredits: initialUserCredits,
-//   isExpired = false,
-//   analysisId,
-//   analysisData,
-//   initialTemplate,
-//   plan,
-// }: any) {
-
 export default function TemplateGrid({
   templates: initialTemplates,
   userCredits: initialUserCredits,
@@ -796,14 +786,6 @@ export default function TemplateGrid({
   const editingDataRef = useRef<any>(null);
   const previewViewportRef = useRef<HTMLDivElement>(null);
   const hasRestoredEdits = useRef(false);
-
-  // useEffect(() => {
-  //   editingDataRef.current = editingData;
-  // }, [editingData]);
-
-  // useEffect(() => {
-  //   setTemplates(initialTemplates);
-  // }, [initialTemplates]);
 
   useEffect(() => {
     editingDataRef.current = editingData;
@@ -972,84 +954,6 @@ export default function TemplateGrid({
     setShowModelPicker(false);
   };
 
-  // const handleGenerateAI = async () => {
-  //   // ✅ Fix: Anonymous users should always be prompted to login first
-  //   if (plan === "anonymous") {
-  //     setShowGuestAuthModal(true);
-  //     return;
-  //   }
-  //   // const handleGenerateAI = async () => {
-  //   //   // 🔍 Intercept empty generation to protect user credits and prevent blank CVs
-  //   //   const hasCvContent = analysisData?.optimizedData && Object.keys(analysisData.optimizedData).length > 0;
-  //   //   const hasJobInfo = analysisData?.jobDescription?.trim() || analysisData?.jobUrl?.trim();
-
-  //   //   if (!hasCvContent || !hasJobInfo) {
-  //   //     toast.error("Analyse manquante !", {
-  //   //       description: "Veuillez d'abord analyser votre CV avec une offre d'emploi pour obtenir votre score ATS avant de générer votre CV optimisé par l'IA.",
-  //   //       duration: 6000,
-  //   //     });
-
-  //   //     // Smoothly scroll down if the inputs exist on the same page workspace
-  //   //     const inputSection = document.getElementById("analysis-section") || document.getElementById("ats-form");
-  //   //     if (inputSection) {
-  //   //       inputSection.scrollIntoView({ behavior: "smooth" });
-  //   //     } else {
-  //   //       // Redirect directly to the analysis step
-  //   //       router.push(`/${locale}/dashboard/analyse`);
-  //   //     }
-  //   //     return;
-  //   //   }
-
-  //   //   // ✅ Fix: Anonymous users should always be prompted to login first
-  //   //   if (plan === "anonymous") {
-  //   //     setShowGuestAuthModal(true);
-  //   //     return;
-  //   //   }
-
-  //   if (isExpired && !hasPaid) {
-
-  //     if (isExpired && !hasPaid) {
-  //       setShowPaywall(true);
-  //       return;
-  //     }
-  //     if (userCredits < 1 && !hasPaid) { setShowPaywall(true); return; }
-  //     try {
-  //       setIsGeneratingAI(true);
-
-  //       // Deduct credit first if not already paid
-  //       if (!hasPaid) {
-  //         try {
-  //           const creditRes = await deductCreditForAnalysis(analysisId);
-  //           if (creditRes.success) {
-  //             if (!creditRes.alreadyPaid && userCredits > 0) {
-  //               setUserCredits(prev => prev - 1);
-  //             }
-  //             setTemplates(prev => prev.map(t => ({ ...t, isPaid: true })));
-  //             router.refresh();
-  //           }
-  //         } catch (err: any) {
-  //           setShowPaywall(true); // Only show paywall for logged-in users
-  //           return;
-  //         }
-  //       }
-
-  //       const res = await fetch("/api/generate-templates", {
-  //         method: "POST",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify({ analysisId }),
-  //       });
-  //       if (!res.ok) throw new Error("Erreur lors de la génération IA");
-  //       const result = await res.json();
-  //       if (result.success) {
-  //         router.refresh();
-  //       }
-  //     } catch (err: any) {
-  //       setShowPaywall(true); // Only show paywall for logged-in users
-  //     } finally {
-  //       setIsGeneratingAI(false);
-  //     }
-  //   };
-
   const handleGenerateAI = async () => {
     // ✅ Fix: Anonymous users should always be prompted to login first
     if (plan === "anonymous") {
@@ -1116,22 +1020,6 @@ export default function TemplateGrid({
     }
   };
 
-  // async function persistEdits(data: any) {
-  //   try {
-  //     const res = await fetch("/api/update-cv-data", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({
-  //         analysisId,
-  //         templateId: selectedTemplate,
-  //         optimizedData: data,
-  //       }),
-  //     });
-  //     return res.ok;
-  //   } catch {
-  //     return false;
-  //   }
-  // };
 
   const handleSave = async () => {
     if (!selectedTemplate || !editingData) return;
@@ -1394,7 +1282,7 @@ export default function TemplateGrid({
   // ── Drag & Drop Logic ──
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 15 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 

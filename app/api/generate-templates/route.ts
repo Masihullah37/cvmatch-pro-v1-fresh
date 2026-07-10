@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { cvAnalyses, cvTemplates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateOptimizedCV } from '@/lib/ai/ats-analyzer';
+import { validateOptimizedCV } from '@/lib/ai/resume-validator';
 
 export async function POST(req: Request) {
   try {
@@ -17,14 +18,31 @@ export async function POST(req: Request) {
     }
 
     // Run real AI optimization
-    const originalText = (analysis.optimizedData as any)?._originalCvText || "";
-    
+     const originalText = (analysis.optimizedData as any)?._originalCvText || "";
+
+     const generatedContent = await generateOptimizedCV(
+     originalText,
+     analysis.jobDescription || "",
+    {
+     atsScore: analysis.atsScore,
+     scoreBreakdown: analysis.scoreBreakdown,
+     flaws: analysis.flaws,
+     suggestions: analysis.suggestions,
+     keywordsMissing: analysis.keywordsMissing,
+     keywordsFound: analysis.keywordsFound,
+    }
+  );
+
     const optimizedContent = await generateOptimizedCV(
-      originalText,
-      analysis.jobDescription || "",
+       originalText,
+       analysis.jobDescription || "",
       {
-        atsScore: analysis.atsScore,
-        keywordsMissing: analysis.keywordsMissing,
+       atsScore: analysis.atsScore,
+       scoreBreakdown: analysis.scoreBreakdown,
+       flaws: analysis.flaws,
+       suggestions: analysis.suggestions,
+       keywordsMissing: analysis.keywordsMissing,
+       keywordsFound: analysis.keywordsFound,
       }
     );
 
