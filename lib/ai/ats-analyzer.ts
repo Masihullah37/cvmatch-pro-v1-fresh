@@ -51,14 +51,34 @@ function extractJSON(text: string): string {
 // ─────────────────────────────────────────────────────────────
 // 🔒 SAFE PARSER
 // ─────────────────────────────────────────────────────────────
+// function safeParse(text: string): any {
+//   try {
+//     const jsonString = extractJSON(text);
+//     return JSON.parse(jsonString);
+//   } catch (err: any) {
+//     console.error("❌ JSON PARSE FAILED");
+//     console.error("RAW RESPONSE (first 1000 chars):", text.substring(0, 1000));
+//     throw new Error(`Invalid JSON returned by AI: ${err.message}`);
+//   }
+// }
+
 function safeParse(text: string): any {
   try {
     const jsonString = extractJSON(text);
+
     return JSON.parse(jsonString);
+
   } catch (err: any) {
+
     console.error("❌ JSON PARSE FAILED");
-    console.error("RAW RESPONSE (first 1000 chars):", text.substring(0, 1000));
-    throw new Error(`Invalid JSON returned by AI: ${err.message}`);
+    console.error(
+      "RAW RESPONSE (first 1000 chars):",
+      text.substring(0, 1000)
+    );
+
+    throw new Error(
+      `Invalid JSON returned by AI: ${err.message}`
+    );
   }
 }
 
@@ -149,7 +169,7 @@ ${structuredContext}`;
     const text = await generateLLMResponse({
       prompt,
       temperature: 0.1,
-      maxTokens: 3000,
+      maxTokens: 6000,
     });
 
     const parsed = safeParse(text);
@@ -273,10 +293,10 @@ Your goal is NOT simply to rewrite the CV.
 Your goal is to MAXIMIZE the ATS score while remaining 100% truthful.
 
 ${isGeneral
-? `
+      ? `
 Optimize this CV according to modern professional resume best practices.
 `
-: `
+      : `
 Optimize this CV specifically for the following Job Description.
 
 ==============================
@@ -323,7 +343,7 @@ Never invent employers, projects, employment dates or certifications.
 Strengthen and expand existing experience instead of creating new experience.
 
 `
-}
+    }
 
 ==================================================
 MANDATORY RULES
@@ -416,7 +436,17 @@ Examples of forbidden inference:
 
 17. Preserve the original CV language exactly.
 
-18. Return ONLY valid JSON.
+18. IMPORTANT FINAL VALIDATION:
+
+Before returning the answer:
+- Verify JSON syntax is valid.
+- Close every object with }.
+- Close every array with ].
+- Escape all quotes inside strings.
+- Do not stop generation before completing the JSON.
+- If the CV is long, shorten descriptions instead of cutting JSON.
+
+19. Return ONLY valid JSON.
 
 ==================================================
 OUTPUT FORMAT
@@ -483,8 +513,8 @@ ${structuredContext}
   try {
     const text = await generateLLMResponse({
       prompt,
-      temperature: 0.2,
-      maxTokens: 3000,
+      temperature: 0.1,
+      maxTokens: 6000,
     });
 
     console.log("=== generateOptimizedCV LLM Response (first 500 chars) ===");
@@ -516,13 +546,14 @@ ${structuredContext}
       portfolio: parsed.contact.portfolio || "",
     };
 
-    return parsed;} 
+    return parsed;
+  }
 
-    catch (error: any) {
+  catch (error: any) {
     console.error("generateOptimizedCV Error:", error?.message || error);
     throw error;
-    }
-    // catch (error: any) {
+  }
+  // catch (error: any) {
   //   console.error("generateOptimizedCV Error:", error?.message || error);
 
   //   // Return structured error object (doesn't crash the UI)

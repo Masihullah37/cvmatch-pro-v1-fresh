@@ -50,7 +50,7 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4">
             <Sparkles size={12} />
-            20 Modèles Professionnels
+            28 Modèles Professionnels
           </div>
           <h2 className="text-3xl md:text-4xl font-black text-slate-950 leading-tight mb-4">
             Modèles CV Recommandés
