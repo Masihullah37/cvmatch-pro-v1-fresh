@@ -14,14 +14,16 @@ const DraggableSectionInteractive = ({ id, onDelete, children, style: extraStyle
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : 'auto',
+    // 🚀 CRITICAL MOBILE FIX: Stops the background window from scrolling when dragging a container!
+    touchAction: 'none'
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={`group relative ${className}`}>
+    <div ref={setNodeRef} style={style} className={`group relative select-none ${className}`}>
       <div
         {...attributes}
         {...listeners}
-        className="cv-section-controls absolute -left-1 top-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1.5 bg-white rounded-md shadow-md border border-slate-300 text-slate-600 hover:text-slate-900 hover:border-slate-400 transition-all z-[100]"
+        className="cv-section-controls absolute -left-1 top-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1.5 bg-white rounded-md shadow-md border border-slate-300 text-slate-600 hover:text-slate-900 touch-none hover:border-slate-400 transition-all z-[100]"
         title="Déplacer"
       >
         <GripVertical size={14} strokeWidth={2.5} />

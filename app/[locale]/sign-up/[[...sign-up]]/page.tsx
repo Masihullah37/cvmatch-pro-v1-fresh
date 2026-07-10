@@ -101,10 +101,10 @@ export default function CustomSignUpPage() {
                   formFieldRow: "!w-full",
                   form: "!w-full",
                   formButtonPrimary: "!w-full",
-                  socialButtonsBlockButton: "!w-full",
-                  socialButtons: "!w-full",
-                  dividerRow: "!w-full",
-                },
+                  socialButtons: "!w-full flex flex-col gap-2",
+                  socialButtonsBlockButton: "!w-full !min-w-0 flex items-center justify-center gap-2 !px-3",
+                  socialButtonsBlockButtonText: "!text-xs md:!text-sm !overflow-visible !whitespace-normal !line-clamp-none",
+                  socialButtonsProviderIcon: "!shrink-0",
               }}
             />
           ) : (
