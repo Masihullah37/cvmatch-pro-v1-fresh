@@ -66,14 +66,27 @@ function safeParse(text: string): any {
   try {
     const jsonString = extractJSON(text);
 
-    return JSON.parse(jsonString);
+    try {
+      return JSON.parse(jsonString);
+
+    } catch {
+
+      console.warn("⚠ Attempting JSON repair...");
+
+      const { jsonrepair } = require("jsonrepair");
+
+      return JSON.parse(
+        jsonrepair(jsonString)
+      );
+    }
 
   } catch (err: any) {
 
     console.error("❌ JSON PARSE FAILED");
+
     console.error(
-      "RAW RESPONSE (first 1000 chars):",
-      text.substring(0, 1000)
+      "RAW RESPONSE (first 1500 chars):",
+      text.substring(0, 1500)
     );
 
     throw new Error(
