@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const optimizedJson = (analysis.optimizedData as any) || {};
 
     let originalText =
-      analysis.cvText ||
+      (analysis as any).cvText ||
       (analysis as any).rawText ||
       optimizedJson._originalCvText ||
       optimizedJson.originalText ||
@@ -64,16 +64,17 @@ export async function POST(req: Request) {
     // 🔒 FULLY DYNAMIC SELF-HEALING HOOKS (Universal Application)
     // ─────────────────────────────────────────────────────────────
     if (optimizedContent) {
-
-      // Dynamic Name Sanitization: If name is blank or accidentally caught a structural layout term
+      // Dynamic Name Sanitization: Handle null/blank properties cleanly
       const invalidKeywords = ["website", "management", "cv", "resume", "curriculum", "e-commerce", "project", "projet"];
       const currentNameLower = (optimizedContent.userName || "").toLowerCase();
       const isNameCorrupted = invalidKeywords.some(keyword => currentNameLower.includes(keyword)) || !optimizedContent.userName || optimizedContent.userName.trim() === "";
 
       if (isNameCorrupted) {
-        if (analysis.userName && !invalidKeywords.some(keyword => analysis.userName.toLowerCase().includes(keyword))) {
+        const dbUserName = analysis.userName; // Safely capture reference to fix null typing
+
+        if (dbUserName && !invalidKeywords.some(keyword => dbUserName.toLowerCase().includes(keyword))) {
           // If the top-level analysis row captured a cleaner profile record, use that
-          optimizedContent.userName = analysis.userName;
+          optimizedContent.userName = dbUserName;
         } else {
           // Regex fallback: Grab the very first capitalized sequence line from the raw document string
           const cleanNameMatch = originalText.match(/^([A-Z][a-zÀ-ÿ]+(?:\s[A-Z][a-zÀ-ÿ]+)+)/m);
