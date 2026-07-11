@@ -77,31 +77,73 @@ export async function generateLLMResponse({
   }
 
 
+  // async function executeGenerate(config: LLMConfig) {
+  //   const model = getModel(config);
+  //   console.log("Using model:", config.model);
+
+
+  //   // const { text } = await generateText({
+  //   //   model,
+  //   //   system,
+  //   //   prompt,
+  //   //   temperature,
+  //   //   maxOutputTokens: maxTokens,
+  //   // });
+
+  //   const { text } = await generateText({
+  //     model,
+  //     system,
+  //     prompt,
+  //     temperature,
+  //     maxOutputTokens:
+  //       config.provider.toLowerCase() === "groq"
+  //         ? Math.min(maxTokens, 1800)
+  //         : maxTokens,
+  //   });
+
+  //   return text.trim();
+  // }
+
   async function executeGenerate(config: LLMConfig) {
     const model = getModel(config);
     console.log("Using model:", config.model);
-
-
-    // const { text } = await generateText({
-    //   model,
-    //   system,
-    //   prompt,
-    //   temperature,
-    //   maxOutputTokens: maxTokens,
-    // });
 
     const { text } = await generateText({
       model,
       system,
       prompt,
       temperature,
+      // Cap Groq output tokens to stay within free tier TPM limit.
+      // openai/gpt-oss-120b: 8000 TPM = input + output combined.
+      // Capping output at 1800 leaves ~6200 tokens for input.
+      // Google/Anthropic/OpenAI get full maxTokens unchanged.
       maxOutputTokens:
         config.provider.toLowerCase() === "groq"
           ? Math.min(maxTokens, 1800)
           : maxTokens,
     });
 
-    return text.trim();
+    // Strip reasoning blocks from thinking models.
+    // openai/gpt-oss-120b outputs <think>...</think> before JSON.
+    // Must strip BEFORE passing to JSON parser or it grabs
+    // wrong { } characters from inside the reasoning block.
+    const cleaned = text
+      .replace(/<think>[\s\S]*?<\/think>/gi, "")
+      .replace(/<thinking>[\s\S]*?<\/antml:thinking>/gi, "")
+      .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
+      .trim();
+
+    console.log(
+      `[LLM] ${config.model} | raw: ${text.length} chars | cleaned: ${cleaned.length} chars`
+    );
+
+    if (!cleaned) {
+      throw new Error(
+        `Model ${config.model} returned empty response after reasoning strip`
+      );
+    }
+
+    return cleaned;
   }
 
 
