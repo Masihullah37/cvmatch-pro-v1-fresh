@@ -170,7 +170,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("❌ CRITICAL GENERATE-TEMPLATES ROUTE ERROR:", error);
+    console.error("❌ CRITICAL FAILURE DETECTED:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return NextResponse.json(
       { error: error?.message || "Internal error encountered" },
       { status: 500 }
