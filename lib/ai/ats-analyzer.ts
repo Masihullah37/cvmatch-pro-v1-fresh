@@ -4,49 +4,6 @@ import { applyCoherentAtsScoring } from "@/lib/ai/keyword-normalizer";
 
 // ─────────────────────────────────────────────────────────────
 // 🔒 ROBUST JSON EXTRACTOR
-// Handles ALL model types:
-//   - Clean JSON models (llama-3.3-70b-versatile) ✅
-//   - Models that add preamble ("Here is the JSON:") ✅
-//   - Reasoning models with <think> blocks ✅
-//   - Models that wrap JSON in ```json ``` fences ✅
-// ─────────────────────────────────────────────────────────────
-// function extractJSON(text: string): string {
-//   // Step 1: Remove reasoning blocks from thinking models
-//   // Handles <think>...</think>, <reasoning>...</reasoning> etc.
-//   let cleaned = text
-//     .replace(/<think>[\s\S]*?<\/think>/gi, "")
-//     .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
-//     .replace(/<thinking>[\s\S]*?<\/antml:thinking>/gi, "")
-//     .trim();
-
-//   // Step 2: Remove markdown code fences ```json ... ``` or ``` ... ```
-//   cleaned = cleaned
-//     .replace(/^```(?:json)?\s*/i, "")
-//     .replace(/\s*```$/i, "")
-//     .trim();
-
-//   // Step 3: Remove any text before the first { character
-//   // (handles "Here is the JSON:" preamble)
-//   const firstBrace = cleaned.indexOf("{");
-//   if (firstBrace > 0) {
-//     cleaned = cleaned.substring(firstBrace);
-//   }
-
-//   // Step 4: Remove any text after the last } character
-//   // (handles trailing explanations after JSON)
-//   const lastBrace = cleaned.lastIndexOf("}");
-//   if (lastBrace !== -1 && lastBrace < cleaned.length - 1) {
-//     cleaned = cleaned.substring(0, lastBrace + 1);
-//   }
-
-//   // Step 5: Validate we have something JSON-like
-//   if (!cleaned.startsWith("{") || !cleaned.endsWith("}")) {
-//     console.error("❌ RAW AI RESPONSE (no JSON found):", text.substring(0, 500));
-//     throw new Error("No valid JSON object found in AI response");
-//   }
-
-//   return cleaned;
-// }
 
 
 function extractJSON(text: string): string {
@@ -320,22 +277,328 @@ ${safeCvText}`;
 // ─────────────────────────────────────────────────────────────
 // ✍️ GENERATE OPTIMIZED CV
 // ─────────────────────────────────────────────────────────────
+// export async function generateOptimizedCV(
+//   cvText: string,
+//   jobDescription: string,
+//   analysisResult?: any,
+//   structuredJobDetails?: StructuredJobDetails
+// ) {
+//   const safeCvText = cvText.substring(0, 6000);
+//   const safeJobDescription = jobDescription.substring(0, 3000);
+//   const isGeneral = jobDescription.includes("Optimisation standard");
+
+//   const missingKeywords = analysisResult?.keywordsMissing?.slice(0, 10).join(", ") || "";
+//   const foundKeywords = analysisResult?.keywordsFound?.join(", ") || "";
+
+//   const suggestions = analysisResult?.suggestions?.join("\n- ") || "";
+
+//   const flaws = analysisResult?.flaws?.join("\n- ") || "";
+
+//   const structuredContext = structuredJobDetails
+//     ? `
+// Structured Job Data:
+// - Title: ${structuredJobDetails.title}
+// - Skills: ${structuredJobDetails.skills.join(", ") || "N/A"}
+// - Requirements: ${structuredJobDetails.requirements.join(" | ") || "N/A"}
+// - Responsibilities: ${structuredJobDetails.responsibilities.join(" | ") || "N/A"}
+// `
+//     : "";
+
+//   const prompt = `You MUST respond with ONLY a valid JSON object.
+// No explanations.
+// No markdown.
+// No text before or after the JSON.
+// Start your response with { and end with }.
+
+// You are one of the world's best ATS Resume Writers and Career Coaches.
+
+// Your goal is NOT simply to rewrite the CV.
+
+// Your goal is to MAXIMIZE the ATS score while remaining 100% truthful.
+
+// ${isGeneral
+//       ? `
+// Optimize this CV according to modern professional resume best practices.
+// `
+//       : `
+// Optimize this CV specifically for the following Job Description.
+
+// ==============================
+// ATS ANALYSIS
+// ==============================
+
+// Current ATS Score:
+// ${analysisResult?.atsScore ?? "Unknown"}
+
+// Missing Keywords:
+// ${missingKeywords || "None"}
+
+// Existing Matching Keywords:
+// ${foundKeywords || "None"}
+
+// Detected ATS Weaknesses:
+// ${flaws || "None"}
+
+// ATS Suggestions:
+// ${suggestions || "None"}
+
+// ==============================
+// YOUR OBJECTIVE
+// ==============================
+
+// Increase the ATS score as much as possible.
+
+// Follow EVERY ATS suggestion whenever possible.
+
+// Fix EVERY detected ATS weakness whenever possible.
+
+// Integrate as many missing ATS keywords as truthfully possible.
+
+// Prefer placing them in:
+// - Professional Summary
+// - Skills
+// - Experience bullet points
+// - Project technologies
+
+// If multiple related keywords belong to the candidate's demonstrated profession, rewrite existing content so they fit naturally.
+
+// Never invent employers, projects, employment dates or certifications.
+
+// Strengthen and expand existing experience instead of creating new experience.
+
+// `
+//     }
+
+// ==================================================
+// MANDATORY RULES
+// ==================================================
+
+// 1. Preserve ALL existing information.
+
+// 2. Never remove experience.
+
+// 3. Never remove education.
+
+// 4. Never remove projects.
+
+// 5. Never remove existing skills.
+
+// 6. Rewrite the Professional Summary so it naturally includes the highest priority ATS keywords.
+
+// 7. Rewrite every Experience description using STAR methodology.
+
+// 8. Whenever a missing keyword genuinely applies to an experience, insert it naturally.
+
+// 9. Whenever a missing keyword applies to a project, include it.
+
+// 10. The Skills array MUST contain:
+//    - existing skills
+//    - relevant missing ATS keywords
+//    - without duplicates
+
+// 11. Every Project must contain technologies used.
+
+// 12. If Adobe products, software, frameworks or tools are listed in the missing keywords and they truthfully fit the candidate's experience, include them inside:
+//    - skills
+//    - project technologies
+//    - experience descriptions
+//    - summary
+
+// 13. Improve keyword density naturally without keyword stuffing.
+
+// 14. Never invent employers, job titles, employment dates, projects, certifications or degrees.
+
+// 15. You MAY infer closely related professional skills ONLY when ALL of the following are true:
+//    - the missing keyword belongs to the same professional domain,
+//    - the candidate already demonstrates closely related experience,
+//    - the inferred skill is commonly associated with that role,
+//    - the wording remains truthful and does not claim expert-level experience.
+
+// Examples:
+
+// Infer closely related professional skills only when they are clearly
+// supported by the candidate's existing experience and related to same domain.
+// Do not infer unrelated skills.
+// Never invent employers, projects, certifications, degrees or work history.
+
+// 16. If a missing keyword cannot truthfully fit, leave it out rather than forcing it into the resume.
+
+// 17. Preserve the original CV language exactly.
+
+// 18. IMPORTANT FINAL VALIDATION:
+
+// Before returning the answer:
+// - Verify JSON syntax is valid.
+// - Close every object with }.
+// - Close every array with ].
+// - Escape all quotes inside strings.
+// - Do not stop generation before completing the JSON.
+// - If the CV is long, shorten descriptions instead of cutting JSON.
+
+// 19. Return ONLY valid JSON.
+
+// ==================================================
+// OUTPUT FORMAT
+// ==================================================
+
+// Return EXACTLY this JSON schema.
+
+// {
+//   "userName": "",
+//   "jobTitle": "",
+//   "summary": "",
+//   "contact": {
+//     "email": "",
+//     "phone": "",
+//     "location": "",
+//     "linkedin": "",
+//     "github": "",
+//     "portfolio": ""
+//   },
+//   "experience": [
+//     {
+//       "title": "",
+//       "company": "",
+//       "period": "",
+//       "description": ""
+//     }
+//   ],
+//   "education": [
+//     {
+//       "degree": "",
+//       "school": "",
+//       "year": "",
+//       "details": ""
+//     }
+//   ],
+//   "projects": [
+//     {
+//       "name": "",
+//       "description": "",
+//       "technologies": []
+//     }
+//   ],
+//   "skills": [],
+//   "languages": [
+//     {
+//       "language": "",
+//       "level": ""
+//     }
+//   ],
+//   "interests": []
+// }
+
+// ==================================================
+// CV
+// ==================================================
+
+// ${safeCvText}
+
+// ${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 2500)}`}
+
+// ${structuredContext}
+// `;
+
+//   try {
+//     const text = await generateLLMResponse({
+//       prompt,
+//       temperature: 0.15,
+//       maxTokens: 3200,
+//     });
+
+//     console.log("=== generateOptimizedCV LLM Response (first 500 chars) ===");
+//     console.log(text.substring(0, 500));
+
+//     console.log("========== RAW ANALYSIS RESPONSE ==========");
+//     console.log(text);
+//     console.log("===========================================");
+
+//     const parsed = safeParse(text);
+//     console.log("Missing keywords:", analysisResult?.keywordsMissing);
+
+//     console.log("Generated skills:", parsed.skills);
+
+//     console.log("Generated projects:", parsed.projects);
+
+//     console.log("Generated summary:", parsed.summary);
+
+//     // Fallback: extract name from CV text if AI missed it
+//     if (!parsed.userName || parsed.userName.includes("full name") || parsed.userName === "") {
+//       const nameMatch = cvText.match(/^([A-Z][a-zÀ-ÿ]+(?:\s[A-Z][a-zÀ-ÿ]+)+)/m);
+//       if (nameMatch) parsed.userName = nameMatch[1];
+//     }
+
+//     // Ensure contact object always exists with all fields
+//     if (!parsed.contact) parsed.contact = {};
+//     parsed.contact = {
+//       email: parsed.contact.email || "",
+//       phone: parsed.contact.phone || "",
+//       location: parsed.contact.location || "",
+//       linkedin: parsed.contact.linkedin || "",
+//       github: parsed.contact.github || "",
+//       portfolio: parsed.contact.portfolio || "",
+//     };
+
+//     return parsed;
+//   }
+
+//   catch (error: any) {
+//     console.error("generateOptimizedCV Error:", error?.message || error);
+//     throw error;
+//   }
+
+// }
+
+
+// ✍️ GENERATE OPTIMIZED CV
 export async function generateOptimizedCV(
   cvText: string,
   jobDescription: string,
   analysisResult?: any,
   structuredJobDetails?: StructuredJobDetails
 ) {
-  const safeCvText = cvText.substring(0, 6000);
   const safeJobDescription = jobDescription.substring(0, 3000);
   const isGeneral = jobDescription.includes("Optimisation standard");
 
   const missingKeywords = analysisResult?.keywordsMissing?.slice(0, 10).join(", ") || "";
   const foundKeywords = analysisResult?.keywordsFound?.join(", ") || "";
-
   const suggestions = analysisResult?.suggestions?.join("\n- ") || "";
-
   const flaws = analysisResult?.flaws?.join("\n- ") || "";
+
+  // ========================================================
+  // CORE FIX: Context Recovery Layer
+  // ========================================================
+  let safeCvText = cvText.substring(0, 6000);
+
+  // If the passed text is a stitched fallback string, explicitly verify if we can 
+  // extract richer structural history from analysisResult properties.
+  if (analysisResult && typeof analysisResult === "object") {
+    const backupSource = analysisResult.optimizedData || analysisResult;
+
+    if (backupSource.experience && Array.isArray(backupSource.experience) && backupSource.experience.length > 0) {
+      console.log(" [Optimizer] Reconstructing execution context from parsed database JSON schema arrays.");
+
+      const reconstruction: string[] = [];
+      if (backupSource.userName) reconstruction.push(`Candidate Name: ${backupSource.userName}`);
+      if (backupSource.jobTitle) reconstruction.push(`Current/Target Title: ${backupSource.jobTitle}`);
+      if (backupSource.summary) reconstruction.push(`Professional Summary:\n${backupSource.summary}`);
+
+      if (backupSource.skills && Array.isArray(backupSource.skills)) {
+        reconstruction.push(`Skills:\n${backupSource.skills.join(", ")}`);
+      }
+
+      reconstruction.push(`Experience History:\n${JSON.stringify(backupSource.experience, null, 2)}`);
+
+      if (backupSource.education && Array.isArray(backupSource.education)) {
+        reconstruction.push(`Education History:\n${JSON.stringify(backupSource.education, null, 2)}`);
+      }
+      if (backupSource.projects && Array.isArray(backupSource.projects)) {
+        reconstruction.push(`Projects:\n${JSON.stringify(backupSource.projects, null, 2)}`);
+      }
+
+      safeCvText = reconstruction.join("\n\n---\n\n");
+    }
+  }
 
   const structuredContext = structuredJobDetails
     ? `
@@ -354,47 +617,28 @@ No text before or after the JSON.
 Start your response with { and end with }.
 
 You are one of the world's best ATS Resume Writers and Career Coaches.
-
 Your goal is NOT simply to rewrite the CV.
-
 Your goal is to MAXIMIZE the ATS score while remaining 100% truthful.
 
 ${isGeneral
-      ? `
-Optimize this CV according to modern professional resume best practices.
-`
-      : `
-Optimize this CV specifically for the following Job Description.
+      ? `Optimize this CV according to modern professional resume best practices.`
+      : `Optimize this CV specifically for the following Job Description.
 
 ==============================
 ATS ANALYSIS
 ==============================
-
-Current ATS Score:
-${analysisResult?.atsScore ?? "Unknown"}
-
-Missing Keywords:
-${missingKeywords || "None"}
-
-Existing Matching Keywords:
-${foundKeywords || "None"}
-
-Detected ATS Weaknesses:
-${flaws || "None"}
-
-ATS Suggestions:
-${suggestions || "None"}
+Current ATS Score: ${analysisResult?.atsScore ?? "Unknown"}
+Missing Keywords: ${missingKeywords || "None"}
+Existing Matching Keywords: ${foundKeywords || "None"}
+Detected ATS Weaknesses: ${flaws || "None"}
+ATS Suggestions: ${suggestions || "None"}
 
 ==============================
 YOUR OBJECTIVE
 ==============================
-
 Increase the ATS score as much as possible.
-
 Follow EVERY ATS suggestion whenever possible.
-
 Fix EVERY detected ATS weakness whenever possible.
-
 Integrate as many missing ATS keywords as truthfully possible.
 
 Prefer placing them in:
@@ -404,141 +648,59 @@ Prefer placing them in:
 - Project technologies
 
 If multiple related keywords belong to the candidate's demonstrated profession, rewrite existing content so they fit naturally.
-
 Never invent employers, projects, employment dates or certifications.
-
 Strengthen and expand existing experience instead of creating new experience.
-
 `
     }
 
 ==================================================
 MANDATORY RULES
 ==================================================
-
 1. Preserve ALL existing information.
-
 2. Never remove experience.
-
 3. Never remove education.
-
 4. Never remove projects.
-
 5. Never remove existing skills.
-
 6. Rewrite the Professional Summary so it naturally includes the highest priority ATS keywords.
-
 7. Rewrite every Experience description using STAR methodology.
-
 8. Whenever a missing keyword genuinely applies to an experience, insert it naturally.
-
 9. Whenever a missing keyword applies to a project, include it.
-
 10. The Skills array MUST contain:
    - existing skills
    - relevant missing ATS keywords
    - without duplicates
-
 11. Every Project must contain technologies used.
-
-12. If Adobe products, software, frameworks or tools are listed in the missing keywords and they truthfully fit the candidate's experience, include them inside:
-   - skills
-   - project technologies
-   - experience descriptions
-   - summary
-
+12. If Adobe products, software, frameworks or tools are listed in the missing keywords and they truthfully fit the candidate's experience, include them inside skills, project technologies, experience descriptions, and summary.
 13. Improve keyword density naturally without keyword stuffing.
-
 14. Never invent employers, job titles, employment dates, projects, certifications or degrees.
-
-15. You MAY infer closely related professional skills ONLY when ALL of the following are true:
-   - the missing keyword belongs to the same professional domain,
-   - the candidate already demonstrates closely related experience,
-   - the inferred skill is commonly associated with that role,
-   - the wording remains truthful and does not claim expert-level experience.
-
-Examples:
-
-Infer closely related professional skills only when they are clearly
-supported by the candidate's existing experience and related to same domain.
-Do not infer unrelated skills.
-Never invent employers, projects, certifications, degrees or work history.
-
+15. You MAY infer closely related professional skills ONLY when the missing keyword belongs to the same professional domain, the candidate already demonstrates closely related experience, and the inferred skill is commonly associated with that role.
 16. If a missing keyword cannot truthfully fit, leave it out rather than forcing it into the resume.
-
 17. Preserve the original CV language exactly.
-
-18. IMPORTANT FINAL VALIDATION:
-
-Before returning the answer:
-- Verify JSON syntax is valid.
-- Close every object with }.
-- Close every array with ].
-- Escape all quotes inside strings.
-- Do not stop generation before completing the JSON.
-- If the CV is long, shorten descriptions instead of cutting JSON.
-
-19. Return ONLY valid JSON.
+18. IMPORTANT FINAL VALIDATION: Verify JSON syntax is valid. Close every object and array. Escape inner quotes.
 
 ==================================================
 OUTPUT FORMAT
 ==================================================
-
-Return EXACTLY this JSON schema.
-
+Return EXACTLY this JSON schema structure:
 {
   "userName": "",
   "jobTitle": "",
   "summary": "",
-  "contact": {
-    "email": "",
-    "phone": "",
-    "location": "",
-    "linkedin": "",
-    "github": "",
-    "portfolio": ""
-  },
-  "experience": [
-    {
-      "title": "",
-      "company": "",
-      "period": "",
-      "description": ""
-    }
-  ],
-  "education": [
-    {
-      "degree": "",
-      "school": "",
-      "year": "",
-      "details": ""
-    }
-  ],
-  "projects": [
-    {
-      "name": "",
-      "description": "",
-      "technologies": []
-    }
-  ],
+  "contact": { "email": "", "phone": "", "location": "", "linkedin": "", "github": "", "portfolio": "" },
+  "experience": [ { "title": "", "company": "", "period": "", "description": "" } ],
+  "education": [ { "degree": "", "school": "", "year": "", "details": "" } ],
+  "projects": [ { "name": "", "description": "", "technologies": [] } ],
   "skills": [],
-  "languages": [
-    {
-      "language": "",
-      "level": ""
-    }
-  ],
+  "languages": [ { "language": "", "level": "" } ],
   "interests": []
 }
 
 ==================================================
-CV
+CV CONTENT TO OPTIMIZE
 ==================================================
-
 ${safeCvText}
 
 ${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 2500)}`}
-
 ${structuredContext}
 `;
 
@@ -549,29 +711,27 @@ ${structuredContext}
       maxTokens: 3200,
     });
 
-    console.log("=== generateOptimizedCV LLM Response (first 500 chars) ===");
-    console.log(text.substring(0, 500));
-
-    console.log("========== RAW ANALYSIS RESPONSE ==========");
-    console.log(text);
-    console.log("===========================================");
-
     const parsed = safeParse(text);
-    console.log("Missing keywords:", analysisResult?.keywordsMissing);
 
-    console.log("Generated skills:", parsed.skills);
-
-    console.log("Generated projects:", parsed.projects);
-
-    console.log("Generated summary:", parsed.summary);
-
-    // Fallback: extract name from CV text if AI missed it
-    if (!parsed.userName || parsed.userName.includes("full name") || parsed.userName === "") {
-      const nameMatch = cvText.match(/^([A-Z][a-zÀ-ÿ]+(?:\s[A-Z][a-zÀ-ÿ]+)+)/m);
-      if (nameMatch) parsed.userName = nameMatch[1];
+    // Hard fallback: mapping safety array checks
+    if (analysisResult?.keywordsMissing && Array.isArray(analysisResult.keywordsMissing)) {
+      if (!parsed.skills || parsed.skills.length === 0) {
+        const backupSource = analysisResult.optimizedData || analysisResult;
+        const oldSkills = Array.isArray(backupSource.skills) ? backupSource.skills : [];
+        parsed.skills = Array.from(new Set([...oldSkills, ...analysisResult.keywordsMissing]));
+      }
     }
 
-    // Ensure contact object always exists with all fields
+    if (!parsed.userName || parsed.userName.includes("full name") || parsed.userName === "") {
+      const backupSource = analysisResult.optimizedData || analysisResult;
+      if (backupSource?.userName && !backupSource.userName.includes("Website")) {
+        parsed.userName = backupSource.userName;
+      } else {
+        const nameMatch = cvText.match(/^([A-Z][a-zÀ-ÿ]+(?:\s[A-Z][a-zÀ-ÿ]+)+)/m);
+        if (nameMatch) parsed.userName = nameMatch[1];
+      }
+    }
+
     if (!parsed.contact) parsed.contact = {};
     parsed.contact = {
       email: parsed.contact.email || "",
@@ -583,11 +743,8 @@ ${structuredContext}
     };
 
     return parsed;
-  }
-
-  catch (error: any) {
+  } catch (error: any) {
     console.error("generateOptimizedCV Error:", error?.message || error);
     throw error;
   }
-
 }
