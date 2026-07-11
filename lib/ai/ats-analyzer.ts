@@ -549,7 +549,6 @@ ${safeCvText}`;
 
 // }
 
-
 // ✍️ GENERATE OPTIMIZED CV
 export async function generateOptimizedCV(
   cvText: string,
@@ -566,17 +565,17 @@ export async function generateOptimizedCV(
   const flaws = analysisResult?.flaws?.join("\n- ") || "";
 
   // ========================================================
-  // CORE FIX: Context Recovery Layer
+  // 🔒 CORE FIX: SAFE SEED CONTEXT LAYER
+  // Ensures safeCvText is NEVER wiped out into an empty string
   // ========================================================
-  let safeCvText = cvText.substring(0, 6000);
+  let safeCvText = cvText && cvText.trim().length > 15 ? cvText : "";
 
-  // If the passed text is a stitched fallback string, explicitly verify if we can 
-  // extract richer structural history from analysisResult properties.
   if (analysisResult && typeof analysisResult === "object") {
-    const backupSource = analysisResult.optimizedData || analysisResult;
+    // Look everywhere for structured fallback records if the string was unhydrated
+    const backupSource = analysisResult.optimizedData || analysisResult.optimizedJson || null;
 
-    if (backupSource.experience && Array.isArray(backupSource.experience) && backupSource.experience.length > 0) {
-      console.log(" [Optimizer] Reconstructing execution context from parsed database JSON schema arrays.");
+    if (backupSource && backupSource.experience && Array.isArray(backupSource.experience) && backupSource.experience.length > 0) {
+      console.log("🔄 [Optimizer] Reconstructing execution context from parsed database arrays.");
 
       const reconstruction: string[] = [];
       if (backupSource.userName) reconstruction.push(`Candidate Name: ${backupSource.userName}`);
@@ -598,6 +597,11 @@ export async function generateOptimizedCV(
 
       safeCvText = reconstruction.join("\n\n---\n\n");
     }
+  }
+
+  // Final absolute fallback protection to ensure the prompt is never blank
+  if (!safeCvText || safeCvText.trim().length < 10) {
+    safeCvText = cvText || "Contenu du CV indisponible.";
   }
 
   const structuredContext = structuredJobDetails
@@ -747,4 +751,4 @@ ${structuredContext}
     console.error("generateOptimizedCV Error:", error?.message || error);
     throw error;
   }
-}
+}  //updated//
