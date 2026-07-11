@@ -3,39 +3,7 @@ import { db } from "@/lib/db";
 import { cvAnalyses, cvTemplates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { generateOptimizedCV } from "@/lib/ai/ats-analyzer";
-
-/**
- * Clean and robust JSON parser designed to safely extract objects 
- * from LLM outputs even if they are wrapped in Markdown or contain bad formatting.
- */
-function robustJsonParse(input: any): any {
-  if (!input) return null;
-  if (typeof input === "object") return input;
-
-  let cleanInput = String(input).trim();
-
-  // Stripping code fences if markdown output is sent back
-  if (cleanInput.startsWith("```")) {
-    cleanInput = cleanInput.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  }
-  cleanInput = cleanInput.trim();
-
-  try {
-    return JSON.parse(cleanInput);
-  } catch (e) {
-    console.warn("❌ [PARSE ERROR] Standard JSON parse failed, trying control character cleanup...");
-    try {
-      // Removing control characters (newlines, tabs inside string scopes) that break native parsing
-      const serialized = cleanInput
-        .replace(/[\u0000-\u0019]+/g, "")
-        .trim();
-      return JSON.parse(serialized);
-    } catch (err) {
-      console.error("❌ [PARSE CRITICAL] Could not parse LLM output safely.");
-      return null;
-    }
-  }
-}
+import { validateOptimizedCV } from "@/lib/ai/resume-validator";
 
 export async function POST(req: Request) {
   try {
@@ -54,7 +22,6 @@ export async function POST(req: Request) {
 
     const optimizedJson = (analysis.optimizedData as any) || {};
 
-    // Safeguards retrieval of text, using type-cast to skip strict type checking warnings
     let originalText =
       (analysis as any).cvText ||
       (analysis as any).rawText ||
@@ -62,6 +29,7 @@ export async function POST(req: Request) {
       optimizedJson.originalText ||
       "";
 
+    // Prepare structured optimization metadata from the first analysis phase
     const analysisData = {
       atsScore: typeof analysis.atsScore === "number" ? analysis.atsScore : undefined,
       scoreBreakdown: (analysis.scoreBreakdown as Record<string, { score: number; max: number }>) ?? undefined,
@@ -71,71 +39,73 @@ export async function POST(req: Request) {
       keywordsFound: Array.isArray(analysis.keywordsFound) ? (analysis.keywordsFound as string[]) : [],
     };
 
-    // Triggering the LLM generator
     let generatedContent = await generateOptimizedCV(
       originalText,
       analysis.jobDescription || "Optimisation standard",
       analysisData
     );
 
-    // Parsing the LLM content cleanly
-    let optimizedContent = robustJsonParse(generatedContent);
+    let optimizedContent = await validateOptimizedCV(
+      generatedContent,
+      analysisData
+    );
 
-    if (!optimizedContent || Object.keys(optimizedContent).length === 0) {
-      console.warn("⚠️ Empty optimized content generated, using initial base data.");
-      optimizedContent = typeof generatedContent === "object" ? generatedContent : {};
+    if (!optimizedContent) {
+      optimizedContent = generatedContent || {};
     }
 
-    // Fix candidate name if the parsing phase caught metadata keywords instead of the person's name
-    const invalidKeywords = ["website", "management", "cv", "resume", "curriculum", "e-commerce", "project", "projet"];
-    const currentNameLower = (optimizedContent.userName || "").toLowerCase();
-    const isNameCorrupted = invalidKeywords.some(keyword => currentNameLower.includes(keyword)) || !optimizedContent.userName || optimizedContent.userName.trim() === "";
+    if (optimizedContent) {
+      // Dynamic Name Sanitization: Handle null/blank properties cleanly
+      const invalidKeywords = ["website", "management", "cv", "resume", "curriculum", "e-commerce", "project", "projet"];
+      const currentNameLower = (optimizedContent.userName || "").toLowerCase();
+      const isNameCorrupted = invalidKeywords.some(keyword => currentNameLower.includes(keyword)) || !optimizedContent.userName || optimizedContent.userName.trim() === "";
 
-    if (isNameCorrupted) {
-      const dbUserName = analysis.userName; // Constant lock for strict null checks
-      if (dbUserName && !invalidKeywords.some(keyword => dbUserName.toLowerCase().includes(keyword))) {
-        optimizedContent.userName = dbUserName;
-      } else {
-        const cleanNameMatch = originalText.match(/^([A-Z][a-zÀ-ÿ]+(?:\s[A-Z][a-zÀ-ÿ]+)+)/m);
-        optimizedContent.userName = cleanNameMatch ? cleanNameMatch[1].trim() : "Candidat";
+      if (isNameCorrupted) {
+        const dbUserName = analysis.userName; // Safely capture reference to fix null typing
+
+        if (dbUserName && !invalidKeywords.some(keyword => dbUserName.toLowerCase().includes(keyword))) {
+          // If the top-level analysis row captured a cleaner profile record, use that
+          optimizedContent.userName = dbUserName;
+        } else {
+          // Regex fallback: Grab the very first capitalized sequence line from the raw document string
+          const cleanNameMatch = originalText.match(/^([A-Z][a-zÀ-ÿ]+(?:\s[A-Z][a-zÀ-ÿ]+)+)/m);
+          optimizedContent.userName = cleanNameMatch ? cleanNameMatch[1].trim() : "Candidat";
+        }
+      }
+
+      // Dynamic Title Fallback
+      if (!optimizedContent.jobTitle || optimizedContent.jobTitle.trim() === "") {
+        optimizedContent.jobTitle = analysis.jobTitle || "Professionnel";
+      }
+
+      if (!optimizedContent.contact) optimizedContent.contact = {};
+      const databaseContact = optimizedJson.contact || {};
+      optimizedContent.contact = {
+        email: optimizedContent.contact.email || databaseContact.email || "",
+        phone: optimizedContent.contact.phone || databaseContact.phone || "",
+        location: optimizedContent.contact.location || databaseContact.location || "",
+        linkedin: optimizedContent.contact.linkedin || databaseContact.linkedin || "",
+        github: optimizedContent.contact.github || databaseContact.github || "",
+        portfolio: optimizedContent.contact.portfolio || databaseContact.portfolio || "",
+      };
+
+      if ((!optimizedContent.experience || optimizedContent.experience.length === 0) && optimizedJson.experience) {
+        optimizedContent.experience = optimizedJson.experience;
+      }
+      if ((!optimizedContent.education || optimizedContent.education.length === 0) && optimizedJson.education) {
+        optimizedContent.education = optimizedJson.education;
+      }
+      if ((!optimizedContent.projects || optimizedContent.projects.length === 0) && optimizedJson.projects) {
+        optimizedContent.projects = optimizedJson.projects;
+      }
+      if ((!optimizedContent.skills || optimizedContent.skills.length === 0) && optimizedJson.skills) {
+        optimizedContent.skills = optimizedJson.skills;
+      }
+      if ((!optimizedContent.languages || optimizedContent.languages.length === 0) && optimizedJson.languages) {
+        optimizedContent.languages = optimizedJson.languages;
       }
     }
 
-    // Dynamic Title Guard
-    if (!optimizedContent.jobTitle || optimizedContent.jobTitle.trim() === "") {
-      optimizedContent.jobTitle = analysis.jobTitle || "Professionnel";
-    }
-
-    // Dynamic Contact Guard
-    if (!optimizedContent.contact) optimizedContent.contact = {};
-    const databaseContact = (optimizedJson && typeof optimizedJson === 'object') ? (optimizedJson.contact || {}) : {};
-    optimizedContent.contact = {
-      email: optimizedContent.contact.email || databaseContact.email || "",
-      phone: optimizedContent.contact.phone || databaseContact.phone || "",
-      location: optimizedContent.contact.location || databaseContact.location || "",
-      linkedin: optimizedContent.contact.linkedin || databaseContact.linkedin || "",
-      github: optimizedContent.contact.github || databaseContact.github || "",
-      portfolio: optimizedContent.contact.portfolio || databaseContact.portfolio || "",
-    };
-
-    // Restore historical context from the original parsed uploaded CV if the generator returned empty sections
-    if ((!optimizedContent.experience || optimizedContent.experience.length === 0) && optimizedJson.experience) {
-      optimizedContent.experience = optimizedJson.experience;
-    }
-    if ((!optimizedContent.education || optimizedContent.education.length === 0) && optimizedJson.education) {
-      optimizedContent.education = optimizedJson.education;
-    }
-    if ((!optimizedContent.projects || optimizedContent.projects.length === 0) && optimizedJson.projects) {
-      optimizedContent.projects = optimizedJson.projects;
-    }
-    if ((!optimizedContent.skills || optimizedContent.skills.length === 0) && optimizedJson.skills) {
-      optimizedContent.skills = optimizedJson.skills;
-    }
-    if ((!optimizedContent.languages || optimizedContent.languages.length === 0) && optimizedJson.languages) {
-      optimizedContent.languages = optimizedJson.languages;
-    }
-
-    // Saving the sanitized payload to main analytical table row
     await db
       .update(cvAnalyses)
       .set({
@@ -145,7 +115,6 @@ export async function POST(req: Request) {
       })
       .where(eq(cvAnalyses.id, analysisId));
 
-    // Sync the template layouts associated with this analysis for direct UI rendering
     const existingTemplates = await db.query.cvTemplates.findMany({
       where: eq(cvTemplates.analysisId, analysisId),
     });
@@ -187,8 +156,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    // Explicitly serializing errors to capture any hidden issues on cloud consoles
-    console.error("❌ [CRITICAL LINE ERR] Details:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    console.error("❌ CRITICAL GENERATE-TEMPLATES ROUTE ERROR:", error);
     return NextResponse.json(
       { error: error?.message || "Internal error encountered" },
       { status: 500 }
