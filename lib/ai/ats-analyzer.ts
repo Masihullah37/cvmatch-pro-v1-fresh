@@ -10,39 +10,99 @@ import { applyCoherentAtsScoring } from "@/lib/ai/keyword-normalizer";
 //   - Reasoning models with <think> blocks ✅
 //   - Models that wrap JSON in ```json ``` fences ✅
 // ─────────────────────────────────────────────────────────────
+// function extractJSON(text: string): string {
+//   // Step 1: Remove reasoning blocks from thinking models
+//   // Handles <think>...</think>, <reasoning>...</reasoning> etc.
+//   let cleaned = text
+//     .replace(/<think>[\s\S]*?<\/think>/gi, "")
+//     .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
+//     .replace(/<thinking>[\s\S]*?<\/antml:thinking>/gi, "")
+//     .trim();
+
+//   // Step 2: Remove markdown code fences ```json ... ``` or ``` ... ```
+//   cleaned = cleaned
+//     .replace(/^```(?:json)?\s*/i, "")
+//     .replace(/\s*```$/i, "")
+//     .trim();
+
+//   // Step 3: Remove any text before the first { character
+//   // (handles "Here is the JSON:" preamble)
+//   const firstBrace = cleaned.indexOf("{");
+//   if (firstBrace > 0) {
+//     cleaned = cleaned.substring(firstBrace);
+//   }
+
+//   // Step 4: Remove any text after the last } character
+//   // (handles trailing explanations after JSON)
+//   const lastBrace = cleaned.lastIndexOf("}");
+//   if (lastBrace !== -1 && lastBrace < cleaned.length - 1) {
+//     cleaned = cleaned.substring(0, lastBrace + 1);
+//   }
+
+//   // Step 5: Validate we have something JSON-like
+//   if (!cleaned.startsWith("{") || !cleaned.endsWith("}")) {
+//     console.error("❌ RAW AI RESPONSE (no JSON found):", text.substring(0, 500));
+//     throw new Error("No valid JSON object found in AI response");
+//   }
+
+//   return cleaned;
+// }
+
+
 function extractJSON(text: string): string {
-  // Step 1: Remove reasoning blocks from thinking models
-  // Handles <think>...</think>, <reasoning>...</reasoning> etc.
+  // Step 1: Strip reasoning blocks (double safety after llm-gateway)
+  // openai/gpt-oss-120b sometimes embeds partial JSON inside
+  // <think> blocks — stripping here prevents false matches
   let cleaned = text
     .replace(/<think>[\s\S]*?<\/think>/gi, "")
-    .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
     .replace(/<thinking>[\s\S]*?<\/antml:thinking>/gi, "")
+    .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
     .trim();
 
-  // Step 2: Remove markdown code fences ```json ... ``` or ``` ... ```
+  // Step 2: Remove markdown code fences
   cleaned = cleaned
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
+    .replace(/^```(?:json)?\s*/im, "")
+    .replace(/\s*```$/im, "")
     .trim();
 
-  // Step 3: Remove any text before the first { character
-  // (handles "Here is the JSON:" preamble)
-  const firstBrace = cleaned.indexOf("{");
-  if (firstBrace > 0) {
+  // Step 3: Find the LAST complete JSON object by brace balancing
+  // WHY LAST: reasoning models output real JSON at the END
+  // A naive "first { to last }" approach grabs wrong content
+  // when <think> block contained { } characters
+  const lastBraceClose = cleaned.lastIndexOf("}");
+  if (lastBraceClose === -1) {
+    console.error("❌ No closing } found. Raw:", text.substring(0, 300));
+    throw new Error("No closing brace found in AI response");
+  }
+
+  // Walk backwards from last } to find its matching {
+  let depth = 0;
+  let startIndex = -1;
+  for (let i = lastBraceClose; i >= 0; i--) {
+    if (cleaned[i] === "}") depth++;
+    if (cleaned[i] === "{") depth--;
+    if (depth === 0) {
+      startIndex = i;
+      break;
+    }
+  }
+
+  if (startIndex !== -1) {
+    cleaned = cleaned.substring(startIndex, lastBraceClose + 1);
+  } else {
+    // Fallback: cut everything before first {
+    const firstBrace = cleaned.indexOf("{");
+    if (firstBrace === -1) {
+      console.error("❌ No JSON found. Raw:", text.substring(0, 300));
+      throw new Error("No JSON object found in AI response");
+    }
     cleaned = cleaned.substring(firstBrace);
   }
 
-  // Step 4: Remove any text after the last } character
-  // (handles trailing explanations after JSON)
-  const lastBrace = cleaned.lastIndexOf("}");
-  if (lastBrace !== -1 && lastBrace < cleaned.length - 1) {
-    cleaned = cleaned.substring(0, lastBrace + 1);
-  }
-
-  // Step 5: Validate we have something JSON-like
+  // Step 4: Validate boundaries
   if (!cleaned.startsWith("{") || !cleaned.endsWith("}")) {
-    console.error("❌ RAW AI RESPONSE (no JSON found):", text.substring(0, 500));
-    throw new Error("No valid JSON object found in AI response");
+    console.error("❌ Invalid JSON boundaries:", cleaned.substring(0, 200));
+    throw new Error("Extracted content is not a valid JSON object");
   }
 
   return cleaned;
@@ -174,6 +234,10 @@ ${structuredContext}`;
       temperature: 0.1,
       maxTokens: 2500,
     });
+
+    console.log("========== RAW ANALYSIS RESPONSE ==========");
+    console.log(text);
+    console.log("===========================================");
 
     const parsed = safeParse(text);
 
@@ -396,7 +460,7 @@ MANDATORY RULES
 Examples:
 
 Infer closely related professional skills only when they are clearly
-supported by the candidate's existing experience.
+supported by the candidate's existing experience and related to same domain.
 Do not infer unrelated skills.
 Never invent employers, projects, certifications, degrees or work history.
 
@@ -487,6 +551,10 @@ ${structuredContext}
 
     console.log("=== generateOptimizedCV LLM Response (first 500 chars) ===");
     console.log(text.substring(0, 500));
+
+    console.log("========== RAW ANALYSIS RESPONSE ==========");
+    console.log(text);
+    console.log("===========================================");
 
     const parsed = safeParse(text);
     console.log("Missing keywords:", analysisResult?.keywordsMissing);
