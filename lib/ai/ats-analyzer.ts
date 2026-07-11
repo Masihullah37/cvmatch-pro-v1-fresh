@@ -751,4 +751,4 @@ ${structuredContext}
     console.error("generateOptimizedCV Error:", error?.message || error);
     throw error;
   }
-}
+}  //updated//
