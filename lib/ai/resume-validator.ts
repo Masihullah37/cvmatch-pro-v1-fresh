@@ -150,7 +150,7 @@ Return JSON only.
     const response = await generateLLMResponse({
       prompt,
       temperature: 0.1,
-      maxTokens: 3500,
+      maxTokens: 2500,
     });
 
 

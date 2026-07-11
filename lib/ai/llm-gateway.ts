@@ -76,49 +76,29 @@ export async function generateLLMResponse({
     throw error;
   }
 
-  // async function executeGenerate(config: LLMConfig) {
-  //   const model = getModel(config);
-  //   const { text } = await generateText({
-  //     model,
-  //     system,
-  //     prompt,
-  //     temperature,
-  //     maxOutputTokens: maxTokens,
-  //   });
-  //   return text;
-  // }
 
   async function executeGenerate(config: LLMConfig) {
     const model = getModel(config);
     console.log("Using model:", config.model);
 
-    // For Qwen3 models: append /no_think to prompt to disable
-    // reasoning mode and get clean JSON output directly.
-    // This prevents <think>...</think> blocks in JSON responses.
-    //   const isQwen3 = config.model.includes("qwen3") || config.model.includes("qwen/qwen3");
-    //   const finalPrompt = isQwen3 ? `${prompt} /no_think` : prompt;
 
-    //   const { text } = await generateText({
-    //     model,
-    //     system,
-    //     prompt: finalPrompt,
-    //     temperature,
-    //     maxOutputTokens: maxTokens,
-    //   });
-
-    //   // Strip any remaining <think> blocks just in case
-    //   return text
-    //     .replace(/<think>[\s\S]*?<\/think>/gi, "")
-    //     .replace(/<thinking>[\s\S]*?<\/antml:thinking>/gi, "")
-    //     .trim();
-
+    // const { text } = await generateText({
+    //   model,
+    //   system,
+    //   prompt,
+    //   temperature,
+    //   maxOutputTokens: maxTokens,
+    // });
 
     const { text } = await generateText({
       model,
       system,
       prompt,
       temperature,
-      maxOutputTokens: maxTokens,
+      maxOutputTokens:
+        config.provider.toLowerCase() === "groq"
+          ? Math.min(maxTokens, 1800)
+          : maxTokens,
     });
 
     return text.trim();

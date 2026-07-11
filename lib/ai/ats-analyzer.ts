@@ -51,16 +51,6 @@ function extractJSON(text: string): string {
 // ─────────────────────────────────────────────────────────────
 // 🔒 SAFE PARSER
 // ─────────────────────────────────────────────────────────────
-// function safeParse(text: string): any {
-//   try {
-//     const jsonString = extractJSON(text);
-//     return JSON.parse(jsonString);
-//   } catch (err: any) {
-//     console.error("❌ JSON PARSE FAILED");
-//     console.error("RAW RESPONSE (first 1000 chars):", text.substring(0, 1000));
-//     throw new Error(`Invalid JSON returned by AI: ${err.message}`);
-//   }
-// }
 
 function safeParse(text: string): any {
   try {
@@ -175,14 +165,14 @@ Return this EXACT JSON structure:
 CV:
 ${safeCvText}
 
-${isGeneral ? "" : `Job Description:\n${safeJobDescription}`}
+${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 2500)}`}
 ${structuredContext}`;
 
   try {
     const text = await generateLLMResponse({
       prompt,
       temperature: 0.1,
-      maxTokens: 6000,
+      maxTokens: 2500,
     });
 
     const parsed = safeParse(text);
@@ -405,45 +395,10 @@ MANDATORY RULES
 
 Examples:
 
-Software Engineering
-- React → TypeScript ✔
-- React → Redux ✔
-- Node.js → REST API ✔
-- Node.js → Express ✔
-- Docker → Kubernetes ✔ only if containerization/cloud deployment is already evident.
-- Git → GitHub ✔
-
-Accounting
-- Bookkeeping → Accounts Payable ✔
-- Accounts Payable → Accounts Receivable ✔
-- QuickBooks → Financial Reporting ✔ when accounting work clearly supports it.
-
-Nursing
-- Patient Care → Vital Signs ✔
-- Medication Administration → Electronic Health Records ✔
-
-Construction
-- General Construction → Site Safety ✔
-- Carpentry → Blueprint Reading ✔
-
-Electrician
-- Electrical Wiring → Circuit Testing ✔
-- Electrical Installation → Troubleshooting ✔
-
-Plumbing
-- Pipe Installation → Leak Detection ✔
-
-Administrative / Reception
-- Microsoft Office → Outlook ✔
-- Scheduling → Calendar Management ✔
-
-DO NOT infer unrelated skills.
-
-Examples of forbidden inference:
-- React → Java ✘
-- Accountant → Lawyer ✘
-- Nurse → Doctor ✘
-- Docker → AWS ✘ unless cloud experience is already demonstrated.
+Infer closely related professional skills only when they are clearly
+supported by the candidate's existing experience.
+Do not infer unrelated skills.
+Never invent employers, projects, certifications, degrees or work history.
 
 16. If a missing keyword cannot truthfully fit, leave it out rather than forcing it into the resume.
 
@@ -518,7 +473,7 @@ CV
 
 ${safeCvText}
 
-${isGeneral ? "" : `Job Description:\n${safeJobDescription}`}
+${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 2500)}`}
 
 ${structuredContext}
 `;
@@ -526,8 +481,8 @@ ${structuredContext}
   try {
     const text = await generateLLMResponse({
       prompt,
-      temperature: 0.1,
-      maxTokens: 6000,
+      temperature: 0.15,
+      maxTokens: 3200,
     });
 
     console.log("=== generateOptimizedCV LLM Response (first 500 chars) ===");
@@ -566,21 +521,5 @@ ${structuredContext}
     console.error("generateOptimizedCV Error:", error?.message || error);
     throw error;
   }
-  // catch (error: any) {
-  //   console.error("generateOptimizedCV Error:", error?.message || error);
 
-  //   // Return structured error object (doesn't crash the UI)
-  //   return {
-  //     userName: "Erreur",
-  //     jobTitle: "Vérifiez les logs",
-  //     summary: `Erreur IA: ${error?.message || "Erreur inconnue"}`,
-  //     contact: { email: "", phone: "", location: "", linkedin: "", github: "", portfolio: "" },
-  //     experience: [],
-  //     education: [],
-  //     projects: [],
-  //     skills: [],
-  //     languages: [],
-  //     interests: [],
-  //   };
-  // }
 }
