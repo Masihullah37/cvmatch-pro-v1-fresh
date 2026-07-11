@@ -120,9 +120,51 @@ export async function POST(req: Request) {
       );
     }
 
-    // Original CV text extracted during ATS analysis
-    const originalText =
-      (analysis.optimizedData as any)?._originalCvText || "";
+    // // Original CV text extracted during ATS analysis
+    // const originalText =
+    //   (analysis.optimizedData as any)?._originalCvText || "";
+
+    // 1. Try to extract raw string data from the jsonb payloads directly
+    const optimizedJson = (analysis.optimizedData as any) || {};
+    let originalText =
+      optimizedJson._originalCvText ||
+      optimizedJson.originalText ||
+      optimizedJson.cvText ||
+      "";
+
+    // 2. STITCHING FALLBACK: If string fields are blank, compile the baseline structure 
+    // from the available columns so the LLM receives the user's career context.
+    if (!originalText || originalText.trim().length < 10) {
+      const parts = [];
+      if (analysis.userName) parts.push(`Candidate Name: ${analysis.userName}`);
+      if (analysis.jobTitle) parts.push(`Target Professional Domain / Current Title: ${analysis.jobTitle}`);
+
+      // Inject keywords already matched to solidify domain detection (e.g. React for developer)
+      if (analysis.keywordsFound && Array.isArray(analysis.keywordsFound) && analysis.keywordsFound.length > 0) {
+        parts.push(`Demonstrated Skills/Tools: ${analysis.keywordsFound.join(", ")}`);
+      }
+
+      // Deconstruct objects nested within the optimizedData schema
+      if (typeof optimizedJson === "object" && optimizedJson !== null) {
+        if (optimizedJson.summary) parts.push(`Summary: ${optimizedJson.summary}`);
+        if (optimizedJson.skills && Array.isArray(optimizedJson.skills)) parts.push(`Skills Inventory: ${optimizedJson.skills.join(", ")}`);
+        if (optimizedJson.experience) parts.push(`Work Experience History: ${JSON.stringify(optimizedJson.experience)}`);
+        if (optimizedJson.education) parts.push(`Education Details: ${JSON.stringify(optimizedJson.education)}`);
+        if (optimizedJson.projects) parts.push(`Projects Log: ${JSON.stringify(optimizedJson.projects)}`);
+      }
+
+      originalText = parts.join("\n\n");
+    }
+
+    // 3. Prevent execution if context cannot be reliably inferred
+    if (!originalText || originalText.trim().length < 10) {
+      return NextResponse.json(
+        { error: "Cannot optimize CV: Baseline resume information could not be resolved." },
+        { status: 400 }
+      );
+    }
+
+
 
     /**
      * Normalize database JSON fields.
