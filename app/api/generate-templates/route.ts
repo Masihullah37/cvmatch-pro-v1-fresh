@@ -200,12 +200,58 @@ export async function POST(req: Request) {
         : [],
     };
 
-    // Generate optimized CV
-    const generatedContent = await generateOptimizedCV(
+    // // Generate optimized CV
+    // const generatedContent = await generateOptimizedCV(
+    //   originalText,
+    //   analysis.jobDescription || "",
+    //   analysisData
+    // );
+
+
+
+    // Generate optimized CV via the domain-agnostic LLM
+    let generatedContent = await generateOptimizedCV(
       originalText,
-      analysis.jobDescription || "",
+      analysis.jobDescription || "Optimisation standard",
       analysisData
     );
+
+    // ─────────────────────────────────────────────────────────────
+    // 🔒 DOMAIN-AGNOSTIC DATA RETENTION & HYDRATION LAYER
+    // Ensures existing user data is never lost, regardless of industry.
+    // ─────────────────────────────────────────────────────────────
+    if (generatedContent) {
+      if (!generatedContent.userName || generatedContent.userName.trim() === "") {
+        generatedContent.userName = analysis.userName || optimizedJson.userName || "Votre Nom";
+      }
+      if (!generatedContent.jobTitle || generatedContent.jobTitle.trim() === "") {
+        generatedContent.jobTitle = analysis.jobTitle || optimizedJson.jobTitle || "Professionnel Qualifié";
+      }
+      if (!generatedContent.summary || generatedContent.summary.trim() === "") {
+        generatedContent.summary = optimizedJson.summary || "Professionnel expérimenté et axé sur les résultats.";
+      }
+
+      // Merge skills: Force-combine user's existing skills with newly suggested ATS keywords without duplicates
+      const baseSkills = Array.isArray(optimizedJson.skills) ? optimizedJson.skills : [];
+      const missingSkills = analysisData.keywordsMissing || [];
+      if (!generatedContent.skills || generatedContent.skills.length === 0) {
+        generatedContent.skills = Array.from(new Set([...baseSkills, ...missingSkills]));
+      }
+
+      // Fail-safe protection: If the AI output strips section arrays, safely restore user's original data arrays
+      if ((!generatedContent.experience || generatedContent.experience.length === 0) && optimizedJson.experience) {
+        generatedContent.experience = optimizedJson.experience;
+      }
+      if ((!generatedContent.education || generatedContent.education.length === 0) && optimizedJson.education) {
+        generatedContent.education = optimizedJson.education;
+      }
+      if ((!generatedContent.projects || generatedContent.projects.length === 0) && optimizedJson.projects) {
+        generatedContent.projects = optimizedJson.projects;
+      }
+      if ((!generatedContent.languages || generatedContent.languages.length === 0) && optimizedJson.languages) {
+        generatedContent.languages = optimizedJson.languages;
+      }
+    }
 
     // Validate and improve optimized CV
     const optimizedContent = await validateOptimizedCV(
