@@ -479,6 +479,10 @@ export async function POST(req: Request) {
         contact: safeContact,
       };
 
+      console.log("========== FINAL CONTENT ==========");
+      console.log(JSON.stringify(finalContent, null, 2));
+      console.log("===================================");
+
       if (aiSucceeded) {
         await db.update(cvAnalyses)
           .set({ optimizedData: finalContent })
