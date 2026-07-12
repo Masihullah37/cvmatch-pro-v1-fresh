@@ -98,13 +98,29 @@ export async function POST(req: Request) {
     let aiSucceeded = false;
 
     try {
+      // optimizedContent = await generateOptimizedCV(
+      //   "",                     // cvText no longer needed (compact summary built internally)
+      //   analysis.jobDescription || "",
+      //   analysisResult,
+      //   undefined,
+      //   existingStructuredCV
+      // );
+
+      // Cleanly extract the stored raw CV text from DB BEFORE the function call
+      const originalCvText =
+        optimizedData?._originalCvText ||
+        optimizedData?._originalcvtext ||
+        "";
+
+      // Execute the optimized AI call with clean, defined arguments
       optimizedContent = await generateOptimizedCV(
-        "",                     // cvText no longer needed (compact summary built internally)
+        originalCvText,   // ← pass the actual CV text
         analysis.jobDescription || "",
         analysisResult,
         undefined,
         existingStructuredCV
       );
+
 
       if (optimizedContent) {
         aiSucceeded = true;
