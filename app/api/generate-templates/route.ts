@@ -38,6 +38,16 @@
 //     // ── Extract original CV text with multiple fallbacks ──
 //     const optimizedData = analysis.optimizedData as any;
 
+//     console.log(
+//       "[DEBUG] optimizedData keys:",
+//       Object.keys(optimizedData || {})
+//     );
+
+//     console.log(
+//       "[DEBUG] optimizedData:",
+//       JSON.stringify(optimizedData, null, 2)
+//     );
+
 //     const originalText =
 //       optimizedData?._originalCvText ||
 //       optimizedData?._originalcvtext ||
@@ -116,14 +126,7 @@
 //     let optimizedContent: any = null;
 //     let aiSucceeded = false;
 
-//     // try {
-//     //   optimizedContent = await generateOptimizedCV(
-//     //     originalText,
-//     //     analysis.jobDescription || "",
-//     //     analysisResult
-//     //   );
-
-//     try {
+//     { // Changed from 'try {' to simple '{' to establish type-safe block-level scope and fix unclosed block syntax
 //       // Pass both the raw CV text AND the structured data
 //       // so the AI has maximum context to work with
 //       const cvContext = originalText.length > 200
@@ -134,41 +137,6 @@
 //         type: originalText.length > 200 ? "rawText" : "structuredJSON",
 //         length: cvContext.length,
 //       });
-
-//       //   optimizedContent = await generateOptimizedCV(
-//       //     cvContext,
-//       //     analysis.jobDescription || "",
-//       //     analysisResult,
-//       //     existingStructuredCV  // NEW: pass existing data as reference
-//       //   );
-
-//       //   if (optimizedContent) {
-//       //     aiSucceeded = true;
-//       //     console.log("[generate-templates] AI optimization succeeded");
-//       //   }
-//       // } catch (aiError: any) {
-//       //   // Log but DO NOT rethrow — we have a fallback
-//       //   console.error(
-//       //     "[generate-templates] AI optimization failed, using existing data as fallback:",
-//       //     aiError.message
-//       //   );
-//       // }
-
-//       // // ── Step 2: If AI failed, use existing DB data ────
-//       // // This ensures user always sees their templates even
-//       // // if the AI call fails due to truncation/timeout
-//       // if (!optimizedContent) {
-//       //   console.log("[generate-templates] Falling back to existing optimizedData from DB");
-//       //   optimizedContent = analysis.optimizedData;
-//       // }
-
-//       // // ── Step 3: Final safety check ────────────────────
-//       // if (!optimizedContent) {
-//       //   return NextResponse.json(
-//       //     { error: "No CV data available. Please re-upload your CV." },
-//       //     { status: 422 }
-//       //   );
-//       // }
 
 
 //       const analysisResult = {
@@ -309,14 +277,16 @@
 //         aiOptimized: aiSucceeded,
 //       });
 
-//     } catch (error: any) {
-//       console.error('[generate-templates] Unhandled error:', error);
-//       return NextResponse.json(
-//         { error: error.message || 'CV generation failed' },
-//         { status: 500 }
-//       );
-//     }
+//     } // Closes the isolated block scope cleanly
+//   } catch (error: any) {
+//     console.error('[generate-templates] Unhandled error:', error);
+//     return NextResponse.json(
+//       { error: error.message || 'CV generation failed' },
+//       { status: 500 }
+//     );
 //   }
+// }
+
 
 
 import { NextResponse } from 'next/server';
@@ -348,16 +318,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // // ── Extract original CV text ──────────────────────
-    // const originalText =
-    //   (analysis.optimizedData as any)?._originalCvText ||
-    //   (analysis.optimizedData as any)?._originalcvtext ||
-    //   (analysis.optimizedData as any)?._originalCvContext ||
-    //   // "";
-
-
-    // ── Extract original CV text with multiple fallbacks ──
     const optimizedData = analysis.optimizedData as any;
+
+    console.log(
+      "[DEBUG] optimizedData keys:",
+      Object.keys(optimizedData || {})
+    );
+
+    console.log(
+      "[DEBUG] optimizedData:",
+      JSON.stringify(optimizedData, null, 2)
+    );
 
     const originalText =
       optimizedData?._originalCvText ||
@@ -366,10 +337,6 @@ export async function POST(req: Request) {
       optimizedData?._originalcv ||
       "";
 
-    // ── Build structured CV context from existing DB data ─
-    // If originalText is empty or too short, reconstruct
-    // the CV context from the already-parsed structured data
-    // This prevents the AI from generating a blank CV
     const existingStructuredCV = {
       userName: optimizedData?.userName || "",
       jobTitle: optimizedData?.jobTitle || "",
@@ -404,20 +371,19 @@ export async function POST(req: Request) {
       existingExperienceCount: existingStructuredCV.experience.length,
     });
 
-    // ── Build complete analysis result ────────────────
     const analysisResult = {
       atsScore: analysis.atsScore || 0,
       keywordsMissing: Array.isArray(analysis.keywordsMissing)
-        ? analysis.keywordsMissing as string[]
+        ? (analysis.keywordsMissing as string[])
         : [],
       keywordsFound: Array.isArray(analysis.keywordsFound)
-        ? analysis.keywordsFound as string[]
+        ? (analysis.keywordsFound as string[])
         : [],
       suggestions: Array.isArray(analysis.suggestions)
-        ? analysis.suggestions as string[]
+        ? (analysis.suggestions as string[])
         : [],
       flaws: Array.isArray(analysis.flaws)
-        ? analysis.flaws as string[]
+        ? (analysis.flaws as string[])
         : [],
     };
 
@@ -429,90 +395,16 @@ export async function POST(req: Request) {
       originalTextLength: originalText.length,
     });
 
-    // ── Step 1: Try AI optimization with full fallback ─
-    // CRITICAL: Wrapped in its own try/catch so JSON
-    // truncation errors NEVER crash the entire route.
-    // If AI fails for any reason, we fall back to the
-    // existing optimizedData already in the database.
-    let optimizedContent: any = null;
-    let aiSucceeded = false;
-
-    // try {
-    //   optimizedContent = await generateOptimizedCV(
-    //     originalText,
-    //     analysis.jobDescription || "",
-    //     analysisResult
-    //   );
-
-    { // Changed from 'try {' to simple '{' to establish type-safe block-level scope and fix unclosed block syntax
-      // Pass both the raw CV text AND the structured data
-      // so the AI has maximum context to work with
-      const cvContext = originalText.length > 200
-        ? originalText
-        : JSON.stringify(existingStructuredCV, null, 2);
+    {
+      // EXACT FIX 5: Always use structured JSON instead of raw PDF text context
+      const cvContext = JSON.stringify(existingStructuredCV, null, 2);
 
       console.log("[generate-templates] Using CV context:", {
-        type: originalText.length > 200 ? "rawText" : "structuredJSON",
+        type: "structuredJSON",
         length: cvContext.length,
       });
 
-      //   optimizedContent = await generateOptimizedCV(
-      //     cvContext,
-      //     analysis.jobDescription || "",
-      //     analysisResult,
-      //     existingStructuredCV  // NEW: pass existing data as reference
-      //   );
-
-      //   if (optimizedContent) {
-      //     aiSucceeded = true;
-      //     console.log("[generate-templates] AI optimization succeeded");
-      //   }
-      // } catch (aiError: any) {
-      //   // Log but DO NOT rethrow — we have a fallback
-      //   console.error(
-      //     "[generate-templates] AI optimization failed, using existing data as fallback:",
-      //     aiError.message
-      //   );
-      // }
-
-      // // ── Step 2: If AI failed, use existing DB data ────
-      // // This ensures user always sees their templates even
-      // // if the AI call fails due to truncation/timeout
-      // if (!optimizedContent) {
-      //   console.log("[generate-templates] Falling back to existing optimizedData from DB");
-      //   optimizedContent = analysis.optimizedData;
-      // }
-
-      // // ── Step 3: Final safety check ────────────────────
-      // if (!optimizedContent) {
-      //   return NextResponse.json(
-      //     { error: "No CV data available. Please re-upload your CV." },
-      //     { status: 422 }
-      //   );
-      // }
-
-
-      const analysisResult = {
-        atsScore: analysis.atsScore || 0,
-        keywordsMissing: Array.isArray(analysis.keywordsMissing)
-          ? analysis.keywordsMissing as string[] : [],
-        keywordsFound: Array.isArray(analysis.keywordsFound)
-          ? analysis.keywordsFound as string[] : [],
-        suggestions: Array.isArray(analysis.suggestions)
-          ? analysis.suggestions as string[] : [],
-        flaws: Array.isArray(analysis.flaws)
-          ? analysis.flaws as string[] : [],
-      };
-
-      console.log("[generate-templates] ATS data:", {
-        atsScore: analysisResult.atsScore,
-        keywordsMissing: analysisResult.keywordsMissing,
-        suggestionsCount: analysisResult.suggestions.length,
-        flawsCount: analysisResult.flaws.length,
-      });
-
-      // Wrapped in isolated try/catch — JSON truncation errors
-      // NEVER crash the entire route
+      // Wrapped in isolated try/catch — JSON truncation errors NEVER crash the entire route
       let optimizedContent: any = null;
       let aiSucceeded = false;
 
@@ -536,7 +428,6 @@ export async function POST(req: Request) {
         );
       }
 
-      // If AI failed, fall back to existing DB data
       if (!optimizedContent) {
         console.log("[generate-templates] Using existing optimizedData from DB");
         optimizedContent = analysis.optimizedData;
@@ -549,7 +440,6 @@ export async function POST(req: Request) {
         );
       }
 
-      // ── Step 4: Validate and patch keywords (only if AI succeeded) ─
       if (aiSucceeded && analysisResult.keywordsMissing.length > 0) {
         try {
           console.log("[generate-templates] Running keyword validator...");
@@ -558,7 +448,6 @@ export async function POST(req: Request) {
             analysisResult
           );
         } catch (validatorError: any) {
-          // Validator failure is non-fatal — keep the AI-generated content
           console.warn(
             "[generate-templates] Keyword validator failed, keeping AI output:",
             validatorError.message
@@ -566,7 +455,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // ── Step 5: Ensure contact object is always complete ─
       const safeContact = {
         email: optimizedContent?.contact?.email || "",
         phone: optimizedContent?.contact?.phone || "",
@@ -581,8 +469,6 @@ export async function POST(req: Request) {
         contact: safeContact,
       };
 
-      // ── Step 6: Update analysis record ───────────────
-      // Only update if AI actually improved the content
       if (aiSucceeded) {
         await db.update(cvAnalyses)
           .set({ optimizedData: finalContent })
@@ -590,7 +476,6 @@ export async function POST(req: Request) {
         console.log("[generate-templates] Analysis record updated with AI content");
       }
 
-      // ── Step 7: Update all template records ──────────
       const existingTemplates = await db.query.cvTemplates.findMany({
         where: eq(cvTemplates.analysisId, analysisId)
       });
@@ -602,7 +487,6 @@ export async function POST(req: Request) {
               .set({
                 templateData: {
                   ...finalContent,
-                  // Preserve custom section order from each template
                   sectionOrder: (t.templateData as any)?.sectionOrder
                     || (finalContent as any)?.sectionOrder,
                 }
@@ -629,8 +513,7 @@ export async function POST(req: Request) {
         success: true,
         aiOptimized: aiSucceeded,
       });
-
-    } // Closes the isolated block scope cleanly
+    }
   } catch (error: any) {
     console.error('[generate-templates] Unhandled error:', error);
     return NextResponse.json(
