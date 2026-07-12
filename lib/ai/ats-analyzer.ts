@@ -90,8 +90,10 @@ export async function analyzeCV(
   structuredJobDetails?: StructuredJobDetails,
   locale?: string
 ) {
-  const safeCvText = cvText.substring(0, 6000);
-  const safeJobDescription = jobDescription.substring(0, 3000);
+  // const safeCvText = cvText.substring(0, 6000);
+  const safeCvText = cvText.substring(0, 3500);
+  // const safeJobDescription = jobDescription.substring(0, 3000);
+  const safeJobDescription = jobDescription.substring(0, 1200);
   const isGeneral = jobDescription.includes("Optimisation standard");
   const targetLanguage = locale === "fr" ? "French (fr)" : "English (en)";
 
@@ -165,6 +167,7 @@ ${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 2500)}`}
 ${structuredContext}`;
 
 
+
   try {
     const text = await generateLLMResponse({
       prompt,
@@ -178,9 +181,22 @@ ${structuredContext}`;
 
     const parsed = safeParse(text);
 
-    console.log("========== PARSED JSON ==========");
-    console.log(JSON.stringify(parsed, null, 2));
-    console.log("================================");
+    console.log("====================================");
+    console.log("PARSED IS NULL:", parsed === null);
+
+    if (parsed) {
+      console.log("Experience:", parsed.experience?.length);
+      console.log("Education:", parsed.education?.length);
+      console.log("Projects:", parsed.projects?.length);
+      console.log("Skills:", parsed.skills?.length);
+    }
+
+    console.log("====================================");
+
+    // CRITICAL FIX: If LLM returned null/undefined, throw immediately
+    if (!parsed) {
+      throw new Error("The LLM returned invalid JSON.");
+    }
 
     // Validate and enforce atsScore = sum of sub-scores
     if (parsed.scoreBreakdown) {
@@ -202,7 +218,8 @@ ${structuredContext}`;
 // ✍️ EXTRACT RAW CV DATA (no AI optimization)
 // ─────────────────────────────────────────────────────────────
 export async function extractRawCVData(cvText: string) {
-  const safeCvText = cvText.substring(0, 6000);
+  // const safeCvText = cvText.substring(0, 6000);
+  const safeCvText = cvText.substring(0, 3500);
 
   const prompt = `You MUST respond with ONLY a valid JSON object.
 No explanations, no markdown, no text before or after the JSON.
@@ -269,6 +286,7 @@ export async function generateOptimizedCV(
   structuredJobDetails?: StructuredJobDetails | any,
   existingCV?: any  // NEW: existing structured CV as reference
 ) {
+  // const safeJobDescription = jobDescription.substring(0, 3000);
   const safeJobDescription = jobDescription.substring(0, 3000);
   const isGeneral = jobDescription.includes("Optimisation standard");
 
@@ -416,11 +434,14 @@ Return EXACTLY this JSON schema structure:
 STRUCTURED CV
 ==================================================
 
-This structured CV is the ONLY source of truth.
-Do not recreate information from raw text.
-Rewrite and optimize this structure only.
+Use ONLY this structured CV as your input.
+Never recreate missing information.
+Never omit any existing experience.
+Never omit any education.
+Never omit any projects.
+Return the COMPLETE JSON.
 
-${JSON.stringify(existingCV, null, 2)}
+${JSON.stringify(existingCV)}
 
 ${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 1800)}`}
 ${structuredContext}
@@ -430,7 +451,7 @@ ${structuredContext}
     const text = await generateLLMResponse({
       prompt,
       temperature: 0.15,
-      maxTokens: 6000,
+      maxTokens: 2500,
     });
 
     const parsed = safeParse(text);
@@ -553,6 +574,19 @@ ${structuredContext}
         ])
       )
     };
+
+    console.log("========== FINAL MERGED CV ==========");
+
+    console.log({
+      experience: merged.experience?.length,
+      education: merged.education?.length,
+      projects: merged.projects?.length,
+      skills: merged.skills?.length,
+    });
+
+    console.log(JSON.stringify(merged, null, 2));
+
+    console.log("====================================");
 
     return merged;
   } catch (error: any) {
