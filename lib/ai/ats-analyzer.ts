@@ -563,11 +563,19 @@ ${safeCvText}`;
 // }
 
 // ✍️ GENERATE OPTIMIZED CV
+// export async function generateOptimizedCV(
+//   cvText: string,
+//   jobDescription: string,
+//   analysisResult?: any,
+//   structuredJobDetails?: StructuredJobDetails
+// ) {
+
 export async function generateOptimizedCV(
   cvText: string,
   jobDescription: string,
   analysisResult?: any,
-  structuredJobDetails?: StructuredJobDetails
+  structuredJobDetails?: StructuredJobDetails | any,
+  existingCV?: any  // NEW: existing structured CV as reference
 ) {
   const safeJobDescription = jobDescription.substring(0, 3000);
   const isGeneral = jobDescription.includes("Optimisation standard");
