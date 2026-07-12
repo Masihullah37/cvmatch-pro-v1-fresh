@@ -85,10 +85,34 @@ export async function generateLLMResponse({
     // With compacted prompts (~2000-3000 chars / ~800-1000 tokens input),
     // we have room for 2500 output tokens.
     // Google / Anthropic / OpenAI use the full maxTokens unchanged.
+
+    // const effectiveMaxTokens =
+    //   config.provider.toLowerCase() === "groq"
+    //     ? Math.min(maxTokens, 2500)
+    //     : maxTokens;
+
+
+
+    // Provider-specific output token limits:
+    //
+    // GROQ (openai/gpt-oss-120b):
+    //   8000 TPM combined (input + output)
+    //   Cap output at 2500 → leaves room for input tokens
+    //
+    // GOOGLE (gemini-3.5-flash):
+    //   THINKING model — consumes hidden reasoning tokens
+    //   BEFORE generating output. Observed: 3836 thinking
+    //   tokens used internally, leaving only 160 for JSON
+    //   → JSON truncated → blank CV.
+    //   Fix: give 8192 so thinking(3836) + output(4356) fit.
+    //
+    // OPENAI / ANTHROPIC: standard models, use maxTokens as-is
     const effectiveMaxTokens =
       config.provider.toLowerCase() === "groq"
         ? Math.min(maxTokens, 2500)
-        : maxTokens;
+        : config.provider.toLowerCase() === "google"
+          ? 8192
+          : maxTokens;
 
     const result = await generateText({
       model,
