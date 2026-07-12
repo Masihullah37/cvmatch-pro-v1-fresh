@@ -79,47 +79,45 @@ export async function generateLLMResponse({
   async function executeGenerate(config: LLMConfig) {
     const model = getModel(config);
     console.log("Using model:", config.model);
-
-    // const { text } = await generateText({
-    //   model,
-    //   system,
-    //   prompt,
-    //   temperature,
-    //   // Cap Groq output tokens to stay within free tier TPM limit.
-    //   // openai/gpt-oss-120b: 8000 TPM = input + output combined.
-    //   // Capping output at 1800 leaves ~6200 tokens for input.
-    //   // Google/Anthropic/OpenAI get full maxTokens unchanged.
-    //   maxOutputTokens:
-    //     config.provider.toLowerCase() === "groq"
-    //       ? Math.min(maxTokens, 1800)
-    //       : maxTokens,
-    // });
-
     console.log("Prompt length (chars):", prompt.length);
+
+    // Groq free tier: ~8000 TPM (input + output combined).
+    // With compacted prompts (~2000-3000 chars / ~800-1000 tokens input),
+    // we have room for 2500 output tokens.
+    // Google / Anthropic / OpenAI use the full maxTokens unchanged.
+    const effectiveMaxTokens =
+      config.provider.toLowerCase() === "groq"
+        ? Math.min(maxTokens, 2500)
+        : maxTokens;
 
     const result = await generateText({
       model,
       system,
       prompt,
       temperature,
-      maxOutputTokens:
-        config.provider.toLowerCase() === "groq"
-          ? Math.min(maxTokens, 1800)
-          : maxTokens,
+      maxOutputTokens: effectiveMaxTokens,
     });
 
     console.log("Finish reason:", result.finishReason);
     console.log("Usage:", result.usage);
 
+    // Guard: if the model ran out of tokens the JSON will be truncated.
+    // Throw immediately so the fallback LLM is triggered instead of
+    // passing a broken partial response to the JSON parser.
+    if (result.finishReason === "length") {
+      throw new Error(
+        `Model ${config.model} hit token limit (finish_reason=length). Prompt may be too long.`
+      );
+    }
+
     const text = result.text;
 
     // Strip reasoning blocks from thinking models.
     // openai/gpt-oss-120b outputs <think>...</think> before JSON.
-    // Must strip BEFORE passing to JSON parser or it grabs
-    // wrong { } characters from inside the reasoning block.
+    // Must strip BEFORE passing to JSON parser.
     const cleaned = text
       .replace(/<think>[\s\S]*?<\/think>/gi, "")
-      .replace(/<thinking>[\s\S]*?<\/antml:thinking>/gi, "")
+      .replace(/<thinking>[\s\S]*?<\/thinking>/gi, "")
       .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
       .trim();
 
