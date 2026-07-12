@@ -76,52 +76,42 @@ export async function generateLLMResponse({
     throw error;
   }
 
-
-  // async function executeGenerate(config: LLMConfig) {
-  //   const model = getModel(config);
-  //   console.log("Using model:", config.model);
-
-
-  //   // const { text } = await generateText({
-  //   //   model,
-  //   //   system,
-  //   //   prompt,
-  //   //   temperature,
-  //   //   maxOutputTokens: maxTokens,
-  //   // });
-
-  //   const { text } = await generateText({
-  //     model,
-  //     system,
-  //     prompt,
-  //     temperature,
-  //     maxOutputTokens:
-  //       config.provider.toLowerCase() === "groq"
-  //         ? Math.min(maxTokens, 1800)
-  //         : maxTokens,
-  //   });
-
-  //   return text.trim();
-  // }
-
   async function executeGenerate(config: LLMConfig) {
     const model = getModel(config);
     console.log("Using model:", config.model);
 
-    const { text } = await generateText({
+    // const { text } = await generateText({
+    //   model,
+    //   system,
+    //   prompt,
+    //   temperature,
+    //   // Cap Groq output tokens to stay within free tier TPM limit.
+    //   // openai/gpt-oss-120b: 8000 TPM = input + output combined.
+    //   // Capping output at 1800 leaves ~6200 tokens for input.
+    //   // Google/Anthropic/OpenAI get full maxTokens unchanged.
+    //   maxOutputTokens:
+    //     config.provider.toLowerCase() === "groq"
+    //       ? Math.min(maxTokens, 1800)
+    //       : maxTokens,
+    // });
+
+    console.log("Prompt length (chars):", prompt.length);
+
+    const result = await generateText({
       model,
       system,
       prompt,
       temperature,
-      // Cap Groq output tokens to stay within free tier TPM limit.
-      // openai/gpt-oss-120b: 8000 TPM = input + output combined.
-      // Capping output at 1800 leaves ~6200 tokens for input.
-      // Google/Anthropic/OpenAI get full maxTokens unchanged.
       maxOutputTokens:
         config.provider.toLowerCase() === "groq"
           ? Math.min(maxTokens, 1800)
           : maxTokens,
     });
+
+    console.log("Finish reason:", result.finishReason);
+    console.log("Usage:", result.usage);
+
+    const text = result.text;
 
     // Strip reasoning blocks from thinking models.
     // openai/gpt-oss-120b outputs <think>...</think> before JSON.
