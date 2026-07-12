@@ -123,7 +123,7 @@ const DOMAIN_SIGNALS: Record<Domain, string[]> = {
   general: [],
 };
 
-function detectDomain(existingCV: any): Domain {
+function detectDomain(existingCV: any, rawCvText?: string): Domain {
   const profile = [
     ...(Array.isArray(existingCV?.skills) ? existingCV.skills : []),
     ...(Array.isArray(existingCV?.experience)
@@ -131,6 +131,8 @@ function detectDomain(existingCV: any): Domain {
       : []),
     existingCV?.jobTitle || "",
     existingCV?.summary || "",
+    // Fallback: also scan raw CV text when existingCV has no structured data
+    rawCvText || "",
   ]
     .join(" ")
     .toLowerCase();
@@ -340,7 +342,11 @@ ${safeCvText}`;
     const text = await generateLLMResponse({
       prompt,
       temperature: 0,
-      maxTokens: 2000,
+      // Thinking models (gemini-3.5-flash, gpt-oss-120b) burn ~1900 tokens on
+      // internal reasoning before emitting any text. 2000 left only 80 tokens
+      // for actual JSON output — not enough for a full CV structure.
+      // 4000 gives reasoning models room to finish the JSON completely.
+      maxTokens: 4000,
     });
 
     return safeParse(text);
@@ -365,7 +371,9 @@ export async function generateOptimizedCV(
   const isGeneral = jobDescription.includes("Optimisation standard");
 
   // ── Detect candidate domain for keyword filtering ──────────
-  const domain = detectDomain(existingCV);
+  // Pass raw cvText as fallback so domain detection works even when
+  // extractRawCVData failed and existingCV has no structured fields.
+  const domain = detectDomain(existingCV, cvText);
 
   // Only inject missing keywords that belong to the candidate's domain
   const rawMissing: string[] = analysisResult?.keywordsMissing?.slice(0, 12) || [];
@@ -383,11 +391,18 @@ export async function generateOptimizedCV(
   console.log("[generateOptimizedCV] Domain-filtered missing:", domainFilteredMissing);
 
   // ── Build compact CV representation ───────────────────────
-  // Use compact text summary instead of full JSON dump
-  // to drastically reduce prompt size
+  // Prefer the structured compact summary (built from existingCV fields).
+  // CRITICAL FALLBACK: when extractRawCVData failed, existingCV has no
+  // structured fields so compactCV would be empty. In that case, use the
+  // raw CV text stored in the DB (_originalCvText, passed as cvText).
   const compactCV = buildCompactCVSummary(existingCV || {});
+  const finalCVContext = compactCV.length > 50
+    ? compactCV
+    : cvText.substring(0, 2500); // raw _originalCvText from DB
 
   console.log("[generateOptimizedCV] Compact CV length:", compactCV.length);
+  console.log("[generateOptimizedCV] Context source:", compactCV.length > 50 ? "structured" : "raw text");
+  console.log("[generateOptimizedCV] Final context length:", finalCVContext.length);
 
   const atsSection = isGeneral
     ? ""
@@ -413,7 +428,7 @@ Return EXACTLY this JSON structure (complete, valid JSON):
 {"userName":"","jobTitle":"","summary":"","contact":{"email":"","phone":"","location":"","linkedin":"","github":"","portfolio":""},"experience":[{"title":"","company":"","period":"","description":""}],"education":[{"degree":"","school":"","year":"","details":""}],"projects":[{"name":"","description":"","technologies":[]}],"skills":[],"languages":[{"language":"","level":""}],"interests":[]}
 
 CANDIDATE CV:
-${compactCV}
+${finalCVContext}
 
 ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
 
