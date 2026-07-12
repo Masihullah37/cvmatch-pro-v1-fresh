@@ -69,36 +69,49 @@ function extractJSON(text: string): string {
 // 🔒 SAFE PARSER
 // ─────────────────────────────────────────────────────────────
 
+// function safeParse(text: string): any {
+//   try {
+//     const jsonString = extractJSON(text);
+
+//     try {
+//       return JSON.parse(jsonString);
+
+//     } catch {
+
+//       console.warn("⚠ Attempting JSON repair...");
+
+//       const { jsonrepair } = require("jsonrepair");
+
+//       return JSON.parse(
+//         jsonrepair(jsonString)
+//       );
+//     }
+
+//   } catch (err: any) {
+
+//     console.error("❌ JSON PARSE FAILED");
+
+//     console.error(
+//       "RAW RESPONSE (first 1500 chars):",
+//       text.substring(0, 1500)
+//     );
+
+//     throw new Error(
+//       `Invalid JSON returned by AI: ${err.message}`
+//     );
+//   }
+// }
+
+
 function safeParse(text: string): any {
   try {
     const jsonString = extractJSON(text);
-
-    try {
-      return JSON.parse(jsonString);
-
-    } catch {
-
-      console.warn("⚠ Attempting JSON repair...");
-
-      const { jsonrepair } = require("jsonrepair");
-
-      return JSON.parse(
-        jsonrepair(jsonString)
-      );
-    }
-
+    return JSON.parse(jsonString);
   } catch (err: any) {
-
-    console.error("❌ JSON PARSE FAILED");
-
-    console.error(
-      "RAW RESPONSE (first 1500 chars):",
-      text.substring(0, 1500)
-    );
-
-    throw new Error(
-      `Invalid JSON returned by AI: ${err.message}`
-    );
+    console.error("❌ JSON PARSE FAILED:", err.message);
+    console.error("RAW RESPONSE (first 500 chars):", text.substring(0, 500));
+    // Return null instead of throwing so callers can use fallback
+    return null;
   }
 }
 
@@ -716,6 +729,13 @@ ${structuredContext}
     });
 
     const parsed = safeParse(text);
+
+    // If JSON was truncated or invalid, return null so
+    // generate-templates/route.ts uses existing DB data as fallback
+    if (!parsed) {
+      console.warn("[generateOptimizedCV] safeParse returned null — JSON likely truncated by token limit");
+      return null;
+    }
 
     // Hard fallback: mapping safety array checks
     if (analysisResult?.keywordsMissing && Array.isArray(analysisResult.keywordsMissing)) {
