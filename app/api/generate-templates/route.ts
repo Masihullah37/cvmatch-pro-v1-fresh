@@ -441,6 +441,9 @@ export async function POST(req: Request) {
       if (!optimizedContent) {
         console.log("[generate-templates] Using existing optimizedData from DB");
         optimizedContent = analysis.optimizedData;
+        console.log("========= FALLBACK =========");
+        console.log(JSON.stringify(optimizedContent, null, 2));
+        console.log("============================");
       }
 
       if (!optimizedContent) {
