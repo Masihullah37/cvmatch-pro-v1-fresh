@@ -320,6 +320,8 @@ export async function POST(req: Request) {
 
     const optimizedData = analysis.optimizedData as any;
 
+    console.log("========== OPTIMIZED DATA ==========");
+
     console.log(
       "[DEBUG] optimizedData keys:",
       Object.keys(optimizedData || {})
@@ -329,6 +331,8 @@ export async function POST(req: Request) {
       "[DEBUG] optimizedData:",
       JSON.stringify(optimizedData, null, 2)
     );
+
+    console.log("====================================");
 
     const originalText =
       optimizedData?._originalCvText ||
@@ -358,6 +362,12 @@ export async function POST(req: Request) {
         ? optimizedData.projects
         : [],
     };
+
+    console.log("========== EXISTING STRUCTURED CV ==========");
+
+    console.log(JSON.stringify(existingStructuredCV, null, 2));
+
+    console.log("===========================================");
 
     const hasStructuredData =
       existingStructuredCV.userName ||
