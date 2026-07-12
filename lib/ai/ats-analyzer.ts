@@ -8,11 +8,9 @@ import { applyCoherentAtsScoring } from "@/lib/ai/keyword-normalizer";
 
 function extractJSON(text: string): string {
   // Step 1: Strip reasoning blocks (double safety after llm-gateway)
-  // openai/gpt-oss-120b sometimes embeds partial JSON inside
-  // <think> blocks — stripping here prevents false matches
   let cleaned = text
     .replace(/<think>[\s\S]*?<\/think>/gi, "")
-    .replace(/<thinking>[\s\S]*?<\/antml:thinking>/gi, "")
+    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, "")
     .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
     .trim();
 
@@ -23,9 +21,6 @@ function extractJSON(text: string): string {
     .trim();
 
   // Step 3: Find the LAST complete JSON object by brace balancing
-  // WHY LAST: reasoning models output real JSON at the END
-  // A naive "first { to last }" approach grabs wrong content
-  // when <think> block contained { } characters
   const lastBraceClose = cleaned.lastIndexOf("}");
   if (lastBraceClose === -1) {
     console.error("❌ No closing } found. Raw:", text.substring(0, 300));
@@ -47,7 +42,6 @@ function extractJSON(text: string): string {
   if (startIndex !== -1) {
     cleaned = cleaned.substring(startIndex, lastBraceClose + 1);
   } else {
-    // Fallback: cut everything before first {
     const firstBrace = cleaned.indexOf("{");
     if (firstBrace === -1) {
       console.error("❌ No JSON found. Raw:", text.substring(0, 300));
@@ -56,7 +50,6 @@ function extractJSON(text: string): string {
     cleaned = cleaned.substring(firstBrace);
   }
 
-  // Step 4: Validate boundaries
   if (!cleaned.startsWith("{") || !cleaned.endsWith("}")) {
     console.error("❌ Invalid JSON boundaries:", cleaned.substring(0, 200));
     throw new Error("Extracted content is not a valid JSON object");
@@ -76,9 +69,176 @@ function safeParse(text: string): any {
   } catch (err: any) {
     console.error("❌ JSON PARSE FAILED:", err.message);
     console.error("RAW RESPONSE (first 500 chars):", text.substring(0, 500));
-    // Return null instead of throwing so callers can use fallback
     return null;
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 🌐 DOMAIN DETECTION
+// Detects the candidate's professional domain from existing
+// skills and experience titles so we only inject keywords
+// that are relevant to their field.
+// ─────────────────────────────────────────────────────────────
+
+type Domain =
+  | "it_dev"
+  | "finance"
+  | "healthcare"
+  | "administrative"
+  | "trades"
+  | "general";
+
+const DOMAIN_SIGNALS: Record<Domain, string[]> = {
+  it_dev: [
+    "java", "python", "javascript", "typescript", "react", "vue", "angular",
+    "node", "spring", "docker", "kubernetes", "k8s", "aws", "azure", "gcp",
+    "sql", "mongodb", "postgresql", "redis", "graphql", "php", "laravel",
+    "symfony", "django", "flask", "git", "devops", "ci/cd", "linux",
+    "terraform", "ansible", "jenkins", "microservices", "api", "rest",
+    "développeur", "developpeur", "informatique", "logiciel", "software",
+    "backend", "frontend", "fullstack", "full stack", "full-stack",
+  ],
+  finance: [
+    "comptabilité", "comptable", "finance", "audit", "fiscalité", "bilan",
+    "sap", "erp", "sage", "excel", "tableau de bord", "budget", "trésorerie",
+    "accountant", "gaap", "ifrs", "cpa", "analyste financier",
+  ],
+  healthcare: [
+    "infirmier", "infirmière", "soins", "médecin", "pharmacien", "kiné",
+    "kinésithérapeute", "sage-femme", "aide-soignant", "hôpital", "clinique",
+    "patient", "nursing", "doctor", "nurse", "pharmacist", "medical",
+    "healthcare", "santé", "urgences",
+  ],
+  administrative: [
+    "secrétaire", "secrétariat", "réceptionniste", "accueil", "administrative",
+    "assistant", "assistante", "gestion", "planning", "agenda", "courrier",
+    "classement", "bureautique", "word", "outlook", "powerpoint",
+  ],
+  trades: [
+    "électricien", "electrician", "plombier", "plumber", "menuisier",
+    "charpentier", "maçon", "peintre", "technicien", "maintenance",
+    "installation", "câblage", "réseau électrique", "chauffage",
+  ],
+  // Catch-all: no signals — detected when no other domain scores ≥ 2
+  general: [],
+};
+
+function detectDomain(existingCV: any): Domain {
+  const profile = [
+    ...(Array.isArray(existingCV?.skills) ? existingCV.skills : []),
+    ...(Array.isArray(existingCV?.experience)
+      ? existingCV.experience.map((e: any) => `${e.title || ""} ${e.company || ""}`)
+      : []),
+    existingCV?.jobTitle || "",
+    existingCV?.summary || "",
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  const scores: Record<Domain, number> = {
+    it_dev: 0,
+    finance: 0,
+    healthcare: 0,
+    administrative: 0,
+    trades: 0,
+    general: 0,
+  };
+
+  for (const [domain, signals] of Object.entries(DOMAIN_SIGNALS) as [Domain, string[]][]) {
+    for (const signal of signals) {
+      if (profile.includes(signal)) {
+        scores[domain]++;
+      }
+    }
+  }
+
+  const best = (Object.entries(scores) as [Domain, number][]).reduce(
+    (a, b) => (b[1] > a[1] ? b : a),
+    ["general", 0] as [Domain, number]
+  );
+
+  const detectedDomain = best[1] >= 2 ? best[0] : "general";
+  console.log("[Domain detection] scores:", scores, "→ detected:", detectedDomain);
+  return detectedDomain;
+}
+
+function filterKeywordsByDomain(keywords: string[], domain: Domain): string[] {
+  if (domain === "general") return keywords;
+
+  const signals = DOMAIN_SIGNALS[domain];
+
+  return keywords.filter((kw) => {
+    const lower = kw.toLowerCase();
+    // Keep if the keyword matches any signal of the detected domain
+    return signals.some((s) => lower.includes(s) || s.includes(lower));
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// 📦 COMPACT CV SUMMARY BUILDER
+// Builds a condensed text representation of the CV that fits
+// inside the token budget while preserving all key data.
+// ─────────────────────────────────────────────────────────────
+
+function buildCompactCVSummary(cv: any): string {
+  const lines: string[] = [];
+
+  if (cv?.userName) lines.push(`Name: ${cv.userName}`);
+  if (cv?.jobTitle) lines.push(`Title: ${cv.jobTitle}`);
+
+  if (cv?.summary) {
+    lines.push(`Summary: ${String(cv.summary).substring(0, 300)}`);
+  }
+
+  if (cv?.contact && typeof cv.contact === "object") {
+    const c = cv.contact;
+    const parts = [c.email, c.phone, c.location, c.linkedin, c.github, c.portfolio]
+      .filter(Boolean)
+      .join(" | ");
+    if (parts) lines.push(`Contact: ${parts}`);
+  }
+
+  if (Array.isArray(cv?.experience) && cv.experience.length > 0) {
+    lines.push("Experience:");
+    for (const exp of cv.experience) {
+      const desc = String(exp.description || "").substring(0, 120);
+      lines.push(
+        `  - ${exp.title || "?"} @ ${exp.company || "?"} (${exp.period || "?"}): ${desc}`
+      );
+    }
+  }
+
+  if (Array.isArray(cv?.education) && cv.education.length > 0) {
+    lines.push("Education:");
+    for (const edu of cv.education) {
+      lines.push(
+        `  - ${edu.degree || "?"} | ${edu.school || "?"} (${edu.year || "?"})`
+      );
+    }
+  }
+
+  if (Array.isArray(cv?.skills) && cv.skills.length > 0) {
+    lines.push(`Skills: ${cv.skills.join(", ")}`);
+  }
+
+  if (Array.isArray(cv?.projects) && cv.projects.length > 0) {
+    lines.push("Projects:");
+    for (const p of cv.projects) {
+      const tech = Array.isArray(p.technologies) ? p.technologies.join(", ") : "";
+      lines.push(`  - ${p.name || "?"}: ${tech}`);
+    }
+  }
+
+  if (Array.isArray(cv?.languages) && cv.languages.length > 0) {
+    const langs = cv.languages.map((l: any) => `${l.language} (${l.level})`).join(", ");
+    lines.push(`Languages: ${langs}`);
+  }
+
+  if (Array.isArray(cv?.interests) && cv.interests.length > 0) {
+    lines.push(`Interests: ${cv.interests.join(", ")}`);
+  }
+
+  return lines.join("\n");
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -90,89 +250,45 @@ export async function analyzeCV(
   structuredJobDetails?: StructuredJobDetails,
   locale?: string
 ) {
-  // const safeCvText = cvText.substring(0, 6000);
-  const safeCvText = cvText.substring(0, 3500);
-  // const safeJobDescription = jobDescription.substring(0, 3000);
-  const safeJobDescription = jobDescription.substring(0, 1200);
+  // Keep inputs tight — analysis only needs keywords, not full paragraphs
+  const safeCvText = cvText.substring(0, 2000);
+  const safeJobDescription = jobDescription.substring(0, 800);
   const isGeneral = jobDescription.includes("Optimisation standard");
   const targetLanguage = locale === "fr" ? "French (fr)" : "English (en)";
 
   const structuredContext = structuredJobDetails
-    ? `
-Structured Job Data:
-- Title: ${structuredJobDetails.title}
-- Skills: ${structuredJobDetails.skills.join(", ") || "N/A"}
-- Requirements: ${structuredJobDetails.requirements.join(" | ") || "N/A"}
-- Responsibilities: ${structuredJobDetails.responsibilities.join(" | ") || "N/A"}
-- Keyword seeds: ${structuredJobDetails.keywords.join(", ") || "N/A"}
-`
+    ? `Job Skills: ${structuredJobDetails.skills.slice(0, 10).join(", ") || "N/A"}\nJob Requirements: ${structuredJobDetails.requirements.slice(0, 5).join(" | ") || "N/A"}`
     : "";
 
-  const prompt = `You MUST respond with ONLY a valid JSON object.
-No explanations, no markdown, no text before or after the JSON.
-Start your response with { and end with }.
+  const prompt = `Respond ONLY with a valid JSON object. No markdown, no text outside JSON.
 
-Task: Analyze this CV ${isGeneral ? "for general professional standards" : "against the Job Description for ATS compatibility"}.
+Task: ATS analysis of CV ${isGeneral ? "for general professional standards" : "vs Job Description"}.
+Language for flaws/suggestions: ${targetLanguage}.
 
-LANGUAGE REQUIREMENT:
-- Write ALL "flaws" and "suggestions" in ${targetLanguage}.
-- Keywords must be in their original language as they appear in the CV/JD.
+KEYWORD RULES:
+- keywordsMissing: hard technical skills in JD but NOT in CV (max 12, max 3 words each)
+- keywordsFound: hard technical skills in BOTH (max 12)
+- No soft skills, no full sentences, no duplicates across lists
 
-KEYWORD RULES (Critical — read carefully):
-1. Keywords = ONLY hard technical skills, tools, frameworks, coding languages, methodologies (React, Docker, Agile, PHP, Git, Python, etc.)
-2. Maximum 3 words per keyword, maximum 30 characters.
-3. NEVER include: full sentences, job titles, soft skills, generic words (motivé, expérience, application).
-4. keywordsMissing = hard skills in JD but NOT in CV (max 15 items).
-5. keywordsFound = hard skills present in BOTH CV and JD (max 15 items).
-6. NEVER put the same skill in both lists.
-7. If a full skill (e.g. "RESTful API") is in CV, do NOT list substrings (e.g. "REST", "API") as missing.
+SCORING (must sum to atsScore):
+keywordMatch/30, format/20, experience/20, education/10, skills/15, readability/5
 
-FLAW & SUGGESTION RULES:
-1. Each flaw/suggestion must be a complete, professional, actionable sentence in ${targetLanguage}.
-2. NOT single words or fragments — full sentences only.
-3. Maximum 5 flaws, maximum 5 suggestions.
-4. Example good flaw: "Vos expériences ne contiennent pas d'indicateurs chiffrés (%, €, délais) pour démontrer votre impact."
-5. Example bad flaw: "chiffres" or "impact manquant".
+Return EXACTLY:
+{"atsScore":0,"scoreBreakdown":{"keywordMatch":{"score":0,"max":30},"format":{"score":0,"max":20},"experience":{"score":0,"max":20},"education":{"score":0,"max":10},"skills":{"score":0,"max":15},"readability":{"score":0,"max":5}},"flaws":["full sentence flaw 1"],"suggestions":["full sentence suggestion 1"],"keywordsMissing":["Skill1"],"keywordsFound":["Skill2"]}
 
-SCORING RULES (must sum to atsScore):
-- keywordMatch: max 30pts. Formula: (keywordsFound.length / (keywordsFound.length + keywordsMissing.length)) * 30. If both empty: 15.
-- format: max 20pts. Deduct 5pts per structural flaw (missing contact, bad layout). Min 5.
-- experience: max 20pts. Perfect match=20, partial=10-15, no match=0-9.
-- education: max 10pts. Required degree=10, different field=5, missing=0.
-- skills: max 15pts. Strong technical list=15, weak/missing=5-10.
-- readability: max 5pts. Clear hierarchy=5, verbose/wall of text=1-4.
-- atsScore MUST equal the exact sum of all 6 sub-scores.
-
-Return this EXACT JSON structure:
-{
-  "atsScore": 0,
-  "scoreBreakdown": {
-    "keywordMatch": { "score": 0, "max": 30 },
-    "format": { "score": 0, "max": 20 },
-    "experience": { "score": 0, "max": 20 },
-    "education": { "score": 0, "max": 10 },
-    "skills": { "score": 0, "max": 15 },
-    "readability": { "score": 0, "max": 5 }
-  },
-  "flaws": ["sentence 1", "sentence 2"],
-  "suggestions": ["actionable sentence 1", "actionable sentence 2"],
-  "keywordsMissing": ["TechnicalSkill1", "TechnicalSkill2"],
-  "keywordsFound": ["FoundSkill1", "FoundSkill2"]
-}
+Max 5 flaws, max 5 suggestions. Full professional sentences only.
 
 CV:
 ${safeCvText}
 
-${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 2500)}`}
+${isGeneral ? "" : `Job Description:\n${safeJobDescription}`}
 ${structuredContext}`;
-
-
 
   try {
     const text = await generateLLMResponse({
       prompt,
       temperature: 0.1,
-      maxTokens: 2500,
+      maxTokens: 1800,
     });
 
     console.log("========== RAW ANALYSIS RESPONSE ==========");
@@ -181,27 +297,17 @@ ${structuredContext}`;
 
     const parsed = safeParse(text);
 
-    console.log("====================================");
     console.log("PARSED IS NULL:", parsed === null);
 
-    if (parsed) {
-      console.log("Experience:", parsed.experience?.length);
-      console.log("Education:", parsed.education?.length);
-      console.log("Projects:", parsed.projects?.length);
-      console.log("Skills:", parsed.skills?.length);
-    }
-
-    console.log("====================================");
-
-    // CRITICAL FIX: If LLM returned null/undefined, throw immediately
     if (!parsed) {
       throw new Error("The LLM returned invalid JSON.");
     }
 
-    // Validate and enforce atsScore = sum of sub-scores
+    // Enforce atsScore = sum of sub-scores
     if (parsed.scoreBreakdown) {
-      const calculatedTotal = Object.values(parsed.scoreBreakdown as Record<string, { score: number }>)
-        .reduce((sum, val) => sum + (val.score || 0), 0);
+      const calculatedTotal = Object.values(
+        parsed.scoreBreakdown as Record<string, { score: number }>
+      ).reduce((sum, val) => sum + (val.score || 0), 0);
       if (Math.abs(calculatedTotal - parsed.atsScore) > 2) {
         parsed.atsScore = calculatedTotal;
       }
@@ -218,45 +324,14 @@ ${structuredContext}`;
 // ✍️ EXTRACT RAW CV DATA (no AI optimization)
 // ─────────────────────────────────────────────────────────────
 export async function extractRawCVData(cvText: string) {
-  // const safeCvText = cvText.substring(0, 6000);
-  const safeCvText = cvText.substring(0, 3500);
+  const safeCvText = cvText.substring(0, 2000);
 
-  const prompt = `You MUST respond with ONLY a valid JSON object.
-No explanations, no markdown, no text before or after the JSON.
-Start your response with { and end with }.
+  const prompt = `Respond ONLY with a valid JSON object. No markdown, no text outside JSON.
 
-Task: Extract all information from this CV exactly as written.
-DO NOT optimize, rephrase, or improve anything.
-Match the original language of the CV exactly.
+Extract all information from this CV exactly as written. Do NOT optimize or rephrase anything.
 
-Return this EXACT JSON structure:
-{
-  "userName": "full name from CV",
-  "jobTitle": "current or most recent job title",
-  "summary": "professional summary if present, else empty string",
-  "contact": {
-    "email": "",
-    "phone": "",
-    "location": "",
-    "linkedin": "",
-    "github": "",
-    "portfolio": ""
-  },
-  "experience": [
-    { "title": "", "company": "", "period": "", "description": "" }
-  ],
-  "education": [
-    { "degree": "", "school": "", "year": "", "details": "" }
-  ],
-  "projects": [
-    { "name": "", "description": "", "technologies": [] }
-  ],
-  "skills": [],
-  "languages": [
-    { "language": "", "level": "" }
-  ],
-  "interests": []
-}
+Return EXACTLY:
+{"userName":"","jobTitle":"","summary":"","contact":{"email":"","phone":"","location":"","linkedin":"","github":"","portfolio":""},"experience":[{"title":"","company":"","period":"","description":""}],"education":[{"degree":"","school":"","year":"","details":""}],"projects":[{"name":"","description":"","technologies":[]}],"skills":[],"languages":[{"language":"","level":""}],"interests":[]}
 
 CV:
 ${safeCvText}`;
@@ -265,7 +340,7 @@ ${safeCvText}`;
     const text = await generateLLMResponse({
       prompt,
       temperature: 0,
-      maxTokens: 5000,
+      maxTokens: 2000,
     });
 
     return safeParse(text);
@@ -284,174 +359,69 @@ export async function generateOptimizedCV(
   jobDescription: string,
   analysisResult?: any,
   structuredJobDetails?: StructuredJobDetails | any,
-  existingCV?: any  // NEW: existing structured CV as reference
+  existingCV?: any
 ) {
-  // const safeJobDescription = jobDescription.substring(0, 3000);
-  const safeJobDescription = jobDescription.substring(0, 3000);
+  const safeJobDescription = jobDescription.substring(0, 600);
   const isGeneral = jobDescription.includes("Optimisation standard");
 
-  const missingKeywords = analysisResult?.keywordsMissing?.slice(0, 10).join(", ") || "";
-  const foundKeywords = analysisResult?.keywordsFound?.join(", ") || "";
-  const suggestions = analysisResult?.suggestions?.join("\n- ") || "";
-  const flaws = analysisResult?.flaws?.join("\n- ") || "";
+  // ── Detect candidate domain for keyword filtering ──────────
+  const domain = detectDomain(existingCV);
 
-  // ========================================================
-  // 🔒 CORE FIX: SAFE SEED CONTEXT LAYER
-  // Ensures safeCvText is NEVER wiped out into an empty string
-  // ========================================================
-  let safeCvText = cvText && cvText.trim().length > 15 ? cvText : "";
+  // Only inject missing keywords that belong to the candidate's domain
+  const rawMissing: string[] = analysisResult?.keywordsMissing?.slice(0, 12) || [];
+  const domainFilteredMissing =
+    domain === "general" ? rawMissing : filterKeywordsByDomain(rawMissing, domain);
 
-  if (analysisResult && typeof analysisResult === "object") {
-    // Look everywhere for structured fallback records if the string was unhydrated
-    const backupSource = analysisResult.optimizedData || analysisResult.optimizedJson || null;
+  // Always keep found keywords + domain-filtered missing keywords
+  const missingKeywords = domainFilteredMissing.join(", ");
+  const foundKeywords = (analysisResult?.keywordsFound || []).join(", ");
+  const suggestions = (analysisResult?.suggestions || []).slice(0, 4).join("\n- ");
+  const flaws = (analysisResult?.flaws || []).slice(0, 3).join("\n- ");
 
-    if (backupSource && backupSource.experience && Array.isArray(backupSource.experience) && backupSource.experience.length > 0) {
-      console.log("🔄 [Optimizer] Reconstructing execution context from parsed database arrays.");
+  console.log("[generateOptimizedCV] Domain:", domain);
+  console.log("[generateOptimizedCV] Raw missing:", rawMissing);
+  console.log("[generateOptimizedCV] Domain-filtered missing:", domainFilteredMissing);
 
-      const reconstruction: string[] = [];
-      if (backupSource.userName) reconstruction.push(`Candidate Name: ${backupSource.userName}`);
-      if (backupSource.jobTitle) reconstruction.push(`Current/Target Title: ${backupSource.jobTitle}`);
-      if (backupSource.summary) reconstruction.push(`Professional Summary:\n${backupSource.summary}`);
+  // ── Build compact CV representation ───────────────────────
+  // Use compact text summary instead of full JSON dump
+  // to drastically reduce prompt size
+  const compactCV = buildCompactCVSummary(existingCV || {});
 
-      if (backupSource.skills && Array.isArray(backupSource.skills)) {
-        reconstruction.push(`Skills:\n${backupSource.skills.join(", ")}`);
-      }
+  console.log("[generateOptimizedCV] Compact CV length:", compactCV.length);
 
-      reconstruction.push(`Experience History:\n${JSON.stringify(backupSource.experience, null, 2)}`);
+  const atsSection = isGeneral
+    ? ""
+    : `ATS Score: ${analysisResult?.atsScore ?? "?"}/100
+Missing Keywords (add if truthful): ${missingKeywords || "None"}
+Found Keywords (keep): ${foundKeywords || "None"}
+Key Weaknesses: ${flaws || "None"}
+Key Suggestions: ${suggestions || "None"}`;
 
-      if (backupSource.education && Array.isArray(backupSource.education)) {
-        reconstruction.push(`Education History:\n${JSON.stringify(backupSource.education, null, 2)}`);
-      }
-      if (backupSource.projects && Array.isArray(backupSource.projects)) {
-        reconstruction.push(`Projects:\n${JSON.stringify(backupSource.projects, null, 2)}`);
-      }
+  const prompt = `Respond ONLY with a valid JSON object. No markdown, no text outside JSON.
 
-      safeCvText = reconstruction.join("\n\n---\n\n");
-    }
-  }
+You are an expert ATS Resume Optimizer. Your task:
+1. Rewrite the candidate's CV to maximize ATS score
+2. Preserve ALL existing experience, education, projects, languages
+3. Add domain-relevant missing keywords naturally (summary, skills, experience bullets)
+4. Use STAR methodology for experience descriptions
+5. Never invent employers, degrees, dates or certifications
+6. Keep the CV in its original language
 
-  // Final absolute fallback protection to ensure the prompt is never blank
-  if (!safeCvText || safeCvText.trim().length < 10) {
-    safeCvText = cvText || "Contenu du CV indisponible.";
-  }
+${isGeneral ? "Optimize for general professional standards." : atsSection}
 
-  const structuredContext = structuredJobDetails
-    ? `
-Structured Job Data:
-- Title: ${structuredJobDetails.title}
-- Skills: ${structuredJobDetails.skills.join(", ") || "N/A"}
-- Requirements: ${structuredJobDetails.requirements.join(" | ") || "N/A"}
-- Responsibilities: ${structuredJobDetails.responsibilities.join(" | ") || "N/A"}
-`
-    : "";
+Return EXACTLY this JSON structure (complete, valid JSON):
+{"userName":"","jobTitle":"","summary":"","contact":{"email":"","phone":"","location":"","linkedin":"","github":"","portfolio":""},"experience":[{"title":"","company":"","period":"","description":""}],"education":[{"degree":"","school":"","year":"","details":""}],"projects":[{"name":"","description":"","technologies":[]}],"skills":[],"languages":[{"language":"","level":""}],"interests":[]}
 
-  const prompt = `You MUST respond with ONLY a valid JSON object.
-No explanations.
-No markdown.
-No text before or after the JSON.
-Start your response with { and end with }.
+CANDIDATE CV:
+${compactCV}
 
-You are one of the world's best ATS Resume Writers and Career Coaches.
-Your goal is NOT simply to rewrite the CV.
-Your goal is to MAXIMIZE the ATS score while remaining 100% truthful.
-
-${isGeneral
-      ? `Optimize this CV according to modern professional resume best practices.`
-      : `Optimize this CV specifically for the following Job Description.
-
-==============================
-ATS ANALYSIS
-==============================
-Current ATS Score: ${analysisResult?.atsScore ?? "Unknown"}
-Missing Keywords: ${missingKeywords || "None"}
-Existing Matching Keywords: ${foundKeywords || "None"}
-Detected ATS Weaknesses: ${flaws || "None"}
-ATS Suggestions: ${suggestions || "None"}
-
-==============================
-YOUR OBJECTIVE
-==============================
-Increase the ATS score as much as possible.
-Follow EVERY ATS suggestion whenever possible.
-Fix EVERY detected ATS weakness whenever possible.
-Integrate as many missing ATS keywords as truthfully possible.
-
-Prefer placing them in:
-- Professional Summary
-- Skills
-- Experience bullet points
-- Project technologies
-
-If multiple related keywords belong to the candidate's demonstrated profession, rewrite existing content so they fit naturally.
-Never invent employers, projects, employment dates or certifications.
-Strengthen and expand existing experience instead of creating new experience.
-`
-    }
-
-==================================================
-MANDATORY RULES
-==================================================
-1. Preserve ALL existing information.
-2. Never remove experience.
-3. Never remove education.
-4. Never remove projects.
-5. Never remove existing skills.
-6. Rewrite the Professional Summary so it naturally includes the highest priority ATS keywords.
-7. Rewrite every Experience description using STAR methodology.
-8. Whenever a missing keyword genuinely applies to an experience, insert it naturally.
-9. Whenever a missing keyword applies to a project, include it.
-10. The Skills array MUST contain:
-   - existing skills
-   - relevant missing ATS keywords
-   - without duplicates
-11. Every Project must contain technologies used.
-12. If Adobe products, software, frameworks or tools are listed in the missing keywords and they truthfully fit the candidate's experience, include them inside skills, project technologies, experience descriptions, and summary.
-13. Improve keyword density naturally without keyword stuffing.
-14. Never invent employers, job titles, employment dates, projects, certifications or degrees.
-15. You MAY infer closely related professional skills ONLY when the missing keyword belongs to the same professional domain, the candidate already demonstrates closely related experience, and the inferred skill is commonly associated with that role.
-16. If a missing keyword cannot truthfully fit, leave it out rather than forcing it into the resume.
-17. Preserve the original CV language exactly.
-18. IMPORTANT FINAL VALIDATION: Verify JSON syntax is valid. Close every object and array. Escape inner quotes.
-
-==================================================
-OUTPUT FORMAT
-==================================================
-Return EXACTLY this JSON schema structure:
-{
-  "userName": "",
-  "jobTitle": "",
-  "summary": "",
-  "contact": { "email": "", "phone": "", "location": "", "linkedin": "", "github": "", "portfolio": "" },
-  "experience": [ { "title": "", "company": "", "period": "", "description": "" } ],
-  "education": [ { "degree": "", "school": "", "year": "", "details": "" } ],
-  "projects": [ { "name": "", "description": "", "technologies": [] } ],
-  "skills": [],
-  "languages": [ { "language": "", "level": "" } ],
-  "interests": []
-}
-
-==================================================
-STRUCTURED CV
-==================================================
-
-Use ONLY this structured CV as your input.
-Never recreate missing information.
-Never omit any existing experience.
-Never omit any education.
-Never omit any projects.
-Return the COMPLETE JSON.
-
-${JSON.stringify(existingCV)}
-
-${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 1800)}`}
-${structuredContext}
-`;
+${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
 
   try {
     const text = await generateLLMResponse({
       prompt,
       temperature: 0.15,
-      maxTokens: 2500,
+      maxTokens: 4000,
     });
 
     const parsed = safeParse(text);
@@ -461,132 +431,108 @@ ${structuredContext}
       parsed ? Object.keys(parsed) : "NULL"
     );
 
-    console.log(
-      "[generateOptimizedCV] Parsed JSON:",
-      JSON.stringify(parsed, null, 2)
-    );
-
-    // If JSON was truncated or invalid, return null so
-    // generate-templates/route.ts uses existing DB data as fallback
     if (!parsed) {
-      console.warn("[generateOptimizedCV] safeParse returned null — JSON likely truncated by token limit");
+      console.warn("[generateOptimizedCV] safeParse returned null — JSON likely truncated");
       return null;
     }
 
-    // Exact Fix 1: Deep structural merge between existingCV and parsed JSON
+    // Deep merge: AI output wins for content, existingCV is the safety net
     const merged = {
       ...existingCV,
       ...parsed,
 
       contact: {
         ...(existingCV?.contact ?? {}),
-        ...(parsed?.contact ?? {})
+        ...(parsed?.contact ?? {}),
       },
-
-      // experience:
-      //   parsed?.experience?.length
-      //     ? parsed.experience
-      //     : existingCV?.experience ?? [],
-
-      // experience:
-      //   Array.isArray(parsed?.experience) &&
-      //     parsed.experience.length > 0 &&
-      //     parsed.experience.every(
-      //       (e: any) => e && (e.title || e.company || e.description)
-      //     )
-      //     ? parsed.experience
-      //     : existingCV?.experience ?? [],
 
       experience:
         Array.isArray(parsed?.experience) &&
-          parsed.experience.length > 0 &&
-          parsed.experience.some(
-            (e: any) =>
-              e &&
-              (
-                (typeof e.title === "string" && e.title.trim()) ||
-                (typeof e.company === "string" && e.company.trim()) ||
-                (typeof e.description === "string" && e.description.trim())
-              )
-          )
+        parsed.experience.length > 0 &&
+        parsed.experience.some(
+          (e: any) =>
+            e &&
+            (
+              (typeof e.title === "string" && e.title.trim()) ||
+              (typeof e.company === "string" && e.company.trim()) ||
+              (typeof e.description === "string" && e.description.trim())
+            )
+        )
           ? parsed.experience
           : existingCV?.experience ?? [],
 
       education:
         Array.isArray(parsed?.education) &&
-          parsed.education.length > 0 &&
-          parsed.education.some(
-            (e: any) =>
-              e &&
-              (
-                (typeof e.degree === "string" && e.degree.trim()) ||
-                (typeof e.school === "string" && e.school.trim()) ||
-                (typeof e.details === "string" && e.details.trim())
-              )
-          )
+        parsed.education.length > 0 &&
+        parsed.education.some(
+          (e: any) =>
+            e &&
+            (
+              (typeof e.degree === "string" && e.degree.trim()) ||
+              (typeof e.school === "string" && e.school.trim()) ||
+              (typeof e.details === "string" && e.details.trim())
+            )
+        )
           ? parsed.education
           : existingCV?.education ?? [],
 
       projects:
         Array.isArray(parsed?.projects) &&
-          parsed.projects.length > 0 &&
-          parsed.projects.some(
-            (p: any) =>
-              p &&
-              (
-                (typeof p.name === "string" && p.name.trim()) ||
-                (typeof p.description === "string" && p.description.trim())
-              )
-          )
+        parsed.projects.length > 0 &&
+        parsed.projects.some(
+          (p: any) =>
+            p &&
+            (
+              (typeof p.name === "string" && p.name.trim()) ||
+              (typeof p.description === "string" && p.description.trim())
+            )
+        )
           ? parsed.projects
           : existingCV?.projects ?? [],
 
       languages:
         Array.isArray(parsed?.languages) &&
-          parsed.languages.length > 0 &&
-          parsed.languages.some(
-            (l: any) =>
-              l &&
-              (
-                (typeof l.language === "string" && l.language.trim()) ||
-                (typeof l.level === "string" && l.level.trim())
-              )
-          )
+        parsed.languages.length > 0 &&
+        parsed.languages.some(
+          (l: any) =>
+            l &&
+            (
+              (typeof l.language === "string" && l.language.trim()) ||
+              (typeof l.level === "string" && l.level.trim())
+            )
+        )
           ? parsed.languages
           : existingCV?.languages ?? [],
 
       interests:
         Array.isArray(parsed?.interests) &&
-          parsed.interests.length > 0 &&
-          parsed.interests.some(
-            (i: any) =>
-              (typeof i === "string" && i.trim().length > 0) ||
-              (i && typeof i.name === "string" && i.name.trim().length > 0)
-          )
+        parsed.interests.length > 0 &&
+        parsed.interests.some(
+          (i: any) =>
+            (typeof i === "string" && i.trim().length > 0) ||
+            (i && typeof i.name === "string" && i.name.trim().length > 0)
+        )
           ? parsed.interests
           : existingCV?.interests ?? [],
 
+      // Merge skills: existing + AI-generated + domain-filtered missing keywords
       skills: Array.from(
         new Set([
           ...(existingCV?.skills ?? []),
           ...(parsed?.skills ?? []),
-          ...(analysisResult?.keywordsMissing ?? [])
+          ...domainFilteredMissing,
         ])
-      )
+      ),
     };
 
     console.log("========== FINAL MERGED CV ==========");
-
     console.log({
       experience: merged.experience?.length,
       education: merged.education?.length,
       projects: merged.projects?.length,
       skills: merged.skills?.length,
     });
-
-    console.log(JSON.stringify(merged, null, 2));
-
-    console.log("====================================");
+    console.log("=====================================");
 
     return merged;
   } catch (error: any) {
