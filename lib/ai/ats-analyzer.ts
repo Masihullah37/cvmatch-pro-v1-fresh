@@ -639,6 +639,7 @@ ${safeCvText}
 ${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 2500)}`}
 ${structuredContext}`;
 
+
   try {
     const text = await generateLLMResponse({
       prompt,
@@ -651,6 +652,10 @@ ${structuredContext}`;
     console.log("===========================================");
 
     const parsed = safeParse(text);
+
+    console.log("========== PARSED JSON ==========");
+    console.log(JSON.stringify(parsed, null, 2));
+    console.log("================================");
 
     // Validate and enforce atsScore = sum of sub-scores
     if (parsed.scoreBreakdown) {
@@ -885,9 +890,15 @@ Return EXACTLY this JSON schema structure:
 ==================================================
 CV CONTENT TO OPTIMIZE
 ==================================================
+
+${safeCvText}
+
+==================================================
+STRUCTURED CV
+==================================================
 ${JSON.stringify(existingCV, null, 2)}
 
-${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 2500)}`}
+${isGeneral ? "" : `Job Description:\n${safeJobDescription.slice(0, 1800)}`}
 ${structuredContext}
 `;
 
@@ -899,6 +910,16 @@ ${structuredContext}
     });
 
     const parsed = safeParse(text);
+
+    console.log(
+      "[generateOptimizedCV] Parsed keys:",
+      parsed ? Object.keys(parsed) : "NULL"
+    );
+
+    console.log(
+      "[generateOptimizedCV] Parsed JSON:",
+      JSON.stringify(parsed, null, 2)
+    );
 
     // If JSON was truncated or invalid, return null so
     // generate-templates/route.ts uses existing DB data as fallback
@@ -917,28 +938,86 @@ ${structuredContext}
         ...(parsed?.contact ?? {})
       },
 
+      // experience:
+      //   parsed?.experience?.length
+      //     ? parsed.experience
+      //     : existingCV?.experience ?? [],
+
+      // experience:
+      //   Array.isArray(parsed?.experience) &&
+      //     parsed.experience.length > 0 &&
+      //     parsed.experience.every(
+      //       (e: any) => e && (e.title || e.company || e.description)
+      //     )
+      //     ? parsed.experience
+      //     : existingCV?.experience ?? [],
+
       experience:
-        parsed?.experience?.length
+        Array.isArray(parsed?.experience) &&
+          parsed.experience.length > 0 &&
+          parsed.experience.some(
+            (e: any) =>
+              e &&
+              (
+                (typeof e.title === "string" && e.title.trim()) ||
+                (typeof e.company === "string" && e.company.trim()) ||
+                (typeof e.description === "string" && e.description.trim())
+              )
+          )
           ? parsed.experience
           : existingCV?.experience ?? [],
 
       education:
-        parsed?.education?.length
+        Array.isArray(parsed?.education) &&
+          parsed.education.length > 0 &&
+          parsed.education.some(
+            (e: any) =>
+              e &&
+              (
+                (typeof e.degree === "string" && e.degree.trim()) ||
+                (typeof e.school === "string" && e.school.trim()) ||
+                (typeof e.details === "string" && e.details.trim())
+              )
+          )
           ? parsed.education
           : existingCV?.education ?? [],
 
       projects:
-        parsed?.projects?.length
+        Array.isArray(parsed?.projects) &&
+          parsed.projects.length > 0 &&
+          parsed.projects.some(
+            (p: any) =>
+              p &&
+              (
+                (typeof p.name === "string" && p.name.trim()) ||
+                (typeof p.description === "string" && p.description.trim())
+              )
+          )
           ? parsed.projects
           : existingCV?.projects ?? [],
 
       languages:
-        parsed?.languages?.length
+        Array.isArray(parsed?.languages) &&
+          parsed.languages.length > 0 &&
+          parsed.languages.some(
+            (l: any) =>
+              l &&
+              (
+                (typeof l.language === "string" && l.language.trim()) ||
+                (typeof l.level === "string" && l.level.trim())
+              )
+          )
           ? parsed.languages
           : existingCV?.languages ?? [],
 
       interests:
-        parsed?.interests?.length
+        Array.isArray(parsed?.interests) &&
+          parsed.interests.length > 0 &&
+          parsed.interests.some(
+            (i: any) =>
+              (typeof i === "string" && i.trim().length > 0) ||
+              (i && typeof i.name === "string" && i.name.trim().length > 0)
+          )
           ? parsed.interests
           : existingCV?.interests ?? [],
 
