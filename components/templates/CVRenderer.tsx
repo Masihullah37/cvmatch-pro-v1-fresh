@@ -513,23 +513,20 @@ export const CVRenderer = ({
             />
           </div>
           <div
-            className="p-12 flex flex-col gap-12"
-            style={{
-              width: "147mm",
-            }}
+            className="p-12 flex flex-col gap-12 flex-1 min-w-0"
           >
             <IdentityHeader
               nameClass="text-4xl font-black text-[#222] uppercase tracking-tighter"
               titleClass="text-lg font-bold text-slate-400 mt-1 uppercase tracking-widest"
-              containerClass="flex justify-between items-start border-b border-slate-100 pb-8"
+              containerClass="flex justify-between items-start w-full border-b border-slate-100 pb-8"
               showContact={false}
               isInteractive={isInteractive}
               onUpdate={onUpdate}
               showPhoto={false} // Photo is in sidebar for Horizon
             />
             <DynamicMainSections
-              headerClass="text-sm font-black uppercase tracking-[0.3em] text-slate-400 mb-6 border-b-2 border-slate-100 pb-2"
-              itemClass="text-sm leading-relaxed text-slate-600"
+              headerClass="text-sm font-black uppercase tracking-[0.3em] text-slate-400 mb-6 border-b-2 border-slate-100 pb-2 w-full"
+              itemClass="text-sm leading-relaxed text-slate-600 w-full"
             />
           </div>
         </div>
