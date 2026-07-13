@@ -1388,7 +1388,10 @@ export default function TemplateGrid({
             {templates.map((template) => (
               <div
                 key={template.id}
-                onClick={() => handleSelect(template.id)}
+                // onClick={() => handleSelect(template.id)}
+                onClick={() => {
+                  setTimeout(() => handleSelect(template.id), 150);
+                }}
                 className="group bg-white rounded-3xl border border-slate-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
               >
                 <div className="relative bg-slate-50 overflow-hidden" style={{ height: 320 }}>

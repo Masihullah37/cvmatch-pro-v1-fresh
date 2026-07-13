@@ -66,8 +66,16 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
           {demoTemplates.map((template) => (
             <button
               key={template.id}
-              onClick={() => handleClick(template.templateNumber)}
-              className="group bg-white rounded-2xl border border-slate-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-1 hover:border-emerald-200 transition-all duration-300 text-left"
+              // onClick={() => handleClick(template.templateNumber)}
+              onClick={() => {
+                setTimeout(() => handleClick(template.templateNumber), 150);
+              }}
+              style={{
+                WebkitTapHighlightColor: "transparent",
+                touchAction: "manipulation",
+              }}
+              // className="group bg-white rounded-2xl border border-slate-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-1 hover:border-emerald-200 transition-all duration-300 text-left"
+              className="group bg-white rounded-2xl border border-slate-100 overflow-hidden cursor-pointer transition-all duration-300 text-left hover:shadow-2xl hover:-translate-y-1 hover:border-emerald-200 active:shadow-2xl active:-translate-y-1 active:border-emerald-200"
             >
               {/* Preview */}
               {/* ✨ FIX 2b: Changed to use layout height classes h-56 mobile to improve visible space */}
@@ -78,8 +86,10 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
                   </div>
                 </div>
                 {/* Hover overlay */}
-                <div className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/10 transition-colors flex items-center justify-center">
-                  <span className="bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all shadow-xl flex items-center gap-2">
+                {/* <div className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/10 transition-colors flex items-center justify-center"> */}
+                <div className="absolute inset-0 bg-emerald-600/0 transition-colors flex items-center justify-center group-hover:bg-emerald-600/10 group-active:bg-emerald-600/10">
+                  {/* <span className="bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all shadow-xl flex items-center gap-2"> */}
+                  <span className="bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs opacity-0 translate-y-2 transition-all shadow-xl flex items-center gap-2 group-hover:opacity-100 group-hover:translate-y-0 group-active:opacity-100 group-active:translate-y-0">
                     Utiliser ce modèle <ArrowRight size={14} />
                   </span>
                 </div>
