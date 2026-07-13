@@ -541,12 +541,7 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
     };
 
     console.log("========== FINAL MERGED CV ==========");
-    console.log({
-      experience: merged.experience?.length,
-      education: merged.education?.length,
-      projects: merged.projects?.length,
-      skills: merged.skills?.length,
-    });
+    console.log(merged);
     console.log("=====================================");
 
     return merged;
@@ -554,4 +549,165 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
     console.error("generateOptimizedCV Error:", error?.message || error);
     throw error;
   }
+}
+
+export function matchKeywordSafely(text: string, keyword: string): boolean {
+  const normalizedText = text.toLowerCase();
+  const normalizedKw = keyword.toLowerCase().trim();
+
+  if (!normalizedKw) return false;
+
+  // Escape special regex characters except technical ones (+, #, ., -)
+  const escaped = normalizedKw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+
+  // Construct boundary rules:
+  // Must be preceded by start of string, or a character that is NOT a word char, nor #, +, ., -
+  const prefix = "(?<=^|[^a-zA-Z0-9_#+.-])";
+  // Must be followed by end of string, or a character that is NOT a word char, nor #, +, ., -
+  const suffix = "(?=$|[^a-zA-Z0-9_#+.-])";
+
+  const regex = new RegExp(prefix + escaped + suffix, "i");
+  return regex.test(normalizedText);
+}
+
+export function flattenStructuredCV(cv: any): string {
+  const parts: string[] = [];
+  if (cv.userName) parts.push(cv.userName);
+  if (cv.jobTitle) parts.push(cv.jobTitle);
+  if (cv.summary) parts.push(cv.summary);
+
+  if (Array.isArray(cv.skills)) {
+    parts.push(...cv.skills);
+  }
+
+  if (Array.isArray(cv.experience)) {
+    for (const exp of cv.experience) {
+      if (exp.title) parts.push(exp.title);
+      if (exp.company) parts.push(exp.company);
+      if (exp.description) parts.push(exp.description);
+    }
+  }
+
+  if (Array.isArray(cv.education)) {
+    for (const edu of cv.education) {
+      if (edu.degree) parts.push(edu.degree);
+      if (edu.school) parts.push(edu.school);
+      if (edu.details) parts.push(edu.details);
+    }
+  }
+
+  if (Array.isArray(cv.projects)) {
+    for (const proj of cv.projects) {
+      if (proj.name) parts.push(proj.name);
+      if (proj.description) parts.push(proj.description);
+      if (Array.isArray(proj.technologies)) {
+        parts.push(...proj.technologies);
+      }
+    }
+  }
+
+  if (Array.isArray(cv.languages)) {
+    for (const lang of cv.languages) {
+      if (lang.language) parts.push(lang.language);
+      if (lang.level) parts.push(lang.level);
+    }
+  }
+
+  if (Array.isArray(cv.interests)) {
+    for (const interest of cv.interests) {
+      if (typeof interest === "string") {
+        parts.push(interest);
+      } else if (interest && typeof interest.name === "string") {
+        parts.push(interest.name);
+      }
+    }
+  }
+
+  return parts.join("\n");
+}
+
+export function recalculateScoreForStructuredCV(
+  optimizedCV: any,
+  originalAnalysis: {
+    atsScore?: number;
+    scoreBreakdown?: any;
+    keywordsFound?: string[] | null;
+    keywordsMissing?: string[] | null;
+  }
+) {
+  const optimizedCvText = flattenStructuredCV(optimizedCV);
+
+  // Combine all keywords to check
+  const allKeywords = Array.from(
+    new Set([
+      ...(originalAnalysis.keywordsFound || []),
+      ...(originalAnalysis.keywordsMissing || []),
+    ])
+  );
+
+  const keywordsFound: string[] = [];
+  const keywordsMissing: string[] = [];
+
+  for (const kw of allKeywords) {
+    if (matchKeywordSafely(optimizedCvText, kw)) {
+      keywordsFound.push(kw);
+    } else {
+      keywordsMissing.push(kw);
+    }
+  }
+
+  // Recalculate keywordMatch score out of 30
+  const totalKwCount = keywordsFound.length + keywordsMissing.length;
+  let keywordMatchScore = 15; // default if no keywords
+  if (totalKwCount > 0) {
+    keywordMatchScore = Math.round((keywordsFound.length / totalKwCount) * 30);
+  }
+
+  // Recalculate skills score out of 15
+  let skillsScore = 5; // default
+  if (totalKwCount > 0) {
+    skillsScore = Math.max(5, Math.round((keywordsFound.length / totalKwCount) * 15));
+  }
+
+  const baseBreakdown = originalAnalysis.scoreBreakdown || {};
+  const scoreBreakdown = {
+    keywordMatch: {
+      score: Math.min(30, Math.max(0, keywordMatchScore)),
+      max: 30,
+    },
+    format: {
+      score: Number(baseBreakdown.format?.score) || 15,
+      max: 20,
+    },
+    experience: {
+      score: Number(baseBreakdown.experience?.score) || 15,
+      max: 20,
+    },
+    education: {
+      score: Number(baseBreakdown.education?.score) || 8,
+      max: 10,
+    },
+    skills: {
+      score: Math.min(15, Math.max(0, skillsScore)),
+      max: 15,
+    },
+    readability: {
+      score: Number(baseBreakdown.readability?.score) || 4,
+      max: 5,
+    },
+  };
+
+  // Re-sum total score
+  const atsScore = Object.values(scoreBreakdown).reduce(
+    (sum, cat) => sum + cat.score,
+    0
+  );
+
+  return {
+    atsScore: Math.min(100, Math.max(0, atsScore)),
+    scoreBreakdown,
+    keywordsFound,
+    keywordsMissing,
+    optimizedCvText,
+  };
 }
