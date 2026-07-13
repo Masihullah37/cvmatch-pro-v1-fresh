@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { cvAnalyses, cvTemplates } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { generateOptimizedCV } from '@/lib/ai/ats-analyzer';
+import { generateOptimizedCV, recalculateScoreForStructuredCV } from '@/lib/ai/ats-analyzer';
 import { validateOptimizedCV } from '@/lib/ai/resume-validator';
 
 export async function POST(req: Request) {
@@ -97,6 +97,12 @@ export async function POST(req: Request) {
     let optimizedContent: any = null;
     let aiSucceeded = false;
 
+    // Cleanly extract the stored raw CV text from DB BEFORE the function call
+    const originalCvText =
+      optimizedData?._originalCvText ||
+      optimizedData?._originalcvtext ||
+      "";
+
     try {
       // optimizedContent = await generateOptimizedCV(
       //   "",                     // cvText no longer needed (compact summary built internally)
@@ -106,11 +112,7 @@ export async function POST(req: Request) {
       //   existingStructuredCV
       // );
 
-      // Cleanly extract the stored raw CV text from DB BEFORE the function call
-      const originalCvText =
-        optimizedData?._originalCvText ||
-        optimizedData?._originalcvtext ||
-        "";
+
 
       // Execute the optimized AI call with clean, defined arguments
       optimizedContent = await generateOptimizedCV(
@@ -187,45 +189,103 @@ export async function POST(req: Request) {
     });
 
     // ── Step 5: Persist to DB ───────────────────────────────
+    // ── Step 5: Recalculate score and persist to DB ─────────
     if (aiSucceeded) {
+      const scoreUpdate = recalculateScoreForStructuredCV(finalContent, analysisResult);
+
+      const dbOptimizedData = {
+        ...finalContent,
+        _originalCvText: originalCvText,
+        _optimizedCvText: scoreUpdate.optimizedCvText,
+      };
+
       await db.update(cvAnalyses)
-        .set({ optimizedData: finalContent })
+        .set({
+          optimizedData: dbOptimizedData,
+          atsScore: scoreUpdate.atsScore,
+          scoreBreakdown: scoreUpdate.scoreBreakdown,
+          keywordsFound: scoreUpdate.keywordsFound,
+          keywordsMissing: scoreUpdate.keywordsMissing,
+        })
         .where(eq(cvAnalyses.id, analysisId));
-      console.log("[generate-templates] Analysis record updated with AI content");
-    }
 
-    // ── Step 6: Update or create template records ───────────
-    const existingTemplates = await db.query.cvTemplates.findMany({
-      where: eq(cvTemplates.analysisId, analysisId)
-    });
-
-    if (existingTemplates.length > 0) {
-      await Promise.all(
-        existingTemplates.map(t =>
-          db.update(cvTemplates)
-            .set({
-              templateData: {
-                ...finalContent,
-                sectionOrder: (t.templateData as any)?.sectionOrder
-                  || (finalContent as any)?.sectionOrder,
-              }
-            })
-            .where(eq(cvTemplates.id, t.id))
-        )
+      console.log(
+        "[generate-templates] Analysis record updated with AI content & recalculated ATS score:",
+        scoreUpdate.atsScore
       );
-      console.log(`[generate-templates] Updated ${existingTemplates.length} templates`);
+
+      // ── Step 6: Update or create template records ───────────
+      const existingTemplates = await db.query.cvTemplates.findMany({
+        where: eq(cvTemplates.analysisId, analysisId)
+      });
+
+      if (existingTemplates.length > 0) {
+        await Promise.all(
+          existingTemplates.map(t =>
+            db.update(cvTemplates)
+              .set({
+                templateData: {
+                  ...dbOptimizedData,
+                  sectionOrder: (t.templateData as any)?.sectionOrder
+                    || (dbOptimizedData as any)?.sectionOrder,
+                }
+              })
+              .where(eq(cvTemplates.id, t.id))
+          )
+        );
+        console.log(`[generate-templates] Updated ${existingTemplates.length} templates`);
+      } else {
+        const { CV_TEMPLATE_STYLES } = await import('@/lib/cv-template-styles');
+        const styles = [...CV_TEMPLATE_STYLES];
+        const newTemplates = styles.map((style, i) => ({
+          analysisId,
+          templateNumber: i + 1,
+          templateStyle: style,
+          templateData: dbOptimizedData,
+          isPaid: true,
+        }));
+        await db.insert(cvTemplates).values(newTemplates);
+        console.log(`[generate-templates] Created ${newTemplates.length} new templates`);
+      }
     } else {
-      const { CV_TEMPLATE_STYLES } = await import('@/lib/cv-template-styles');
-      const styles = [...CV_TEMPLATE_STYLES];
-      const newTemplates = styles.map((style, i) => ({
-        analysisId,
-        templateNumber: i + 1,
-        templateStyle: style,
-        templateData: finalContent,
-        isPaid: true,
-      }));
-      await db.insert(cvTemplates).values(newTemplates);
-      console.log(`[generate-templates] Created ${newTemplates.length} new templates`);
+      // If AI failed, we still update template records with the existing fallback data
+      const existingTemplates = await db.query.cvTemplates.findMany({
+        where: eq(cvTemplates.analysisId, analysisId)
+      });
+
+      const fallbackOptimizedData = {
+        ...existingStructuredCV,
+        _originalCvText: originalCvText,
+      };
+
+      if (existingTemplates.length > 0) {
+        await Promise.all(
+          existingTemplates.map(t =>
+            db.update(cvTemplates)
+              .set({
+                templateData: {
+                  ...fallbackOptimizedData,
+                  sectionOrder: (t.templateData as any)?.sectionOrder
+                    || (fallbackOptimizedData as any)?.sectionOrder,
+                }
+              })
+              .where(eq(cvTemplates.id, t.id))
+          )
+        );
+        console.log(`[generate-templates] Updated ${existingTemplates.length} fallback templates`);
+      } else {
+        const { CV_TEMPLATE_STYLES } = await import('@/lib/cv-template-styles');
+        const styles = [...CV_TEMPLATE_STYLES];
+        const newTemplates = styles.map((style, i) => ({
+          analysisId,
+          templateNumber: i + 1,
+          templateStyle: style,
+          templateData: fallbackOptimizedData,
+          isPaid: true,
+        }));
+        await db.insert(cvTemplates).values(newTemplates);
+        console.log(`[generate-templates] Created ${newTemplates.length} new fallback templates`);
+      }
     }
 
     return NextResponse.json({

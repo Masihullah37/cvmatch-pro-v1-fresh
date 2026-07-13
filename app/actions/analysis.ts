@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { cvAnalyses, cvTemplates, users, userTemplateUnlocks } from "@/lib/db/schema";
 import { revalidatePath } from "next/cache";
-import { analyzeCV, extractRawCVData, generateOptimizedCV } from "@/lib/ai/ats-analyzer";
+import { analyzeCV, extractRawCVData, generateOptimizedCV, recalculateScoreForStructuredCV } from "@/lib/ai/ats-analyzer";
 import { parseCVFile } from "@/lib/ai/cv-parser";
 import { extractStructuredJobDetails, isUrl, scrapeJobDescription } from "@/lib/utils/scraper";
 import { addCredits, deductCredit } from "@/lib/billing/credit-service";
@@ -271,7 +271,8 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
         keywordsMissing: analysis.keywordsMissing,
         keywordsFound: analysis.keywordsFound,
       } as any,
-      structuredJobDetails
+      structuredJobDetails,
+      analysis.optimizedData // Pass JSON source of truth as 5th argument
     );
 
     // RULE: Prevent AI from adding extra sections not present in user editor
@@ -285,52 +286,62 @@ export async function generateAIResume(analysisId: string, currentCVData?: any) 
     }
     finalData = result;
 
+    // Recalculate ATS metrics
+    const scoreUpdate = recalculateScoreForStructuredCV(finalData, {
+      atsScore: analysis.atsScore || 0,
+      scoreBreakdown: analysis.scoreBreakdown,
+      // keywordsFound: analysis.keywordsFound,
+      // keywordsMissing: analysis.keywordsMissing,
+
+      keywordsFound: Array.isArray(analysis.keywordsFound)
+        ? (analysis.keywordsFound as string[])
+        : [],
+
+      keywordsMissing: Array.isArray(analysis.keywordsMissing)
+        ? (analysis.keywordsMissing as string[])
+        : [],
+    });
+
+    const dbOptimizedData = {
+      ...finalData,
+      _originalCvText: (analysis.optimizedData as any)?._originalCvText || "",
+      _optimizedCvText: scoreUpdate.optimizedCvText,
+    };
+
+    console.log("[generateAIResume] Recalculated ATS score after AI optimization:", scoreUpdate.atsScore);
+
     // 3. Persist AI-generated data within the same transaction
     await tx.update(cvAnalyses)
-      .set({ optimizedData: finalData })
+      .set({
+        optimizedData: dbOptimizedData,
+        atsScore: scoreUpdate.atsScore,
+        scoreBreakdown: scoreUpdate.scoreBreakdown,
+        keywordsFound: scoreUpdate.keywordsFound,
+        keywordsMissing: scoreUpdate.keywordsMissing,
+      })
       .where(eq(cvAnalyses.id, analysisId));
 
     const existingTemplates = await tx.query.cvTemplates.findMany({
       where: eq(cvTemplates.analysisId, analysisId)
     });
 
-    //   if (existingTemplates.length > 0) {
-    //     await tx.update(cvTemplates)
-    //       .set({ templateData: finalData, isPaid: true })
-    //       .where(eq(cvTemplates.analysisId, analysisId));
-    //   } else {
-    //     const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
-    //     const styles = [...CV_TEMPLATE_STYLES];
-    //     await tx.insert(cvTemplates).values( // Corrected: Use styles directly
-    //       styles.map((style, i) => ({
-    //         analysisId: analysis.id,
-    //         templateNumber: i + 1,
-    //         templateStyle: style,
-    //         templateData: finalData as any,
-    //         isPaid: true,
-    //       }))
-    //     );
-    //   }
-    // });
-
-
     let allTemplateIds: string[] = [];
 
     if (existingTemplates.length > 0) {
       await tx.update(cvTemplates)
-        .set({ templateData: finalData, isPaid: true })
+        .set({ templateData: dbOptimizedData, isPaid: true })
         .where(eq(cvTemplates.analysisId, analysisId));
 
       allTemplateIds = existingTemplates.map((t: any) => t.id);
     } else {
       const { CV_TEMPLATE_STYLES } = await import("@/lib/cv-template-styles");
       const styles = [...CV_TEMPLATE_STYLES];
-      const insertedTemplates = await tx.insert(cvTemplates).values( // Corrected: Use styles directly
+      const insertedTemplates = await tx.insert(cvTemplates).values(
         styles.map((style, i) => ({
           analysisId: analysis.id,
           templateNumber: i + 1,
           templateStyle: style,
-          templateData: finalData as any,
+          templateData: dbOptimizedData as any,
           isPaid: true,
         }))
       ).returning({ id: cvTemplates.id });

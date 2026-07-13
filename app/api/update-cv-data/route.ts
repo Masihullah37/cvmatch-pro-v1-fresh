@@ -70,6 +70,7 @@ import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { syncUserWithClerk } from "@/lib/auth/sync"; // Ensure this import points to your sync utility
+import { recalculateScoreForStructuredCV } from "@/lib/ai/ats-analyzer";
 
 export async function POST(req: Request) {
   try {
@@ -129,10 +130,37 @@ export async function POST(req: Request) {
       };
     }
 
+    const scoreUpdate = recalculateScoreForStructuredCV(masterOptimizedData, {
+      atsScore: analysis.atsScore || 0,
+      scoreBreakdown: analysis.scoreBreakdown,
+      // keywordsFound: analysis.keywordsFound,
+      // keywordsMissing: analysis.keywordsMissing,
+
+      keywordsFound: Array.isArray(analysis.keywordsFound)
+        ? (analysis.keywordsFound as string[])
+        : [],
+
+      keywordsMissing: Array.isArray(analysis.keywordsMissing)
+        ? (analysis.keywordsMissing as string[])
+        : [],
+    });
+
+    const finalMasterData = {
+      ...masterOptimizedData,
+      _originalCvText: (analysis.optimizedData as any)?._originalCvText || "",
+      _optimizedCvText: scoreUpdate.optimizedCvText,
+    };
+
+    console.log("[update-cv-data] Recalculated ATS score for edits:", scoreUpdate.atsScore);
+
     // 4. Update master analysis JSON and associate user if missing
     await db.update(cvAnalyses)
       .set({
-        optimizedData: masterOptimizedData,
+        optimizedData: finalMasterData,
+        atsScore: scoreUpdate.atsScore,
+        scoreBreakdown: scoreUpdate.scoreBreakdown,
+        keywordsFound: scoreUpdate.keywordsFound,
+        keywordsMissing: scoreUpdate.keywordsMissing,
         // Claim the analysis if it was ownerless (guest session)
         userId: analysis.userId ? undefined : dbUser.id
       })
@@ -141,7 +169,7 @@ export async function POST(req: Request) {
     // 5. Update the specific template JSON (if provided)
     if (templateId) {
       await db.update(cvTemplates)
-        .set({ templateData: optimizedData })
+        .set({ templateData: finalMasterData })
         .where(eq(cvTemplates.id, templateId));
     }
 
