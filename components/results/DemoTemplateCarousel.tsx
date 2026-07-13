@@ -66,10 +66,7 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
           {demoTemplates.map((template) => (
             <button
               key={template.id}
-              // onClick={() => handleClick(template.templateNumber)}
-              onClick={() => {
-                setTimeout(() => handleClick(template.templateNumber), 150);
-              }}
+              onClick={() => handleClick(template.templateNumber)}
               style={{
                 WebkitTapHighlightColor: "transparent",
                 touchAction: "manipulation",
