@@ -465,13 +465,21 @@ export const CVRenderer = ({
 
       {/* --- STYLE: HORIZON --- */}
       {style === "Horizon" && (
-        // <div className="flex min-h-[297mm] w-[210mm] font-sans bg-white">
-        // <div className="flex min-h-[297mm] w-[210mm] min-w-[210mm] overflow-hidden font-sans bg-white print:w-[210mm] print:min-w-[210mm]">
-        //   <div className="cv-readable-sidebar w-[30%] bg-[#3d3d3d] text-white p-10 flex flex-col gap-10">
 
-        <div className="flex min-h-[297mm] w-[210mm] font-sans bg-white overflow-hidden">
+        <div
+          className="flex font-sans bg-white overflow-hidden"
+          style={{
+            width: "210mm",
+            minHeight: "297mm",
+          }}
+        >
 
-          <div className="cv-readable-sidebar w-[30%] shrink-0 bg-[#3d3d3d] text-white p-10 flex flex-col gap-10">
+          <div
+            className="cv-readable-sidebar bg-[#3d3d3d] text-white p-10 flex flex-col gap-10 shrink-0"
+            style={{
+              width: "63mm",
+            }}
+          >
             {hasPhotoSlot && (
               <div className="w-32 h-32 rounded-full border-4 border-white/20 mx-auto overflow-hidden shadow-2xl">
                 <img
@@ -485,21 +493,31 @@ export const CVRenderer = ({
               <h3 className="text-xs font-black uppercase tracking-widest border-b border-white/20 pb-2">
                 À propos
               </h3>
-              <p className="text-[11px] leading-relaxed text-white">
+              <p className="text-xs leading-relaxed text-white">
                 <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
               </p>
             </section>
             <DynamicSidebarSections
               sidebarKeys={["contact", "skills"]}
               configs={{
-                contact: { headerClass: "text-xs font-black uppercase tracking-widest border-b border-white/20 pb-2 text-current", itemClass: "text-[11px] opacity-90 text-current" },
-                skills: { headerClass: "text-xs font-black uppercase tracking-widest border-b border-white/20 pb-2", itemClass: "text-[9px] text-white font-bold" },
+
+                contact: {
+                  headerClass: "text-xs font-black uppercase tracking-widest border-b border-white/20 pb-2 text-current",
+                  itemClass: "text-xs leading-relaxed break-words opacity-90 text-current"
+                },
+                skills: {
+                  headerClass: "text-xs font-black uppercase tracking-widest border-b border-white/20 pb-2",
+                  itemClass: "text-xs leading-relaxed text-white font-bold"
+                },
               }}
             />
           </div>
-          {/* <div className="flex-1 p-12 flex flex-col gap-12"> */}
-          {/* <div className="w-[70%] p-12 flex flex-col gap-12"> */}
-          <div className="flex-1 min-w-0 p-12 flex flex-col gap-12">
+          <div
+            className="p-12 flex flex-col gap-12"
+            style={{
+              width: "147mm",
+            }}
+          >
             <IdentityHeader
               nameClass="text-4xl font-black text-[#222] uppercase tracking-tighter"
               titleClass="text-lg font-bold text-slate-400 mt-1 uppercase tracking-widest"
@@ -510,8 +528,8 @@ export const CVRenderer = ({
               showPhoto={false} // Photo is in sidebar for Horizon
             />
             <DynamicMainSections
-              headerClass="text-xs font-black uppercase tracking-[0.3em] text-slate-400 mb-8 border-b-2 border-slate-100 pb-2"
-              itemClass="text-[11px] leading-relaxed text-slate-500"
+              headerClass="text-sm font-black uppercase tracking-[0.3em] text-slate-400 mb-6 border-b-2 border-slate-100 pb-2"
+              itemClass="text-sm leading-relaxed text-slate-600"
             />
           </div>
         </div>
