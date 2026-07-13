@@ -466,8 +466,12 @@ export const CVRenderer = ({
       {/* --- STYLE: HORIZON --- */}
       {style === "Horizon" && (
         // <div className="flex min-h-[297mm] w-[210mm] font-sans bg-white">
-        <div className="flex min-h-[297mm] w-[210mm] min-w-[210mm] overflow-hidden font-sans bg-white print:w-[210mm] print:min-w-[210mm]">
-          <div className="cv-readable-sidebar w-[30%] bg-[#3d3d3d] text-white p-10 flex flex-col gap-10">
+        // <div className="flex min-h-[297mm] w-[210mm] min-w-[210mm] overflow-hidden font-sans bg-white print:w-[210mm] print:min-w-[210mm]">
+        //   <div className="cv-readable-sidebar w-[30%] bg-[#3d3d3d] text-white p-10 flex flex-col gap-10">
+
+        <div className="flex min-h-[297mm] w-[210mm] font-sans bg-white overflow-hidden">
+
+          <div className="cv-readable-sidebar w-[30%] shrink-0 bg-[#3d3d3d] text-white p-10 flex flex-col gap-10">
             {hasPhotoSlot && (
               <div className="w-32 h-32 rounded-full border-4 border-white/20 mx-auto overflow-hidden shadow-2xl">
                 <img
@@ -494,7 +498,8 @@ export const CVRenderer = ({
             />
           </div>
           {/* <div className="flex-1 p-12 flex flex-col gap-12"> */}
-          <div className="w-[70%] p-12 flex flex-col gap-12">
+          {/* <div className="w-[70%] p-12 flex flex-col gap-12"> */}
+          <div className="flex-1 min-w-0 p-12 flex flex-col gap-12">
             <IdentityHeader
               nameClass="text-4xl font-black text-[#222] uppercase tracking-tighter"
               titleClass="text-lg font-bold text-slate-400 mt-1 uppercase tracking-widest"
