@@ -464,8 +464,9 @@ export const CVRenderer = ({
       `}</style>
 
       {/* --- STYLE: HORIZON --- */}
-      {/* {style === "Horizon" && (
-        <div className="flex min-h-[297mm] w-[210mm] font-sans bg-white">
+      {style === "Horizon" && (
+        // <div className="flex min-h-[297mm] w-[210mm] font-sans bg-white">
+        <div className="flex min-h-[297mm] w-[210mm] min-w-[210mm] overflow-hidden font-sans bg-white print:w-[210mm] print:min-w-[210mm]">
           <div className="cv-readable-sidebar w-[30%] bg-[#3d3d3d] text-white p-10 flex flex-col gap-10">
             {hasPhotoSlot && (
               <div className="w-32 h-32 rounded-full border-4 border-white/20 mx-auto overflow-hidden shadow-2xl">
@@ -492,7 +493,8 @@ export const CVRenderer = ({
               }}
             />
           </div>
-          <div className="flex-1 p-12 flex flex-col gap-12">
+          {/* <div className="flex-1 p-12 flex flex-col gap-12"> */}
+          <div className="w-[70%] p-12 flex flex-col gap-12">
             <IdentityHeader
               nameClass="text-4xl font-black text-[#222] uppercase tracking-tighter"
               titleClass="text-lg font-bold text-slate-400 mt-1 uppercase tracking-widest"
@@ -507,62 +509,6 @@ export const CVRenderer = ({
               itemClass="text-[11px] leading-relaxed text-slate-500"
             />
           </div>
-        </div>
-      )} */}
-
-      {/* --- STYLE: HORIZON --- */}
-      {style === "Horizon" && (
-        <div className="flex flex-col md:flex-row min-h-auto md:min-h-[297mm] w-full md:w-[210mm] max-w-full mx-auto font-sans bg-white box-border shadow-sm md:shadow-none">
-
-          {/* Sidebar */}
-          <div className="cv-readable-sidebar w-full md:w-[32%] bg-[#3d3d3d] text-white p-6 sm:p-8 flex flex-col gap-6 sm:gap-8 flex-shrink-0">
-            {hasPhotoSlot && (
-              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-white/20 mx-auto overflow-hidden shadow-2xl flex-shrink-0">
-                <img
-                  src={photoUrl}
-                  alt={name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            <section className="space-y-4">
-              <h3 className="text-sm font-black uppercase tracking-widest border-b border-white/20 pb-2">
-                À propos
-              </h3>
-              <p className="text-xs leading-relaxed text-white/90 whitespace-pre-line">
-                <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
-              </p>
-            </section>
-            <DynamicSidebarSections
-              sidebarKeys={["contact", "skills"]}
-              configs={{
-                contact: { headerClass: "text-sm font-black uppercase tracking-widest border-b border-white/20 pb-2 text-current", itemClass: "text-xs opacity-90 text-current space-y-2" },
-                skills: { headerClass: "text-sm font-black uppercase tracking-widest border-b border-white/20 pb-2", itemClass: "text-[11px] text-white font-bold tracking-wide" },
-              }}
-            />
-          </div>
-
-          {/* Main Content Body */}
-          <div className="flex-1 p-6 sm:p-10 flex flex-col justify-between">
-            <div className="flex flex-col gap-6 sm:gap-8 h-full">
-              <IdentityHeader
-                nameClass="text-2xl sm:text-4xl font-black text-[#222] uppercase tracking-tighter"
-                titleClass="text-base sm:text-lg font-bold text-slate-400 mt-2 uppercase tracking-widest"
-                containerClass="flex flex-col sm:flex-row justify-between items-start border-b border-slate-100 pb-6 gap-2 sm:gap-0"
-                showContact={false}
-                isInteractive={isInteractive}
-                onUpdate={onUpdate}
-                showPhoto={false} // Photo is in sidebar for Horizon
-              />
-              <div className="flex-1 flex flex-col gap-6">
-                <DynamicMainSections
-                  headerClass="text-sm font-black uppercase tracking-[0.2em] text-slate-400 mb-4 border-b-2 border-slate-100 pb-2"
-                  itemClass="text-xs leading-relaxed text-slate-600 space-y-4"
-                />
-              </div>
-            </div>
-          </div>
-
         </div>
       )}
 
@@ -1405,7 +1351,8 @@ export const CVRenderer = ({
                 <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
               </p>
             </div>
-            <div className="relative z-10 text-right text-xs space-y-1 shrink-0 text-blue-100">
+            {/* <div className="relative z-10 text-right text-xs space-y-1 shrink-0 text-blue-100"> */}
+            <div className="relative z-10 text-right text-xs space-y-1 shrink-0 text-blue-100 [&_*]:text-blue-100">
               <p><InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
               <p><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
             </div>

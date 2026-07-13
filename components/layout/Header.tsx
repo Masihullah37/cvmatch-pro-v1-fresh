@@ -52,13 +52,29 @@ export default function Header() {
 
         {/* Logo */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center group">
+          {/* <Link href="/" className="flex items-center group">
             <span className="text-xl font-black text-slate-900 group-hover:text-primary transition-colors tracking-tight uppercase flex items-center gap-2">
+              <Home size={18} />
+              {locale === 'en' ? 'Home' : 'Accueil'}
+            </span>
+          </Link> */}
+
+          <Link
+            href="/"
+            style={{
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
+            }}
+            className="flex items-center group active:scale-95 transition-transform duration-150"
+          >
+            <span className="text-xl font-black text-slate-900 transition-colors tracking-tight uppercase flex items-center gap-2 group-hover:text-primary group-active:text-primary">
               <Home size={18} />
               {locale === 'en' ? 'Home' : 'Accueil'}
             </span>
           </Link>
         </div>
+
+
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">

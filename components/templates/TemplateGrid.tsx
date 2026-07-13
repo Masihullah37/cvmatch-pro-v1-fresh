@@ -1386,22 +1386,37 @@ export default function TemplateGrid({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {templates.map((template) => (
+              // <div
+              //   key={template.id}
+              //   // onClick={() => handleSelect(template.id)}
+              //   onClick={() => {
+              //     setTimeout(() => handleSelect(template.id), 150);
+              //   }}
+              //   className="group bg-white rounded-3xl border border-slate-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
+              // >
+
               <div
                 key={template.id}
-                // onClick={() => handleSelect(template.id)}
                 onClick={() => {
                   setTimeout(() => handleSelect(template.id), 150);
                 }}
-                className="group bg-white rounded-3xl border border-slate-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
+                style={{
+                  WebkitTapHighlightColor: "transparent",
+                  touchAction: "manipulation",
+                }}
+                className="group bg-white rounded-3xl border border-slate-100 overflow-hidden cursor-pointer transition-all duration-300 flex flex-col hover:shadow-2xl hover:-translate-y-1 hover:border-primary/30 active:shadow-2xl active:-translate-y-1 active:border-primary/30"
               >
                 <div className="relative bg-slate-50 overflow-hidden" style={{ height: 320 }}>
                   <div className={`absolute inset-0 flex justify-center items-start pt-6`}>
-                    <div className="scale-[0.38] origin-top transform-gpu">
+                    {/* <div className="scale-[0.38] origin-top transform-gpu"> */}
+                    <div className="scale-[0.38] origin-top transform-gpu pointer-events-none">
                       <CVRenderer template={template} isPaid={hasPaid} analysisData={analysisData} />
                     </div>
                   </div>
-                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors flex items-center justify-center">
-                    <span className="bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all shadow-xl flex items-center gap-2">
+                  {/* <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors flex items-center justify-center"> */}
+                  <div className="absolute inset-0 bg-primary/0 transition-colors flex items-center justify-center group-hover:bg-primary/10 group-active:bg-primary/10">
+                    {/* <span className="bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all shadow-xl flex items-center gap-2"> */}
+                    <span className="bg-white text-slate-900 px-6 py-3 rounded-2xl font-black text-sm opacity-0 translate-y-2 transition-all shadow-xl flex items-center gap-2 group-hover:opacity-100 group-hover:translate-y-0 group-active:opacity-100 group-active:translate-y-0">
                       <Pencil size={15} /> Éditer
                     </span>
                   </div>
@@ -1409,7 +1424,7 @@ export default function TemplateGrid({
                 <div className="p-4 flex items-center justify-between border-t border-slate-100">
                   <div />
                   {hasPaid && (
-                    <button onClick={(e) => { e.stopPropagation(); handleDownload(template.id); }} disabled={isGenerating === template.id} className="w-9 h-9 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl flex items-center justify-center transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); handleDownload(template.id); }} disabled={isGenerating === template.id} className="w-9 h-9 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 active:scale-90 text-white rounded-xl flex items-center justify-center transition-all">
                       {isGenerating === template.id ? (
                         <img src="/ouicvlogo.png" alt="" className="mix-blend-multiply" style={{ width: 18, height: 'auto', animation: 'ouiHeartPump 0.6s infinite ease-in-out' }} />
                       ) : <Download size={15} />}
