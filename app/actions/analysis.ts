@@ -775,6 +775,8 @@ export async function createQuickCVAnalysis() {
     userName: "Votre Nom",
     jobTitle: "Votre Titre",
     jobDescription: "Création rapide de CV",
+    // ADD THIS FLAG
+    detectedPlatform: "manual_cv_creation",
     optimizedData: DEMO_FALLBACK,
   }).returning();
 
