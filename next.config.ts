@@ -27,8 +27,8 @@ const cspHeader = `
     default-src 'self';
     script-src 'self' ${isProd ? "" : "'unsafe-eval'"} 'unsafe-inline' blob: https://clerk.com https://*.clerk.accounts.dev https://js.stripe.com https://cdn.tailwindcss.com https://challenges.cloudflare.com https://hcaptcha.com
         https://*.hcaptcha.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://challenges.cloudflare.com https://i.pravatar.cc https://upload.wikimedia.org;
-    img-src 'self' blob: data: https://img.clerk.com https://utfs.io https://challenges.cloudflare.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://challenges.cloudflare.com;
+    img-src 'self' blob: data: https://img.clerk.com https://utfs.io https://challenges.cloudflare.com https://i.pravatar.cc https://upload.wikimedia.org;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';

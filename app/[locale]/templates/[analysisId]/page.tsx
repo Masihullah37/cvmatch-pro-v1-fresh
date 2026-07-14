@@ -18,8 +18,8 @@ import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 // const STYLES = [...CV_TEMPLATE_STYLES]; // 28 templates
 
 const STYLES = [
-  "Rose",
-  ...CV_TEMPLATE_STYLES.filter(style => style !== "Rose")
+  "Prism",
+  ...CV_TEMPLATE_STYLES.filter(style => style !== "Prism")
 ]; // Garantit que "Rose" est toujours inséré en premier (ID de template #1)
 
 const DEMO_FALLBACK = {
