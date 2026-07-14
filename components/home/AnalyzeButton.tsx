@@ -99,6 +99,10 @@ export default function AnalyzeButton({
       }
 
       if (data && data.analysisId) {
+        sessionStorage.setItem(
+          `ats_completed_${data.analysisId}`,
+          "true"
+        );
         router.push(`/${locale}/results/${data.analysisId}`);
       } else {
         throw new Error("ID d'analyse manquant dans la réponse.");

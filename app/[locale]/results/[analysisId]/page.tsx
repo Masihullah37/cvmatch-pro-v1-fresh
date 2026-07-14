@@ -59,9 +59,39 @@ export default async function ResultsPage({
   }
 
   const redirectToParam = encodeURIComponent(`/${locale}/results/${analysisId}`);
-  const score = analysis.atsScore || 0;
-  const scoreColor = score >= 70 ? 'text-emerald-500' : score >= 40 ? 'text-amber-500' : 'text-red-500';
-  const scoreBg = score >= 70 ? 'bg-emerald-500/10 border-emerald-500/20' : score >= 40 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20';
+  // const score = analysis.atsScore || 0;
+  // const scoreColor = score >= 70 ? 'text-emerald-500' : score >= 40 ? 'text-amber-500' : 'text-red-500';
+  // const scoreBg = score >= 70 ? 'bg-emerald-500/10 border-emerald-500/20' : score >= 40 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20';
+
+  const hasATSAnalysis =
+    analysis.detectedPlatform !== "manual_cv_creation";
+
+
+  const score = hasATSAnalysis
+    ? analysis.atsScore || 0
+    : 0;
+
+
+  const scoreColor = hasATSAnalysis
+    ? (
+      score >= 70
+        ? 'text-emerald-500'
+        : score >= 40
+          ? 'text-amber-500'
+          : 'text-red-500'
+    )
+    : 'text-slate-300';
+
+
+  const scoreBg = hasATSAnalysis
+    ? (
+      score >= 70
+        ? 'bg-emerald-500/10 border-emerald-500/20'
+        : score >= 40
+          ? 'bg-amber-500/10 border-amber-500/20'
+          : 'bg-red-500/10 border-red-500/20'
+    )
+    : 'bg-slate-100 border-slate-200';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -98,20 +128,57 @@ export default async function ResultsPage({
         </div>
       </div>
 
+      {/* <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-8"> */}
+
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-8">
 
         {/* Score hero banner */}
         <div className={`rounded-3xl border p-6 md:p-8 ${scoreBg} flex flex-col md:flex-row items-center gap-6`}>
           <div className="text-center md:text-left">
             <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Score ATS Global</p>
-            <div className={`text-7xl md:text-8xl font-black ${scoreColor} leading-none`}>{score}</div>
+            {/* <div className={`text-7xl md:text-8xl font-black ${scoreColor} leading-none`}>{score}</div> */}
+            <div className={`text-7xl md:text-8xl font-black ${scoreColor} leading-none`}>
+              {hasATSAnalysis ? score : 0}
+            </div>
             <div className={`text-2xl font-black ${scoreColor}`}>/ 100</div>
           </div>
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+          {/* <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
             {[
               { label: 'Mots-clés', icon: Target, value: `${(analysis.keywordsFound as string[])?.length || 0} trouvés` },
               { label: 'Manquants', icon: TrendingUp, value: `${(analysis.keywordsMissing as string[])?.length || 0} keywords` },
               { label: 'Suggestions', icon: Sparkles, value: `${(analysis.suggestions as string[])?.length || 0} points` },
+            ].map(stat => (
+              <div key={stat.label} className="bg-white/60 backdrop-blur rounded-2xl p-4 text-center border border-white/80">
+                <stat.icon size={18} className="mx-auto mb-2 text-slate-400" />
+                <p className="text-lg font-black text-slate-900">{stat.value}</p>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{stat.label}</p>
+              </div>
+            ))}
+          </div> */}
+
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+            {[
+              {
+                label: 'Mots-clés',
+                icon: Target,
+                value: hasATSAnalysis
+                  ? `${(analysis?.keywordsFound as string[])?.length || 0} trouvés`
+                  : "0"
+              },
+              {
+                label: 'Manquants',
+                icon: TrendingUp,
+                value: hasATSAnalysis
+                  ? `${(analysis?.keywordsMissing as string[])?.length || 0} keywords`
+                  : "0"
+              },
+              {
+                label: 'Suggestions',
+                icon: Sparkles,
+                value: hasATSAnalysis
+                  ? `${(analysis?.suggestions as string[])?.length || 0} points`
+                  : "0"
+              },
             ].map(stat => (
               <div key={stat.label} className="bg-white/60 backdrop-blur rounded-2xl p-4 text-center border border-white/80">
                 <stat.icon size={18} className="mx-auto mb-2 text-slate-400" />
@@ -128,10 +195,16 @@ export default async function ResultsPage({
           {/* Left column */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-              <ATSScoreCard score={score} />
+              {/* <ATSScoreCard score={score} /> */}
+              {hasATSAnalysis && (
+                <ATSScoreCard score={score} />
+              )}
             </div>
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-              <ScoreBreakdown breakdown={analysis.scoreBreakdown} />
+              {/* <ScoreBreakdown breakdown={analysis.scoreBreakdown} /> */}
+              {hasATSAnalysis && (
+                <ScoreBreakdown breakdown={analysis.scoreBreakdown} />
+              )}
             </div>
           </div>
 
@@ -140,12 +213,24 @@ export default async function ResultsPage({
 
             {/* Flaws */}
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-              <FlawsList flaws={(analysis.flaws as string[]) || []} isGated={isTeaser} />
+              {/* <FlawsList flaws={(analysis.flaws as string[]) || []} isGated={isTeaser} /> */}
+              {hasATSAnalysis && (
+                <FlawsList
+                  flaws={(analysis.flaws as string[]) || []}
+                  isGated={isTeaser}
+                />
+              )}
             </div>
 
             {/* Suggestions */}
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-              <ImprovementSuggestions suggestions={(analysis.suggestions as string[]) || []} isGated={isTeaser} />
+              {/* <ImprovementSuggestions suggestions={(analysis.suggestions as string[]) || []} isGated={isTeaser} /> */}
+              {hasATSAnalysis && (
+                <ImprovementSuggestions
+                  suggestions={(analysis.suggestions as string[]) || []}
+                  isGated={isTeaser}
+                />
+              )}
             </div>
 
             {/* Keywords */}
