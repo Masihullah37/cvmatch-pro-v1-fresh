@@ -15,7 +15,12 @@ import { PlanType } from "@/lib/billing/get-user-plan";
 import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 
 // Revert to original unique templates
-const STYLES = [...CV_TEMPLATE_STYLES]; // 25 templates
+// const STYLES = [...CV_TEMPLATE_STYLES]; // 28 templates
+
+const STYLES = [
+  "Rose",
+  ...CV_TEMPLATE_STYLES.filter(style => style !== "Rose")
+]; // Garantit que "Rose" est toujours inséré en premier (ID de template #1)
 
 const DEMO_FALLBACK = {
   userName: "Votre Nom",
