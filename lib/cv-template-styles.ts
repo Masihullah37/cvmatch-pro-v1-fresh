@@ -9,15 +9,16 @@
 // ] as const;
 
 export const CV_TEMPLATE_STYLES = [
+  "Prism",
   "Rose",       // 1er (Par défaut)
   "Hartmann",   // 2ème
-  "Galaxy",     // 3ème (N'importe lequel)
+  "Galaxy",
   "Eclipse", "Aether", "Hyperion", "Lunar", "Stellar",
-  "Solar", "Nebula", "Cosmos", "Astra", "Prism",
+  "Solar", "Nebula", "Cosmos", "Astra",
   "Meridian", "Classic", "Navy", "Vertex", "Verde",
   "Azure", "Europass", "Pamela", "Liverpool", "Lumiere",
   "Patterson", "Bremen", "Sevilla", "Munich",
-  "Horizon"     // Dernier
+  "Horizon"
 ] as const;
 
 export type CvTemplateStyle = (typeof CV_TEMPLATE_STYLES)[number];
