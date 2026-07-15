@@ -114,23 +114,47 @@ export default async function ResultsPage({
             >
               Voir mes CVs
             </Link>
-          ) : !isGuest ? (
-            // <UnlockButton analysisId={analysisId} credits={userCredits} isGuest={isGuest} />
+            // ) : !isGuest ? (
+            //   // <UnlockButton analysisId={analysisId} credits={userCredits} isGuest={isGuest} />
 
-            <UnlockButton
-              analysisId={analysisId}
-              credits={userCredits}
-              isGuest={isGuest}
-            >
+            //   <UnlockButton
+            //     analysisId={analysisId}
+            //     credits={userCredits}
+            //     isGuest={isGuest}
+            //   >
+            //     <Link
+            //       href={{ pathname: "/templates/" + analysisId, query: { template: 1 } }}
+            //       locale={locale}
+            //       // className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 border border-slate-300 bg-white text-slate-700 px-6 py-4 rounded-xl sm:rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
+            //       className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-6 sm:px-10 py-4 rounded-2xl border-2 border-primary bg-white text-primary font-black uppercase tracking-widest text-sm shadow-lg transition-all duration-200 hover:bg-primary hover:text-white hover:shadow-xl hover:scale-[1.02] active:bg-primary active:text-white active:scale-95 active:shadow-xl"
+            //     >
+
+            //       {/* <Sparkles size={18} /> */}
+            //       Personnaliser mon CV
+            //     </Link>
+            //   </UnlockButton>
+            // ) : (
+
+          ) : !isGuest ? (
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+
               <Link
                 href={{ pathname: "/templates/" + analysisId, query: { template: 1 } }}
                 locale={locale}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 border border-slate-300 bg-white text-slate-700 px-6 py-4 rounded-xl sm:rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
+                className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-6 sm:px-10 py-4 rounded-2xl border-2 border-primary bg-white text-primary font-black uppercase tracking-widest text-sm shadow-lg transition-all duration-200 hover:bg-primary hover:text-white hover:shadow-xl hover:scale-[1.02] active:bg-primary active:text-white active:scale-95 active:shadow-xl"
               >
-                <Sparkles size={18} />
                 Personnaliser mon CV
               </Link>
-            </UnlockButton>
+
+              <UnlockButton
+                analysisId={analysisId}
+                credits={userCredits}
+                isGuest={isGuest}
+              />
+
+            </div>
+
           ) : (
             <Link
               href={{ pathname: "/sign-in", query: { redirectTo: redirectToParam } }}
