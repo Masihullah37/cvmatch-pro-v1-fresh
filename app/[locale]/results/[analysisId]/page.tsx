@@ -115,7 +115,22 @@ export default async function ResultsPage({
               Voir mes CVs
             </Link>
           ) : !isGuest ? (
-            <UnlockButton analysisId={analysisId} credits={userCredits} isGuest={isGuest} />
+            // <UnlockButton analysisId={analysisId} credits={userCredits} isGuest={isGuest} />
+
+            <UnlockButton
+              analysisId={analysisId}
+              credits={userCredits}
+              isGuest={isGuest}
+            >
+              <Link
+                href={{ pathname: "/templates/" + analysisId, query: { template: 1 } }}
+                locale={locale}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 border border-slate-300 bg-white text-slate-700 px-6 py-4 rounded-xl sm:rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
+              >
+                <Sparkles size={18} />
+                Personnaliser mon CV
+              </Link>
+            </UnlockButton>
           ) : (
             <Link
               href={{ pathname: "/sign-in", query: { redirectTo: redirectToParam } }}
