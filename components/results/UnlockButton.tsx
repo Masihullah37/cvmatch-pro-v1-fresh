@@ -67,11 +67,27 @@ export default function UnlockButton({
 
       {/* <div className="flex flex-col items-center gap-3"> */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full">
-        <button
+        {/* <button
           onClick={handleUnlock}
           disabled={loading}
           // className="bg-primary text-primary-foreground px-8 py-4 rounded-xl sm:rounded-2xl font-black shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all group flex items-center justify-center gap-3 text-sm sm:text-base uppercase tracking-widest disabled:cursor-not-allowed min-w-[280px]"
           className="flex-1 sm:flex-none bg-primary text-primary-foreground px-6 py-4 rounded-xl sm:rounded-2xl font-black shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all group flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <Loader2 className="animate-spin" size={18} />
+          ) : (
+            <Sparkles
+              className="group-hover:rotate-12 transition-transform text-white/90"
+              size={18}
+            />
+          )}
+          <span>Générer CV Optimisés</span>
+        </button> */}
+
+        <button
+          onClick={handleUnlock}
+          disabled={loading}
+          className="flex-1 sm:flex-initial sm:w-64 bg-primary text-primary-foreground px-6 py-4 rounded-2xl font-black shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all group flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:cursor-not-allowed"
         >
           {loading ? (
             <Loader2 className="animate-spin" size={18} />
