@@ -139,10 +139,18 @@ export default async function ResultsPage({
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
 
-              <Link
+              {/* <Link
                 href={{ pathname: "/templates/" + analysisId, query: { template: 1 } }}
                 locale={locale}
                 className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-6 sm:px-10 py-4 rounded-2xl border-2 border-primary bg-white text-primary font-black uppercase tracking-widest text-sm shadow-lg transition-all duration-200 hover:bg-primary hover:text-white hover:shadow-xl hover:scale-[1.02] active:bg-primary active:text-white active:scale-95 active:shadow-xl"
+              >
+                Personnaliser mon CV
+              </Link> */}
+
+              <Link
+                href={{ pathname: "/templates/" + analysisId, query: { template: 1 } }}
+                locale={locale}
+                className="flex-1 sm:flex-initial sm:w-64 inline-flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 border-primary bg-white text-primary font-black uppercase tracking-widest text-sm shadow-lg transition-all duration-200 hover:bg-primary hover:text-white hover:shadow-xl hover:scale-[1.02] active:bg-primary active:text-white active:scale-95 active:shadow-xl"
               >
                 Personnaliser mon CV
               </Link>
