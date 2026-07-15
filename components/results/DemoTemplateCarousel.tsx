@@ -98,7 +98,7 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
           ))}
         </div>
 
-        {/* CTA */}
+        {/* CTA
         <div className="mt-12 text-center">
           <button
             onClick={() => handleClick(1)}
@@ -111,7 +111,9 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
           <p className="text-slate-400 text-xs font-medium mt-3">
             Données de démonstration — vos vraies informations seront utilisées après déblocage
           </p>
-        </div>
+        </div> */}
+
+        {/* CTA removed - button now lives in Results header */}
       </div>
     </div>
   );
