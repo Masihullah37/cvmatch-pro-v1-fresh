@@ -1111,8 +1111,38 @@ export default function TemplateGrid({
       //   document.body.removeChild(link);
       // }
 
+      // if (result.pdfBase64) {
+      //   // Convert base64 safely to a native binary Blob to protect mobile browser threads
+      //   const byteCharacters = atob(result.pdfBase64);
+      //   const byteNumbers = new Array(byteCharacters.length);
+      //   for (let i = 0; i < byteCharacters.length; i++) {
+      //     byteNumbers[i] = byteCharacters.charCodeAt(i);
+      //   }
+      //   const byteArray = new Uint8Array(byteNumbers);
+      //   const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+      //   // Generate a safe object blob URL
+      //   const blobUrl = window.URL.createObjectURL(blob);
+
+      //   const link = document.createElement("a");
+      //   link.href = blobUrl;
+      //   link.download = result.fileName || "CV.pdf";
+
+      //   // Crucial for mobile: isolate the download frame context
+      //   link.target = "_blank";
+      //   link.rel = "noopener noreferrer";
+
+      //   document.body.appendChild(link);
+      //   link.click();
+
+      //   // Safe asynchronous cleanup
+      //   setTimeout(() => {
+      //     document.body.removeChild(link);
+      //     window.URL.revokeObjectURL(blobUrl);
+      //   }, 100);
+      // }
       if (result.pdfBase64) {
-        // Convert base64 safely to a native binary Blob to protect mobile browser threads
+        // 1. Convert base64 to binary data
         const byteCharacters = atob(result.pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -1121,26 +1151,46 @@ export default function TemplateGrid({
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: 'application/pdf' });
 
-        // Generate a safe object blob URL
-        const blobUrl = window.URL.createObjectURL(blob);
+        // 2. Fallback check for mobile Safari/Chrome native file-sharing API
+        if (navigator.canShare && navigator.share) {
+          try {
+            const file = new File([blob], result.fileName || "CV.pdf", { type: 'application/pdf' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: 'Mon CV',
+                text: 'Voici mon CV au format PDF',
+              });
+              return; // Executed successfully, stop thread here to avoid rendering interference
+            }
+          } catch (shareError) {
+            console.log("Share API bypassed, falling back to clean Blob download...", shareError);
+          }
+        }
 
+        // 3. Robust Blob download for other mobile/desktop browsers
+        const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = blobUrl;
         link.download = result.fileName || "CV.pdf";
 
-        // Crucial for mobile: isolate the download frame context
+        // Crucial for mobile isolation:
         link.target = "_blank";
         link.rel = "noopener noreferrer";
 
+        // Append, click and detach in clean micro-tasks to isolate from Next.js thread tracking
         document.body.appendChild(link);
-        link.click();
 
-        // Safe asynchronous cleanup
-        setTimeout(() => {
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(blobUrl);
-        }, 100);
+        // Wrap the execution inside an animation frame so Next.js does not track the click event context
+        requestAnimationFrame(() => {
+          link.click();
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+          }, 200);
+        });
       }
+
     } catch (err: any) {
       const isPaywallError =
         err.message === "PAYWALL" ||
