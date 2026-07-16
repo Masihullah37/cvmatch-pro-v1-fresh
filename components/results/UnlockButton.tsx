@@ -97,7 +97,7 @@ export default function UnlockButton({
               size={18}
             />
           )}
-          <span>Générer mes CV Optimisés</span>
+          <span>Générer CV Optimisés</span>
         </button>
         {children}
       </div>
