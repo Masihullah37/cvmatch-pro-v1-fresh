@@ -10,6 +10,7 @@ import {
   CreditCard, Clock, Zap, Plus, History,
   CheckCircle2, XCircle, AlertCircle,
 } from "lucide-react";
+import CancellationSuccessToast from "@/components/dashboard/CancellationSuccessToast";
 
 export default async function DashboardPage({
   params,
@@ -78,11 +79,14 @@ export default async function DashboardPage({
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Success Notification */}
-      {resolvedSearchParams?.cancellation === 'success' && (
+      {/* {resolvedSearchParams?.cancellation === 'success' && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-emerald-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
           <CheckCircle2 size={20} />
           <span className="font-black uppercase tracking-widest text-xs">Abonnement résilié avec succès</span>
         </div>
+      )} */}
+      {resolvedSearchParams?.cancellation === 'success' && (
+        <CancellationSuccessToast />
       )}
 
       {/* Page header */}
