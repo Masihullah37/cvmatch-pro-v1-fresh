@@ -1,7 +1,7 @@
 // 'use client';
 
 // import { useState } from 'react';
-// import { UserProfile, useClerk } from "@clerk/nextjs";
+// import { UserProfile } from "@clerk/nextjs";
 // import { toast } from 'sonner';
 // import { AlertTriangle, Trash2, ShieldAlert, CheckCircle2, X, Loader2 } from "lucide-react";
 // import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +15,6 @@
 //     const [showDeleteModal, setShowDeleteModal] = useState(false);
 //     const [isDeleting, setIsDeleting] = useState(false);
 //     const [confirmText, setConfirmText] = useState("");
-//     const { signOut } = useClerk();
 
 //     const handleDeleteAccount = async () => {
 //         if (confirmText !== "SUPPRIMER") return;
@@ -24,14 +23,18 @@
 //         try {
 //             const res = await fetch('/api/delete-account', { method: 'POST' });
 //             if (res.ok) {
-//                 await signOut(); // Sign out from Clerk after initiating deletion
-//                 window.location.href = "/";
+//                 toast.success("Votre compte a été supprimé avec succès.");
+
+//                 // Force a hard navigation to wipe client-side cookie caches and cache memory safely 
+//                 // without invoking Clerk JS signout errors.
+//                 window.location.assign("/");
 //             } else {
 //                 toast.error("Erreur lors de la suppression. Veuillez réessayer.");
 //                 setIsDeleting(false);
 //             }
 //         } catch (error) {
 //             console.error("Delete failed:", error);
+//             toast.error("Une erreur système est survenue.");
 //             setIsDeleting(false);
 //         }
 //     };
@@ -50,7 +53,6 @@
 //                         appearance={{
 //                             elements: {
 //                                 navbarItem__security: { display: 'none' },
-//                                 // Target the "Danger Zone" button inside Clerk's UI to hide it
 //                                 profileSection__danger: { display: 'none' },
 //                                 scrollBox: { borderRadius: '2rem' },
 //                                 card: { boxShadow: 'none' }
@@ -191,10 +193,11 @@
 // }
 
 
+
 'use client';
 
 import { useState } from 'react';
-import { UserProfile } from "@clerk/nextjs";
+import { UserProfile, useClerk } from "@clerk/nextjs";
 import { toast } from 'sonner';
 import { AlertTriangle, Trash2, ShieldAlert, CheckCircle2, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -204,6 +207,7 @@ interface AccountSettingsProps {
 }
 
 export default function AccountSettings({ credits }: AccountSettingsProps) {
+    const { signOut } = useClerk(); // 🌟 Access the sign out method
     const [hasConfirmed, setHasConfirmed] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -218,9 +222,12 @@ export default function AccountSettings({ credits }: AccountSettingsProps) {
             if (res.ok) {
                 toast.success("Votre compte a été supprimé avec succès.");
 
-                // Force a hard navigation to wipe client-side cookie caches and cache memory safely 
-                // without invoking Clerk JS signout errors.
-                window.location.assign("/");
+                // 🌟 1. Clear Clerk's local cookies, session storage, and client-side cache
+                await signOut();
+
+                // 🌟 2. Force hard navigation to wipe Next.js client-side router memory
+                // This guarantees credits read 0 / Guest view instantly
+                window.location.href = "/";
             } else {
                 toast.error("Erreur lors de la suppression. Veuillez réessayer.");
                 setIsDeleting(false);
@@ -286,6 +293,11 @@ export default function AccountSettings({ credits }: AccountSettingsProps) {
                         <div className="flex flex-col items-center gap-6 py-8 bg-white rounded-3xl border border-slate-100 shadow-sm">
                             <p className="text-slate-500 font-medium">Pour accéder aux options de suppression, veuillez confirmer la prise de connaissance :</p>
                             <button
+                                type="button"
+                                style={{
+                                    WebkitTapHighlightColor: "transparent",
+                                    touchAction: "manipulation",
+                                }}
                                 onClick={() => setHasConfirmed(true)}
                                 className="group flex items-center gap-3 bg-red-600 text-white px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-700 transition-all shadow-xl shadow-red-200 active:scale-95"
                             >
@@ -301,6 +313,11 @@ export default function AccountSettings({ credits }: AccountSettingsProps) {
                                     Si vous souhaitez vraiment quitter l'aventure et supprimer toutes vos données, cliquez sur le bouton ci-dessous.
                                 </p>
                                 <button
+                                    type="button"
+                                    style={{
+                                        WebkitTapHighlightColor: "transparent",
+                                        touchAction: "manipulation",
+                                    }}
                                     onClick={() => setShowDeleteModal(true)}
                                     className="bg-red-600 text-white px-12 py-4 rounded-2xl font-black text-sm uppercase tracking-tighter hover:bg-red-700 transition-all shadow-lg hover:shadow-red-200"
                                 >
@@ -312,6 +329,7 @@ export default function AccountSettings({ credits }: AccountSettingsProps) {
                             </div>
 
                             <button
+                                type="button"
                                 onClick={() => setHasConfirmed(false)}
                                 className="text-slate-400 text-xs font-bold hover:text-slate-600 transition-colors mx-auto block"
                             >
@@ -338,6 +356,7 @@ export default function AccountSettings({ credits }: AccountSettingsProps) {
                                     <span className="font-black text-lg uppercase tracking-tight">Confirmation Finale</span>
                                 </div>
                                 <button
+                                    type="button"
                                     onClick={() => setShowDeleteModal(false)}
                                     className="p-2 hover:bg-red-100 rounded-xl transition-colors text-red-400"
                                 >
@@ -362,6 +381,7 @@ export default function AccountSettings({ credits }: AccountSettingsProps) {
                                 </div>
 
                                 <button
+                                    type="button"
                                     disabled={confirmText !== "SUPPRIMER" || isDeleting}
                                     onClick={handleDeleteAccount}
                                     className="w-full bg-red-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-700 transition-all shadow-xl flex items-center justify-center gap-3"
@@ -371,6 +391,7 @@ export default function AccountSettings({ credits }: AccountSettingsProps) {
                                 </button>
 
                                 <button
+                                    type="button"
                                     onClick={() => setShowDeleteModal(false)}
                                     className="w-full py-2 text-slate-400 font-bold text-xs hover:text-slate-600 transition-colors"
                                 >
