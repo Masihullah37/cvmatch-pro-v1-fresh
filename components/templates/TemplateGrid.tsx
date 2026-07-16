@@ -1102,13 +1102,44 @@ export default function TemplateGrid({
         throw new Error(result.error || "Erreur serveur");
       }
 
+      // if (result.pdfBase64) {
+      //   const link = document.createElement("a");
+      //   link.href = `data:application/pdf;base64,${result.pdfBase64}`;
+      //   link.download = result.fileName || "CV.pdf";
+      //   document.body.appendChild(link);
+      //   link.click();
+      //   document.body.removeChild(link);
+      // }
+
       if (result.pdfBase64) {
+        // Convert base64 safely to a native binary Blob to protect mobile browser threads
+        const byteCharacters = atob(result.pdfBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+        // Generate a safe object blob URL
+        const blobUrl = window.URL.createObjectURL(blob);
+
         const link = document.createElement("a");
-        link.href = `data:application/pdf;base64,${result.pdfBase64}`;
+        link.href = blobUrl;
         link.download = result.fileName || "CV.pdf";
+
+        // Crucial for mobile: isolate the download frame context
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+
+        // Safe asynchronous cleanup
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(blobUrl);
+        }, 100);
       }
     } catch (err: any) {
       const isPaywallError =
@@ -1498,7 +1529,7 @@ export default function TemplateGrid({
             </div>
 
             <div className="flex sm:hidden items-center gap-2">
-              <button
+              {/* <button
                 onClick={async () => {
                   if (!userId) {
                     if (editingData) {
@@ -1517,6 +1548,47 @@ export default function TemplateGrid({
                 className="w-10 h-10 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 active:scale-90 transition-all text-white rounded-xl flex items-center justify-center"
               >
                 {hasPaid ? <Download size={18} /> : <Lock size={18} />}
+              </button> */}
+
+              <button
+                type="button"
+                style={{
+                  WebkitTapHighlightColor: "transparent",
+                  touchAction: "manipulation",
+                }}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (isGenerating === selectedTpl.id) return;
+
+                  if (!userId) {
+                    if (editingData) {
+                      sessionStorage.setItem(`cv_anon_edits_${analysisId}`, JSON.stringify(editingData));
+                    }
+                    setShowGuestAuthModal(true);
+                    return;
+                  }
+                  if (saveStatus !== "saved" && editingData) await handleSave();
+                  if (hasPaid) {
+                    await handleDownload(selectedTpl.id);
+                  } else {
+                    setShowPaywall(true);
+                  }
+                }}
+                disabled={isGenerating === selectedTpl.id}
+                className="w-10 h-10 bg-emerald-600 active:bg-emerald-700 text-white rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-80 shadow-lg shadow-emerald-600/20"
+              >
+                {isGenerating === selectedTpl.id ? (
+                  <img
+                    src="/ouicvlogo.png"
+                    alt="Loading..."
+                    className="mix-blend-multiply"
+                    style={{ width: 22, height: 'auto', animation: 'ouiHeartPump 0.6s infinite ease-in-out' }}
+                  />
+                ) : hasPaid ? (
+                  <Download size={18} />
+                ) : (
+                  <Lock size={18} />
+                )}
               </button>
               {/* 3-dot menu */}
               <div className="relative">
