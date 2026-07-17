@@ -68,12 +68,24 @@ export default async function ResultsPage({
 
 
   // const score = hasATSAnalysis
-  //   ? analysis.atsScore || 0
+  //   ? Math.round(Number(analysis.atsScore ?? 0))
   //   : 0;
 
-  const score = hasATSAnalysis
-    ? Math.round(Number(analysis.atsScore ?? 0))
+  // Explicit breakdown type check
+  const breakdown = (analysis.scoreBreakdown as Record<string, any>) || {};
+
+  // Dynamically sum up the exact categories displayed under "SCORE DETAILS"
+  const calculatedTotal = hasATSAnalysis
+    ? (Number(breakdown.keywords || 0) +
+      Number(breakdown.format || 0) +
+      Number(breakdown.experience || 0) +
+      Number(breakdown.training || 0) +
+      Number(breakdown.skills || 0) +
+      Number(breakdown.readability || 0))
     : 0;
+
+  // Use the calculated total for the entire page layout
+  const score = Math.max(0, Math.min(100, Math.round(calculatedTotal)));
 
 
   const scoreColor = hasATSAnalysis
@@ -118,38 +130,10 @@ export default async function ResultsPage({
             >
               Voir mes CVs
             </Link>
-            // ) : !isGuest ? (
-            //   // <UnlockButton analysisId={analysisId} credits={userCredits} isGuest={isGuest} />
-
-            //   <UnlockButton
-            //     analysisId={analysisId}
-            //     credits={userCredits}
-            //     isGuest={isGuest}
-            //   >
-            //     <Link
-            //       href={{ pathname: "/templates/" + analysisId, query: { template: 1 } }}
-            //       locale={locale}
-            //       // className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 border border-slate-300 bg-white text-slate-700 px-6 py-4 rounded-xl sm:rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
-            //       className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-6 sm:px-10 py-4 rounded-2xl border-2 border-primary bg-white text-primary font-black uppercase tracking-widest text-sm shadow-lg transition-all duration-200 hover:bg-primary hover:text-white hover:shadow-xl hover:scale-[1.02] active:bg-primary active:text-white active:scale-95 active:shadow-xl"
-            //     >
-
-            //       {/* <Sparkles size={18} /> */}
-            //       Personnaliser mon CV
-            //     </Link>
-            //   </UnlockButton>
-            // ) : (
 
           ) : !isGuest ? (
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-
-              {/* <Link
-                href={{ pathname: "/templates/" + analysisId, query: { template: 1 } }}
-                locale={locale}
-                className="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-6 sm:px-10 py-4 rounded-2xl border-2 border-primary bg-white text-primary font-black uppercase tracking-widest text-sm shadow-lg transition-all duration-200 hover:bg-primary hover:text-white hover:shadow-xl hover:scale-[1.02] active:bg-primary active:text-white active:scale-95 active:shadow-xl"
-              >
-                Personnaliser mon CV
-              </Link> */}
 
               <Link
                 href={{ pathname: "/templates/" + analysisId, query: { template: 1 } }}
@@ -193,19 +177,6 @@ export default async function ResultsPage({
             </div>
             <div className={`text-2xl font-black ${scoreColor}`}>/ 100</div>
           </div>
-          {/* <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-            {[
-              { label: 'Mots-clés', icon: Target, value: `${(analysis.keywordsFound as string[])?.length || 0} trouvés` },
-              { label: 'Manquants', icon: TrendingUp, value: `${(analysis.keywordsMissing as string[])?.length || 0} keywords` },
-              { label: 'Suggestions', icon: Sparkles, value: `${(analysis.suggestions as string[])?.length || 0} points` },
-            ].map(stat => (
-              <div key={stat.label} className="bg-white/60 backdrop-blur rounded-2xl p-4 text-center border border-white/80">
-                <stat.icon size={18} className="mx-auto mb-2 text-slate-400" />
-                <p className="text-lg font-black text-slate-900">{stat.value}</p>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{stat.label}</p>
-              </div>
-            ))}
-          </div> */}
 
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
             {[

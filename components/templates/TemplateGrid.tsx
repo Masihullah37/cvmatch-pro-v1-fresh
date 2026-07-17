@@ -1053,10 +1053,138 @@ export default function TemplateGrid({
     if (ok) setTimeout(() => setSaveStatus("idle"), 2500);
   };
 
+  // const handleDownload = async (templateId: string) => {
+  //   // Force login for anonymous users before trying deduction
+  //   if (!userId) {
+  //     // Capture current edited state before showing login
+  //     if (editingData) {
+  //       sessionStorage.setItem(`cv_anon_edits_${analysisId}`, JSON.stringify(editingData));
+  //     }
+  //     setShowGuestAuthModal(true);
+  //     return;
+  //   }
+
+  //   if (isExpired && !hasPaid) {
+  //     setShowPaywall(true);
+  //     return;
+  //   }
+  //   try {
+  //     setIsGenerating(templateId);
+
+  //     // Deduct credit for this specific template download (handles ownership check internally)
+  //     // This function will throw if credits are insufficient or user is unauthorized.
+  //     const creditRes = await deductCreditForTemplate(templateId);
+
+  //     // If deduction/ownership check was successful, refresh the router to update UI
+  //     // (credits, watermark status, etc.)
+  //     // router.refresh();
+
+  //     // The local state updates for userCredits and templates are removed here
+  //     // because router.refresh() will re-fetch the latest state from the server,
+  //     // ensuring consistency.
+  //     if (creditRes?.deducted && userCredits > 0) { // Only decrement if a credit was actually available to be deducted
+  //       setUserCredits((prev: number) => Math.max(0, prev - 1));
+  //     }
+
+  //     const currentData =
+  //       selectedTemplate === templateId && editingDataRef.current
+  //         ? editingDataRef.current
+  //         : templates.find((t) => t.id === templateId)?.templateData;
+
+  //     // Remove persistEdits here because it's already called by the button click
+  //     // or the manual save. Only call if specifically needed.
+
+  //     const res = await fetch("/api/generate-pdf", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         templateId,
+  //         analysisId,
+  //         templateData: currentData,
+  //       }),
+  //     });
+  //     const result = await res.json();
+  //     if (!res.ok) {
+  //       if (result.action === "upgrade" || result.action === "unlock" || result.action === "login") {
+  //         throw new Error("PAYWALL");
+  //       }
+  //       throw new Error(result.error || "Erreur serveur");
+  //     }
+  //     if (result.pdfBase64) {
+  //       // 1. Convert base64 to binary data
+  //       const byteCharacters = atob(result.pdfBase64);
+  //       const byteNumbers = new Array(byteCharacters.length);
+  //       for (let i = 0; i < byteCharacters.length; i++) {
+  //         byteNumbers[i] = byteCharacters.charCodeAt(i);
+  //       }
+  //       const byteArray = new Uint8Array(byteNumbers);
+  //       const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+  //       // 2. Fallback check for mobile Safari/Chrome native file-sharing API
+  //       if (navigator.canShare && navigator.share) {
+  //         try {
+  //           const file = new File([blob], result.fileName || "CV.pdf", { type: 'application/pdf' });
+  //           if (navigator.canShare({ files: [file] })) {
+  //             await navigator.share({
+  //               files: [file],
+  //               title: 'Mon CV',
+  //               text: 'Voici mon CV au format PDF',
+  //             });
+  //             return; // Executed successfully, stop thread here to avoid rendering interference
+  //           }
+  //         } catch (shareError) {
+  //           console.log("Share API bypassed, falling back to clean Blob download...", shareError);
+  //         }
+  //       }
+
+  //       // 3. Robust Blob download for other mobile/desktop browsers
+  //       const blobUrl = window.URL.createObjectURL(blob);
+  //       const link = document.createElement("a");
+  //       link.href = blobUrl;
+  //       link.download = result.fileName || "CV.pdf";
+
+  //       // Crucial for mobile isolation:
+  //       link.target = "_blank";
+  //       link.rel = "noopener noreferrer";
+
+  //       // Append to DOM securely
+  //       document.body.appendChild(link);
+
+  //       // Run the click outside of Next.js's synchronous execution thread
+  //       requestAnimationFrame(() => {
+  //         link.click();
+
+  //         // Safely cleanup resources right after execution context clears
+  //         setTimeout(() => {
+  //           if (document.body.contains(link)) {
+  //             document.body.removeChild(link);
+  //           }
+  //           window.URL.revokeObjectURL(blobUrl);
+  //         }, 500);
+  //       });
+  //     }
+
+  //   } catch (err: any) {
+  //     const isPaywallError =
+  //       err.message === "PAYWALL" ||
+  //       err.message === "Crédits insuffisants." ||
+  //       err.message?.startsWith("EXPIRED:") ||
+  //       err.message === "Utilisateur introuvable.";
+
+  //     if (isPaywallError) {
+  //       setShowPaywall(true); // Only show paywall for logged-in users
+  //     } else {
+  //       toast.error(err.message || "Une erreur s'est produite lors du téléchargement.");
+  //     }
+  //   } finally {
+  //     if (mountedRef.current) {
+  //       setIsGenerating(null);
+  //     }
+  //   }
+  // };
+
   const handleDownload = async (templateId: string) => {
-    // Force login for anonymous users before trying deduction
     if (!userId) {
-      // Capture current edited state before showing login
       if (editingData) {
         sessionStorage.setItem(`cv_anon_edits_${analysisId}`, JSON.stringify(editingData));
       }
@@ -1068,21 +1196,13 @@ export default function TemplateGrid({
       setShowPaywall(true);
       return;
     }
+
     try {
       setIsGenerating(templateId);
 
-      // Deduct credit for this specific template download (handles ownership check internally)
-      // This function will throw if credits are insufficient or user is unauthorized.
       const creditRes = await deductCreditForTemplate(templateId);
 
-      // If deduction/ownership check was successful, refresh the router to update UI
-      // (credits, watermark status, etc.)
-      // router.refresh();
-
-      // The local state updates for userCredits and templates are removed here
-      // because router.refresh() will re-fetch the latest state from the server,
-      // ensuring consistency.
-      if (creditRes?.deducted && userCredits > 0) { // Only decrement if a credit was actually available to be deducted
+      if (creditRes?.deducted && userCredits > 0) {
         setUserCredits((prev: number) => Math.max(0, prev - 1));
       }
 
@@ -1090,9 +1210,6 @@ export default function TemplateGrid({
         selectedTemplate === templateId && editingDataRef.current
           ? editingDataRef.current
           : templates.find((t) => t.id === templateId)?.templateData;
-
-      // Remove persistEdits here because it's already called by the button click
-      // or the manual save. Only call if specifically needed.
 
       const res = await fetch("/api/generate-pdf", {
         method: "POST",
@@ -1103,6 +1220,7 @@ export default function TemplateGrid({
           templateData: currentData,
         }),
       });
+
       const result = await res.json();
       if (!res.ok) {
         if (result.action === "upgrade" || result.action === "unlock" || result.action === "login") {
@@ -1110,6 +1228,7 @@ export default function TemplateGrid({
         }
         throw new Error(result.error || "Erreur serveur");
       }
+
       if (result.pdfBase64) {
         // 1. Convert base64 to binary data
         const byteCharacters = atob(result.pdfBase64);
@@ -1120,93 +1239,22 @@ export default function TemplateGrid({
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: 'application/pdf' });
 
-        // 2. Fallback check for mobile Safari/Chrome native file-sharing API
-        if (navigator.canShare && navigator.share) {
-          try {
-            const file = new File([blob], result.fileName || "CV.pdf", { type: 'application/pdf' });
-            if (navigator.canShare({ files: [file] })) {
-              await navigator.share({
-                files: [file],
-                title: 'Mon CV',
-                text: 'Voici mon CV au format PDF',
-              });
-              return; // Executed successfully, stop thread here to avoid rendering interference
-            }
-          } catch (shareError) {
-            console.log("Share API bypassed, falling back to clean Blob download...", shareError);
-          }
-        }
-
-        //       // 3. Robust Blob download for other mobile/desktop browsers
-        //       const blobUrl = window.URL.createObjectURL(blob);
-        //       const link = document.createElement("a");
-        //       link.href = blobUrl;
-        //       link.download = result.fileName || "CV.pdf";
-
-        //       // Crucial for mobile isolation:
-        //       link.target = "_blank";
-        //       link.rel = "noopener noreferrer";
-
-        //       // Append, click and detach in clean micro-tasks to isolate from Next.js thread tracking
-        //       document.body.appendChild(link);
-
-        //       // Wrap the execution inside an animation frame so Next.js does not track the click event context
-        //       // requestAnimationFrame(() => {
-        //       //   link.click();
-        //       //   setTimeout(() => {
-        //       //     document.body.removeChild(link);
-        //       //     window.URL.revokeObjectURL(blobUrl);
-        //       //   }, 200);
-        //       // });
-
-        //       link.click();
-
-        //       setTimeout(() => {
-        //         if (document.body.contains(link)) {
-        //           document.body.removeChild(link);
-        //         }
-
-        //         window.URL.revokeObjectURL(blobUrl);
-        //       }, 1000);
-        //     }
-
-        //   } catch (err: any) {
-        //     const isPaywallError =
-        //       err.message === "PAYWALL" ||
-        //       err.message === "Crédits insuffisants." ||
-        //       err.message?.startsWith("EXPIRED:") ||
-        //       err.message === "Utilisateur introuvable.";
-
-        //     if (isPaywallError) {
-        //       setShowPaywall(true); // Only show paywall for logged-in users
-        //     } else {
-        //       toast.error(err.message || "Une erreur s'est produite lors du téléchargement.");
-        //     }
-        //   } finally {
-        //     if (mountedRef.current) {
-        //       setIsGenerating(null);
-        //     }
-        //   }
-        // };
-
-        // 3. Robust Blob download for other mobile/desktop browsers
+        // 2. Direct, Safe Link Trigger for all Devices (Mobile & Desktop)
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = blobUrl;
         link.download = result.fileName || "CV.pdf";
 
-        // Crucial for mobile isolation:
+        // Isolate context to prevent layout hijacking
         link.target = "_blank";
         link.rel = "noopener noreferrer";
 
-        // Append to DOM securely
         document.body.appendChild(link);
 
-        // Run the click outside of Next.js's synchronous execution thread
+        // Disconnect click completely from the Next.js synchronous render frame
         requestAnimationFrame(() => {
           link.click();
 
-          // Safely cleanup resources right after execution context clears
           setTimeout(() => {
             if (document.body.contains(link)) {
               document.body.removeChild(link);
@@ -1224,7 +1272,7 @@ export default function TemplateGrid({
         err.message === "Utilisateur introuvable.";
 
       if (isPaywallError) {
-        setShowPaywall(true); // Only show paywall for logged-in users
+        setShowPaywall(true);
       } else {
         toast.error(err.message || "Une erreur s'est produite lors du téléchargement.");
       }
