@@ -761,6 +761,15 @@ export default function TemplateGrid({
 }: any) {
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const locale = useLocale();
   const { userId } = useAuth();
 
@@ -1068,7 +1077,7 @@ export default function TemplateGrid({
 
       // If deduction/ownership check was successful, refresh the router to update UI
       // (credits, watermark status, etc.)
-      router.refresh();
+      // router.refresh();
 
       // The local state updates for userCredits and templates are removed here
       // because router.refresh() will re-fetch the latest state from the server,
@@ -1182,13 +1191,23 @@ export default function TemplateGrid({
         document.body.appendChild(link);
 
         // Wrap the execution inside an animation frame so Next.js does not track the click event context
-        requestAnimationFrame(() => {
-          link.click();
-          setTimeout(() => {
+        // requestAnimationFrame(() => {
+        //   link.click();
+        //   setTimeout(() => {
+        //     document.body.removeChild(link);
+        //     window.URL.revokeObjectURL(blobUrl);
+        //   }, 200);
+        // });
+
+        link.click();
+
+        setTimeout(() => {
+          if (document.body.contains(link)) {
             document.body.removeChild(link);
-            window.URL.revokeObjectURL(blobUrl);
-          }, 200);
-        });
+          }
+
+          window.URL.revokeObjectURL(blobUrl);
+        }, 1000);
       }
 
     } catch (err: any) {
@@ -1204,7 +1223,9 @@ export default function TemplateGrid({
         toast.error(err.message || "Une erreur s'est produite lors du téléchargement.");
       }
     } finally {
-      setIsGenerating(null);
+      if (mountedRef.current) {
+        setIsGenerating(null);
+      }
     }
   };
 
