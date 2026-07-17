@@ -128,8 +128,16 @@ export default function ATSScoreCard({ score }: { score: number }) {
     };
   }, [score]);
 
-  const color = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
-  const label = score >= 70 ? 'Excellent' : score >= 40 ? 'Moyen' : 'Critique';
+  // const color = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+  // const label = score >= 70 ? 'Excellent' : score >= 40 ? 'Moyen' : 'Critique';
+  // const circumference = 2 * Math.PI * 54;
+  // const offset = circumference - (animated / 100) * circumference;
+
+  // Use score (not animated) for color/label so they never mismatch
+  // Use animated only for the visual counter and circle progress
+  const safeScore = Math.max(0, Math.min(100, Math.round(Number(score || 0))));
+  const color = safeScore >= 70 ? '#10b981' : safeScore >= 40 ? '#f59e0b' : '#ef4444';
+  const label = safeScore >= 70 ? 'Excellent' : safeScore >= 40 ? 'Moyen' : 'Critique';
   const circumference = 2 * Math.PI * 54;
   const offset = circumference - (animated / 100) * circumference;
 
@@ -149,7 +157,8 @@ export default function ATSScoreCard({ score }: { score: number }) {
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-4xl font-black text-slate-900" style={{ color }}>{animated}</span>
+          {/* <span className="text-4xl font-black text-slate-900" style={{ color }}>{animated}</span> */}
+          <span className="text-4xl font-black text-slate-900" style={{ color }}>{animated === 0 && safeScore > 0 ? safeScore : animated}</span>
           <span className="text-xs text-slate-400 font-bold">/ 100</span>
         </div>
       </div>
