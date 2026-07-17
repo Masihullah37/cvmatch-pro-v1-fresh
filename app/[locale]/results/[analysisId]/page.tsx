@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 10;
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { cvAnalyses, cvTemplates, users } from "@/lib/db/schema";

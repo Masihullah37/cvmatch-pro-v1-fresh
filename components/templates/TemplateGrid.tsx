@@ -808,6 +808,24 @@ export default function TemplateGrid({
     setUserCredits(initialUserCredits);
   }, [initialUserCredits]);
 
+  // useEffect(() => {
+  //   if (searchParams.get("payment") === "success" && !hasRefreshed) {
+  //     setHasRefreshed(true);
+  //     try {
+  //       const raw = sessionStorage.getItem("cvmatch_checkout_return");
+  //       if (raw) {
+  //         const saved = JSON.parse(raw);
+  //         if (saved.mobileView === "edit") setMobileView("edit");
+  //         sessionStorage.removeItem("cvmatch_checkout_return");
+  //       }
+  //     } catch {
+  //       /* ignore */
+  //     }
+  //     fetch("/api/user/refresh-rate-limits", { method: "POST" }).catch(() => { });
+  //     router.refresh();
+  //   }
+  // }, [searchParams, router, hasRefreshed]);
+
   useEffect(() => {
     if (searchParams.get("payment") === "success" && !hasRefreshed) {
       setHasRefreshed(true);
@@ -821,10 +839,18 @@ export default function TemplateGrid({
       } catch {
         /* ignore */
       }
-      fetch("/api/user/refresh-rate-limits", { method: "POST" }).catch(() => { });
-      router.refresh();
+
+      // ✅ FIX: Delay this request slightly so the server doesn't choke on a simultaneous burst
+      const executionTimer = setTimeout(() => {
+        fetch("/api/user/refresh-rate-limits", { method: "POST" }).catch(() => { });
+      }, 1000);
+
+      return () => clearTimeout(executionTimer);
     }
-  }, [searchParams, router, hasRefreshed]);
+  }, [searchParams, hasRefreshed]);
+
+
+
 
   // Auto-select initial template from URL param
   useEffect(() => {
