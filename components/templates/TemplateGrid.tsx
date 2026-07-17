@@ -1110,46 +1110,6 @@ export default function TemplateGrid({
         }
         throw new Error(result.error || "Erreur serveur");
       }
-
-      // if (result.pdfBase64) {
-      //   const link = document.createElement("a");
-      //   link.href = `data:application/pdf;base64,${result.pdfBase64}`;
-      //   link.download = result.fileName || "CV.pdf";
-      //   document.body.appendChild(link);
-      //   link.click();
-      //   document.body.removeChild(link);
-      // }
-
-      // if (result.pdfBase64) {
-      //   // Convert base64 safely to a native binary Blob to protect mobile browser threads
-      //   const byteCharacters = atob(result.pdfBase64);
-      //   const byteNumbers = new Array(byteCharacters.length);
-      //   for (let i = 0; i < byteCharacters.length; i++) {
-      //     byteNumbers[i] = byteCharacters.charCodeAt(i);
-      //   }
-      //   const byteArray = new Uint8Array(byteNumbers);
-      //   const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-      //   // Generate a safe object blob URL
-      //   const blobUrl = window.URL.createObjectURL(blob);
-
-      //   const link = document.createElement("a");
-      //   link.href = blobUrl;
-      //   link.download = result.fileName || "CV.pdf";
-
-      //   // Crucial for mobile: isolate the download frame context
-      //   link.target = "_blank";
-      //   link.rel = "noopener noreferrer";
-
-      //   document.body.appendChild(link);
-      //   link.click();
-
-      //   // Safe asynchronous cleanup
-      //   setTimeout(() => {
-      //     document.body.removeChild(link);
-      //     window.URL.revokeObjectURL(blobUrl);
-      //   }, 100);
-      // }
       if (result.pdfBase64) {
         // 1. Convert base64 to binary data
         const byteCharacters = atob(result.pdfBase64);
@@ -1177,6 +1137,58 @@ export default function TemplateGrid({
           }
         }
 
+        //       // 3. Robust Blob download for other mobile/desktop browsers
+        //       const blobUrl = window.URL.createObjectURL(blob);
+        //       const link = document.createElement("a");
+        //       link.href = blobUrl;
+        //       link.download = result.fileName || "CV.pdf";
+
+        //       // Crucial for mobile isolation:
+        //       link.target = "_blank";
+        //       link.rel = "noopener noreferrer";
+
+        //       // Append, click and detach in clean micro-tasks to isolate from Next.js thread tracking
+        //       document.body.appendChild(link);
+
+        //       // Wrap the execution inside an animation frame so Next.js does not track the click event context
+        //       // requestAnimationFrame(() => {
+        //       //   link.click();
+        //       //   setTimeout(() => {
+        //       //     document.body.removeChild(link);
+        //       //     window.URL.revokeObjectURL(blobUrl);
+        //       //   }, 200);
+        //       // });
+
+        //       link.click();
+
+        //       setTimeout(() => {
+        //         if (document.body.contains(link)) {
+        //           document.body.removeChild(link);
+        //         }
+
+        //         window.URL.revokeObjectURL(blobUrl);
+        //       }, 1000);
+        //     }
+
+        //   } catch (err: any) {
+        //     const isPaywallError =
+        //       err.message === "PAYWALL" ||
+        //       err.message === "Crédits insuffisants." ||
+        //       err.message?.startsWith("EXPIRED:") ||
+        //       err.message === "Utilisateur introuvable.";
+
+        //     if (isPaywallError) {
+        //       setShowPaywall(true); // Only show paywall for logged-in users
+        //     } else {
+        //       toast.error(err.message || "Une erreur s'est produite lors du téléchargement.");
+        //     }
+        //   } finally {
+        //     if (mountedRef.current) {
+        //       setIsGenerating(null);
+        //     }
+        //   }
+        // };
+
         // 3. Robust Blob download for other mobile/desktop browsers
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -1187,27 +1199,21 @@ export default function TemplateGrid({
         link.target = "_blank";
         link.rel = "noopener noreferrer";
 
-        // Append, click and detach in clean micro-tasks to isolate from Next.js thread tracking
+        // Append to DOM securely
         document.body.appendChild(link);
 
-        // Wrap the execution inside an animation frame so Next.js does not track the click event context
-        // requestAnimationFrame(() => {
-        //   link.click();
-        //   setTimeout(() => {
-        //     document.body.removeChild(link);
-        //     window.URL.revokeObjectURL(blobUrl);
-        //   }, 200);
-        // });
+        // Run the click outside of Next.js's synchronous execution thread
+        requestAnimationFrame(() => {
+          link.click();
 
-        link.click();
-
-        setTimeout(() => {
-          if (document.body.contains(link)) {
-            document.body.removeChild(link);
-          }
-
-          window.URL.revokeObjectURL(blobUrl);
-        }, 1000);
+          // Safely cleanup resources right after execution context clears
+          setTimeout(() => {
+            if (document.body.contains(link)) {
+              document.body.removeChild(link);
+            }
+            window.URL.revokeObjectURL(blobUrl);
+          }, 500);
+        });
       }
 
     } catch (err: any) {
