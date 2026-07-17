@@ -67,8 +67,12 @@ export default async function ResultsPage({
     analysis.detectedPlatform !== "manual_cv_creation";
 
 
+  // const score = hasATSAnalysis
+  //   ? analysis.atsScore || 0
+  //   : 0;
+
   const score = hasATSAnalysis
-    ? analysis.atsScore || 0
+    ? Math.round(Number(analysis.atsScore ?? 0))
     : 0;
 
 
@@ -245,6 +249,7 @@ export default async function ResultsPage({
               {/* <ATSScoreCard score={score} /> */}
               {hasATSAnalysis && (
                 <ATSScoreCard score={score} />
+
               )}
             </div>
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
