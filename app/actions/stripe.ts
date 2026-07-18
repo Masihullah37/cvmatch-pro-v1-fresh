@@ -19,9 +19,15 @@ export async function createCheckoutSession(
   templateNumber?: number,
   returnUrl?: string,
 ) {
+  // const { userId } = await auth();
+  // if (!userId) {
+  //   throw new Error("Unauthorized");
+  // }
+
   const { userId } = await auth();
   if (!userId) {
-    throw new Error("Unauthorized");
+    const fallbackReturn = `/${locale}/templates/${analysisId}`;
+    redirect(`/${locale}/sign-in?redirectTo=${encodeURIComponent(returnUrl || fallbackReturn)}`);
   }
 
   const dbUser = await db.query.users.findFirst({
