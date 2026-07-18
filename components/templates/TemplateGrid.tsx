@@ -849,9 +849,6 @@ export default function TemplateGrid({
     }
   }, [searchParams, hasRefreshed]);
 
-
-
-
   // Auto-select initial template from URL param
   useEffect(() => {
     if (initialTemplate && initialTemplates.length > 0 && !selectedTemplate) {
@@ -1028,6 +1025,7 @@ export default function TemplateGrid({
       });
       if (!res.ok) throw new Error("Erreur lors de la génération IA");
       const result = await res.json();
+      console.log("[DOWNLOAD] API response", result);
       if (result.success) {
         router.refresh();
       }
@@ -1248,6 +1246,7 @@ export default function TemplateGrid({
       });
 
       const result = await res.json();
+      console.log("[DOWNLOAD] API response", result);
       if (!res.ok) {
         if (result.action === "upgrade" || result.action === "unlock" || result.action === "login") {
           throw new Error("PAYWALL");
@@ -1278,16 +1277,28 @@ export default function TemplateGrid({
         document.body.appendChild(link);
 
         // Disconnect click completely from the Next.js synchronous render frame
-        requestAnimationFrame(() => {
-          link.click();
+        // requestAnimationFrame(() => {
+        //   link.click();
 
-          setTimeout(() => {
-            if (document.body.contains(link)) {
-              document.body.removeChild(link);
-            }
-            window.URL.revokeObjectURL(blobUrl);
-          }, 500);
-        });
+        //   setTimeout(() => {
+        //     if (document.body.contains(link)) {
+        //       document.body.removeChild(link);
+        //     }
+        //     window.URL.revokeObjectURL(blobUrl);
+        //   }, 500);
+        // });
+
+        link.click();
+        console.log("[DOWNLOAD] Link clicked");
+
+        // Give mobile browsers plenty of time before cleanup
+        setTimeout(() => {
+          if (document.body.contains(link)) {
+            document.body.removeChild(link);
+          }
+
+          window.URL.revokeObjectURL(blobUrl);
+        }, 10000);
       }
 
     } catch (err: any) {
@@ -1300,6 +1311,7 @@ export default function TemplateGrid({
       if (isPaywallError) {
         setShowPaywall(true);
       } else {
+        console.error("[DOWNLOAD ERROR]", err);
         toast.error(err.message || "Une erreur s'est produite lors du téléchargement.");
       }
     } finally {
