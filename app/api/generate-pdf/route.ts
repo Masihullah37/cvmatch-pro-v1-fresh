@@ -304,6 +304,14 @@ export async function POST(req: Request) {
       pageRanges: "1",
     });
 
+    console.log(
+      "[PDF SIZE]",
+      pdfBuffer.length,
+      "bytes",
+      (pdfBuffer.length / 1024 / 1024).toFixed(2),
+      "MB"
+    );
+
     await browser.close();
 
     // ✅ Log the generation to cv_generations table
