@@ -234,16 +234,22 @@ const EditorContent = ({
   analysisData
 }: EditorContentProps) => (
   <div className="flex flex-col h-full overflow-hidden">
-    <div className="p-6 md:p-8 bg-white border-b border-slate-100 shrink-0 z-10">
+    {/* <div className="p-6 md:p-8 bg-white border-b border-slate-100 shrink-0 z-10">
       <h3 className="text-xl font-black text-slate-900">Modifier le CV</h3>
       <p className="text-xs text-slate-400 font-medium mt-1">Personnalisez chaque section en temps réel.</p>
+    </div> */}
+
+    <div className="p-4 md:p-8 bg-white border-b border-slate-100 shrink-0 z-10">
+      <h3 className="text-base md:text-xl font-black text-slate-900">Modifier le CV</h3>
+      <p className="hidden sm:block text-xs text-slate-400 font-medium mt-1">Personnalisez chaque section en temps réel.</p>
     </div>
 
     <div className="flex-1 overflow-y-auto space-y-1 bg-slate-50/30">
       {/* Identity */}
       <div className={`p-6 md:p-8 ${sectionColors.identity}`}>
         <label className={labelCls}>Photo de profil</label>
-        <div className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm mb-6">
+        {/* <div className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm mb-6"> */}
+        <div className="flex items-center gap-4 p-3 bg-white border border-slate-200 rounded-2xl shadow-sm mb-4">
           {editingData?.photoUrl ? (
             <div className="relative group">
               {/* <img
@@ -254,7 +260,8 @@ const EditorContent = ({
               <img
                 src={editingData.photoUrl}
                 alt="Profil"
-                className="w-20 h-20 rounded-xl object-cover"
+                // className="w-20 h-20 rounded-xl object-cover"
+                className="w-20 h-20 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300"
               />
               <button
                 onClick={() => update("photoUrl", "")}
