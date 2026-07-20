@@ -118,10 +118,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             strategy="afterInteractive"
           />
 
-          <Script id="eruda-init" strategy="afterInteractive">
+          <Script id="eruda-init" strategy="lazyOnload">
             {`
-    eruda.init();
-  `}
+(function initEruda(){
+  if(window.eruda){
+    window.eruda.init();
+  }else{
+    setTimeout(initEruda,300);
+  }
+})();
+`}
           </Script>
 
 
