@@ -463,70 +463,70 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
 
       experience:
         Array.isArray(parsed?.experience) &&
-        parsed.experience.length > 0 &&
-        parsed.experience.some(
-          (e: any) =>
-            e &&
-            (
-              (typeof e.title === "string" && e.title.trim()) ||
-              (typeof e.company === "string" && e.company.trim()) ||
-              (typeof e.description === "string" && e.description.trim())
-            )
-        )
+          parsed.experience.length > 0 &&
+          parsed.experience.some(
+            (e: any) =>
+              e &&
+              (
+                (typeof e.title === "string" && e.title.trim()) ||
+                (typeof e.company === "string" && e.company.trim()) ||
+                (typeof e.description === "string" && e.description.trim())
+              )
+          )
           ? parsed.experience
           : existingCV?.experience ?? [],
 
       education:
         Array.isArray(parsed?.education) &&
-        parsed.education.length > 0 &&
-        parsed.education.some(
-          (e: any) =>
-            e &&
-            (
-              (typeof e.degree === "string" && e.degree.trim()) ||
-              (typeof e.school === "string" && e.school.trim()) ||
-              (typeof e.details === "string" && e.details.trim())
-            )
-        )
+          parsed.education.length > 0 &&
+          parsed.education.some(
+            (e: any) =>
+              e &&
+              (
+                (typeof e.degree === "string" && e.degree.trim()) ||
+                (typeof e.school === "string" && e.school.trim()) ||
+                (typeof e.details === "string" && e.details.trim())
+              )
+          )
           ? parsed.education
           : existingCV?.education ?? [],
 
       projects:
         Array.isArray(parsed?.projects) &&
-        parsed.projects.length > 0 &&
-        parsed.projects.some(
-          (p: any) =>
-            p &&
-            (
-              (typeof p.name === "string" && p.name.trim()) ||
-              (typeof p.description === "string" && p.description.trim())
-            )
-        )
+          parsed.projects.length > 0 &&
+          parsed.projects.some(
+            (p: any) =>
+              p &&
+              (
+                (typeof p.name === "string" && p.name.trim()) ||
+                (typeof p.description === "string" && p.description.trim())
+              )
+          )
           ? parsed.projects
           : existingCV?.projects ?? [],
 
       languages:
         Array.isArray(parsed?.languages) &&
-        parsed.languages.length > 0 &&
-        parsed.languages.some(
-          (l: any) =>
-            l &&
-            (
-              (typeof l.language === "string" && l.language.trim()) ||
-              (typeof l.level === "string" && l.level.trim())
-            )
-        )
+          parsed.languages.length > 0 &&
+          parsed.languages.some(
+            (l: any) =>
+              l &&
+              (
+                (typeof l.language === "string" && l.language.trim()) ||
+                (typeof l.level === "string" && l.level.trim())
+              )
+          )
           ? parsed.languages
           : existingCV?.languages ?? [],
 
       interests:
         Array.isArray(parsed?.interests) &&
-        parsed.interests.length > 0 &&
-        parsed.interests.some(
-          (i: any) =>
-            (typeof i === "string" && i.trim().length > 0) ||
-            (i && typeof i.name === "string" && i.name.trim().length > 0)
-        )
+          parsed.interests.length > 0 &&
+          parsed.interests.some(
+            (i: any) =>
+              (typeof i === "string" && i.trim().length > 0) ||
+              (i && typeof i.name === "string" && i.name.trim().length > 0)
+          )
           ? parsed.interests
           : existingCV?.interests ?? [],
 
@@ -636,6 +636,20 @@ export function recalculateScoreForStructuredCV(
   }
 ) {
   const optimizedCvText = flattenStructuredCV(optimizedCV);
+
+  const hasRealBaseline =
+    originalAnalysis.scoreBreakdown &&
+    Object.keys(originalAnalysis.scoreBreakdown).length > 0;
+
+  if (!hasRealBaseline) {
+    return {
+      atsScore: originalAnalysis.atsScore ?? 0,
+      scoreBreakdown: originalAnalysis.scoreBreakdown ?? null,
+      keywordsFound: originalAnalysis.keywordsFound ?? [],
+      keywordsMissing: originalAnalysis.keywordsMissing ?? [],
+      optimizedCvText,
+    };
+  }
 
   // Combine all keywords to check
   const allKeywords = Array.from(

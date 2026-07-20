@@ -68,14 +68,25 @@ export default function PaywallModal({
       }
       const checkoutUrl = await createCheckoutSession(type, analysisId, locale, templateNumber, path);
       window.location.href = checkoutUrl;
+      // } catch (error: any) {
+      //   console.error("Checkout failed", error);
+      //   if (error.message.includes("déjà un plan actif")) {
+      //     setShowActiveModal(true);
+      //   } else {
+      //     toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
+      //   }
+      // } 
     } catch (error: any) {
       console.error("Checkout failed", error);
-      if (error.message.includes("déjà un plan actif")) {
+      if (error.message?.includes("déjà un plan actif")) {
         setShowActiveModal(true);
+      } else if (error.message === "SESSION_EXPIRED") {
+        router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
       } else {
         toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
       }
-    } finally {
+    }
+    finally {
       setLoading(null);
     }
   };
