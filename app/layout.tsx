@@ -111,6 +111,20 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               </Script>
             </>
           )}
+
+          {/* TEMP: Mobile debugging */}
+          <Script
+            src="https://cdn.jsdelivr.net/npm/eruda"
+            strategy="afterInteractive"
+          />
+
+          <Script id="eruda-init" strategy="afterInteractive">
+            {`
+    eruda.init();
+  `}
+          </Script>
+
+
         </body>
       </html>
     </ClerkProvider>

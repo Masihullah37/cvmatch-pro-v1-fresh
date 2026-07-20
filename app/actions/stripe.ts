@@ -24,10 +24,15 @@ export async function createCheckoutSession(
   //   throw new Error("Unauthorized");
   // }
 
+  // const { userId } = await auth();
+  // if (!userId) {
+  //   const fallbackReturn = `/${locale}/templates/${analysisId}`;
+  //   redirect(`/${locale}/sign-in?redirectTo=${encodeURIComponent(returnUrl || fallbackReturn)}`);
+  // }
+
   const { userId } = await auth();
   if (!userId) {
-    const fallbackReturn = `/${locale}/templates/${analysisId}`;
-    redirect(`/${locale}/sign-in?redirectTo=${encodeURIComponent(returnUrl || fallbackReturn)}`);
+    throw new Error("SESSION_EXPIRED");
   }
 
   const dbUser = await db.query.users.findFirst({
