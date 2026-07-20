@@ -253,8 +253,8 @@ export async function analyzeCV(
   locale?: string
 ) {
   // Keep inputs tight — analysis only needs keywords, not full paragraphs
-  const safeCvText = cvText.substring(0, 2000);
-  const safeJobDescription = jobDescription.substring(0, 800);
+  const safeCvText = cvText.substring(0, 8000);
+  const safeJobDescription = jobDescription.substring(0, 2000);
   const isGeneral = jobDescription.includes("Optimisation standard");
   const targetLanguage = locale === "fr" ? "French (fr)" : "English (en)";
 
@@ -326,7 +326,7 @@ ${structuredContext}`;
 // ✍️ EXTRACT RAW CV DATA (no AI optimization)
 // ─────────────────────────────────────────────────────────────
 export async function extractRawCVData(cvText: string) {
-  const safeCvText = cvText.substring(0, 2000);
+  const safeCvText = cvText.substring(0, 8000);
 
   const prompt = `Respond ONLY with a valid JSON object. No markdown, no text outside JSON.
 
@@ -629,7 +629,7 @@ export function flattenStructuredCV(cv: any): string {
 export function recalculateScoreForStructuredCV(
   optimizedCV: any,
   originalAnalysis: {
-    atsScore?: number;
+    atsScore?: number | null;
     scoreBreakdown?: any;
     keywordsFound?: string[] | null;
     keywordsMissing?: string[] | null;
@@ -643,7 +643,7 @@ export function recalculateScoreForStructuredCV(
 
   if (!hasRealBaseline) {
     return {
-      atsScore: originalAnalysis.atsScore ?? 0,
+      atsScore: originalAnalysis.atsScore ?? null,
       scoreBreakdown: originalAnalysis.scoreBreakdown ?? null,
       keywordsFound: originalAnalysis.keywordsFound ?? [],
       keywordsMissing: originalAnalysis.keywordsMissing ?? [],
