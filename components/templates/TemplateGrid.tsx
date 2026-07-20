@@ -209,6 +209,8 @@ interface EditorContentProps {
   newSectionName: string;
   setNewSectionName: (val: string) => void;
   analysisData: any;
+  showATS: boolean;
+  setShowATS: (value: boolean) => void;
 }
 
 const EditorContent = ({
@@ -231,20 +233,14 @@ const EditorContent = ({
   deleteSection,
   newSectionName,
   setNewSectionName,
-  analysisData
+  analysisData,
+  showATS,
+  setShowATS,
 }: EditorContentProps) => (
   <div className="flex flex-col h-full overflow-hidden">
-    {/* <div className="p-6 md:p-8 bg-white border-b border-slate-100 shrink-0 z-10">
-      <h3 className="text-xl font-black text-slate-900">Modifier le CV</h3>
-      <p className="text-xs text-slate-400 font-medium mt-1">Personnalisez chaque section en temps réel.</p>
-    </div> */}
 
-    {/* <div className="p-4 md:p-8 bg-white border-b border-slate-100 shrink-0 z-10">
-      <h3 className="text-base md:text-xl font-black text-slate-900">Modifier le CV</h3>
-      <p className="hidden sm:block text-xs text-slate-400 font-medium mt-1">Personnalisez chaque section en temps réel.</p>
-    </div> */}
-
-    <div className="flex-1 overflow-y-auto space-y-1 bg-slate-50/30">
+    {/* <div className="flex-1 overflow-y-auto space-y-1 bg-slate-50/30"> */}
+    <div className="flex-1 overflow-y-auto space-y-1 bg-slate-50/30 pb-40 md:pb-44">
       {/* Identity */}
       <div className={`p-6 md:p-8 ${sectionColors.identity}`}>
         <label className={labelCls}>Photo de profil</label>
@@ -669,7 +665,7 @@ const EditorContent = ({
     </div>
 
     {/* Fixed Bottom Panel (Save + ATS results) */}
-    <div className="h-[260px] md:h-[300px] bg-white border-t border-slate-200 overflow-y-auto p-4 md:p-6 shrink-0 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] scrollbar-hide">
+    {/* <div className="h-[260px] md:h-[300px] bg-white border-t border-slate-200 overflow-y-auto p-4 md:p-6 shrink-0 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] scrollbar-hide">
       <div className="w-full flex flex-col gap-2 p-3 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl mb-4">
         <div className="flex items-center gap-2">
           <Plus size={12} className="text-slate-400" />
@@ -718,40 +714,261 @@ const EditorContent = ({
               : "Enregistrer les modifications"}
       </button>
 
-      {/* ATS Data Panel - Strictly below Save button and separate from Editor scroll */}
+    //   {//TS Data Panel - Strictly below Save button and separate from Editor scroll //}
+    //   {analysisData && (
+      //     <div className="pt-6 border-t border-slate-100 bg-white space-y-5 pb-6">
+      //       <div className="flex items-center gap-2">
+      //         <Target size={14} className="text-primary shrink-0" />
+      //         <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-700">Données ATS — Optimisez votre CV</h4>
+      //       </div>
+      //       {analysisData.keywordsMissing && (analysisData.keywordsMissing as string[]).length > 0 && (
+      //         <div>
+      //           <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-2">Mots-clés manquants</p>
+      //           <div className="flex flex-wrap gap-1.5">
+      //             {(analysisData.keywordsMissing as string[]).map((kw: string, i: number) => (
+      //               <span key={i} className="bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg text-[11px] font-bold">{kw}</span>
+      //             ))}
+      //           </div>
+      //         </div>
+      //       )}
+      //       {analysisData.suggestions && (analysisData.suggestions as string[]).length > 0 && (
+      //         <div>
+      //           <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-2">Suggestions d'amélioration</p>
+      //           <ul className="space-y-2">
+      //             {(analysisData.suggestions as string[]).slice(0, 5).map((s: string, i: number) => (
+      //               <li key={i} className="flex items-start gap-2 text-xs text-slate-600 font-medium">
+      //                 <span className="w-4 h-4 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-black">{i + 1}</span>
+      //                 {s}
+      //               </li>
+      //             ))}
+      //           </ul>
+      //         </div>
+      //       )}
+      //     </div>
+      //   )}
+      // </div> */}
+
+    {/* Sticky Action Bar */}
+    <div className="
+    sticky
+    bottom-0
+    bg-white
+    border-t
+    border-slate-200
+    shadow-[0_-8px_30px_rgba(0,0,0,0.08)]
+    px-4
+    pt-3
+    pb-[calc(env(safe-area-inset-bottom)+12px)]
+    shrink-0
+    z-30
+">
+
+      {/* Add Section */}
+      <div className="
+    flex 
+    items-center 
+    gap-2 
+    mb-3
+  ">
+
+        <Plus size={14} className="text-slate-400 shrink-0" />
+
+        <input
+          placeholder="Nom de la section"
+          className="
+        flex-1
+        h-10
+        px-3
+        rounded-xl
+        bg-slate-50
+        border
+        border-slate-200
+        text-xs
+        outline-none
+        focus:border-primary
+      "
+          value={newSectionName}
+          onChange={(e) => setNewSectionName(e.target.value)}
+        />
+
+        <button
+          onClick={() => {
+            if (newSectionName.trim()) {
+              addCustomSection(newSectionName.trim());
+              setNewSectionName("");
+            }
+          }}
+          className="
+        h-10
+        px-3
+        rounded-xl
+        bg-primary
+        text-white
+        text-xs
+        font-black
+      "
+        >
+          +
+        </button>
+
+      </div>
+
+
+      {/* Save */}
+      <button
+        onClick={handleSave}
+        disabled={saveStatus === "saving"}
+        className={`
+      w-full
+      h-11
+      rounded-xl
+      font-black
+      text-xs
+      uppercase
+      tracking-widest
+      flex
+      items-center
+      justify-center
+      gap-2
+      ${saveStatus === "saved"
+            ? "bg-emerald-600 text-white"
+            :
+            saveStatus === "error"
+              ? "bg-red-500 text-white"
+              :
+              "bg-emerald-600 text-white"
+          }
+    `}
+      >
+
+        {saveStatus === "saving" &&
+          <OuiCVLoader size="sm" />
+        }
+
+        {saveStatus === "saved" &&
+          <CheckCircle2 size={16} />
+        }
+
+        {saveStatus === "error" &&
+          <AlertCircle size={16} />
+        }
+
+        {saveStatus === "idle" &&
+          <Save size={14} />
+        }
+
+
+        {saveStatus === "saving"
+          ? "Enregistrement..."
+          :
+          saveStatus === "saved"
+            ? "Enregistré !"
+            :
+            saveStatus === "error"
+              ? "Erreur"
+              :
+              "Enregistrer les modifications"
+        }
+
+      </button>
+
+
+      {/* ATS collapsed */}
       {analysisData && (
-        <div className="pt-6 border-t border-slate-100 bg-white space-y-5 pb-6">
-          <div className="flex items-center gap-2">
-            <Target size={14} className="text-primary shrink-0" />
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-700">Données ATS — Optimisez votre CV</h4>
-          </div>
-          {analysisData.keywordsMissing && (analysisData.keywordsMissing as string[]).length > 0 && (
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-2">Mots-clés manquants</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(analysisData.keywordsMissing as string[]).map((kw: string, i: number) => (
-                  <span key={i} className="bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-lg text-[11px] font-bold">{kw}</span>
-                ))}
-              </div>
+
+        <div className="mt-3 border-t border-slate-100 pt-2">
+
+          <button
+            type="button"
+            onClick={() => setShowATS(!showATS)}
+            className="
+          w-full
+          flex
+          items-center
+          justify-between
+          py-2
+          text-xs
+          font-black
+          uppercase
+          tracking-widest
+          text-slate-600
+        "
+          >
+
+            <span className="flex items-center gap-2">
+              <Target size={14} />
+              Données ATS
+            </span>
+
+
+            <span>
+              {showATS ? "▲" : "▼"}
+            </span>
+
+          </button>
+
+
+
+          {showATS && (
+
+            <div className="
+          max-h-[35vh]
+          overflow-y-auto
+          pt-3
+          space-y-4
+        ">
+
+              {analysisData.keywordsMissing &&
+                analysisData.keywordsMissing.length > 0 && (
+
+                  <div>
+
+                    <p className="text-[10px] font-black text-red-500 uppercase mb-2">
+                      Mots-clés manquants
+                    </p>
+
+
+                    <div className="flex flex-wrap gap-1">
+
+                      {analysisData.keywordsMissing.map(
+                        (kw: string, i: number) => (
+                          <span
+                            key={i}
+                            className="
+                    bg-red-50
+                    text-red-600
+                    border
+                    border-red-200
+                    px-2
+                    py-1
+                    rounded-lg
+                    text-[11px]
+                    font-bold
+                    "
+                          >
+                            {kw}
+                          </span>
+                        )
+                      )}
+
+                    </div>
+
+                  </div>
+
+                )}
+
+
+
             </div>
+
           )}
-          {analysisData.suggestions && (analysisData.suggestions as string[]).length > 0 && (
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-2">Suggestions d'amélioration</p>
-              <ul className="space-y-2">
-                {(analysisData.suggestions as string[]).slice(0, 5).map((s: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-slate-600 font-medium">
-                    <span className="w-4 h-4 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-black">{i + 1}</span>
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+
         </div>
+
       )}
+
     </div>
-  </div>
+  </div >
 );
 
 // ── Main Component ─────────────────────────────────────────────────────────────
@@ -798,6 +1015,7 @@ export default function TemplateGrid({
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [forceDesktopPreview, setForceDesktopPreview] = useState(false);
   const [previewScale, setPreviewScale] = useState(1);
+  const [showATS, setShowATS] = useState(false);
 
   const editingDataRef = useRef<any>(null);
   const previewViewportRef = useRef<HTMLDivElement>(null);
@@ -814,24 +1032,6 @@ export default function TemplateGrid({
   useEffect(() => {
     setUserCredits(initialUserCredits);
   }, [initialUserCredits]);
-
-  // useEffect(() => {
-  //   if (searchParams.get("payment") === "success" && !hasRefreshed) {
-  //     setHasRefreshed(true);
-  //     try {
-  //       const raw = sessionStorage.getItem("cvmatch_checkout_return");
-  //       if (raw) {
-  //         const saved = JSON.parse(raw);
-  //         if (saved.mobileView === "edit") setMobileView("edit");
-  //         sessionStorage.removeItem("cvmatch_checkout_return");
-  //       }
-  //     } catch {
-  //       /* ignore */
-  //     }
-  //     fetch("/api/user/refresh-rate-limits", { method: "POST" }).catch(() => { });
-  //     router.refresh();
-  //   }
-  // }, [searchParams, router, hasRefreshed]);
 
   useEffect(() => {
     if (searchParams.get("payment") === "success" && !hasRefreshed) {
@@ -1673,6 +1873,8 @@ export default function TemplateGrid({
                 newSectionName={newSectionName}
                 setNewSectionName={setNewSectionName}
                 analysisData={analysisData}
+                showATS={showATS}
+                setShowATS={setShowATS}
               />
 
               {/* Removed redundant ATS Data Panel from here - moved inside EditorContent */}
