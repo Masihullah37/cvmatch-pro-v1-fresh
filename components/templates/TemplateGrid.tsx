@@ -239,10 +239,10 @@ const EditorContent = ({
       <p className="text-xs text-slate-400 font-medium mt-1">Personnalisez chaque section en temps réel.</p>
     </div> */}
 
-    <div className="p-4 md:p-8 bg-white border-b border-slate-100 shrink-0 z-10">
+    {/* <div className="p-4 md:p-8 bg-white border-b border-slate-100 shrink-0 z-10">
       <h3 className="text-base md:text-xl font-black text-slate-900">Modifier le CV</h3>
       <p className="hidden sm:block text-xs text-slate-400 font-medium mt-1">Personnalisez chaque section en temps réel.</p>
-    </div>
+    </div> */}
 
     <div className="flex-1 overflow-y-auto space-y-1 bg-slate-50/30">
       {/* Identity */}
