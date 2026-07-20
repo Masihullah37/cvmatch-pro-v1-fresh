@@ -112,23 +112,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             </>
           )}
 
-          {/* TEMP: Mobile debugging */}
-          <Script
-            src="https://cdn.jsdelivr.net/npm/eruda"
-            strategy="afterInteractive"
-          />
-
-          <Script id="eruda-init" strategy="lazyOnload">
-            {`
-(function initEruda(){
-  if(window.eruda){
-    window.eruda.init();
-  }else{
-    setTimeout(initEruda,300);
-  }
-})();
-`}
-          </Script>
+          {process.env.NODE_ENV !== "production" || true /* remove `|| true` once done debugging */ ? (
+            <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+          ) : null}
+          <script dangerouslySetInnerHTML={{ __html: `if (window.eruda) eruda.init();` }} />
 
 
         </body>
