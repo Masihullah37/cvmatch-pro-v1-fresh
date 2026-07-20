@@ -4,10 +4,12 @@ import './globals.css';
 import { cookies } from 'next/headers';
 import Script from 'next/script';
 import { ClerkProvider } from '@clerk/nextjs';
+import { getLocale } from 'next-intl/server';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = await getLocale();
   const cookieStore = await cookies();
   const consent = cookieStore.get('cookie_consent')?.value;
 
@@ -95,7 +97,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         },
       }}
     >
-      <html lang="fr" suppressHydrationWarning>
+      <html lang={locale} suppressHydrationWarning translate="no" className="notranslate">
+        <head>
+          <meta name="google" content="notranslate" />
+        </head>
         <body className={inter.className}>
           {children}
           {consent === 'accepted' && (
@@ -111,11 +116,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               </Script>
             </>
           )}
-
-          {process.env.NODE_ENV !== "production" || true /* remove `|| true` once done debugging */ ? (
-            <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-          ) : null}
-          <script dangerouslySetInnerHTML={{ __html: `if (window.eruda) eruda.init();` }} />
 
 
         </body>
