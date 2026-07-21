@@ -80,12 +80,61 @@ function safeParse(text: string): any {
 // that are relevant to their field.
 // ─────────────────────────────────────────────────────────────
 
+// type Domain =
+//   | "it_dev"
+//   | "finance"
+//   | "healthcare"
+//   | "administrative"
+//   | "trades"
+//   | "general";
+
+// const DOMAIN_SIGNALS: Record<Domain, string[]> = {
+//   it_dev: [
+//     "java", "python", "javascript", "typescript", "react", "vue", "angular",
+//     "node", "spring", "docker", "kubernetes", "k8s", "aws", "azure", "gcp",
+//     "sql", "mongodb", "postgresql", "redis", "graphql", "php", "laravel",
+//     "symfony", "django", "flask", "git", "devops", "ci/cd", "linux",
+//     "terraform", "ansible", "jenkins", "microservices", "api", "rest",
+//     "développeur", "developpeur", "informatique", "logiciel", "software",
+//     "backend", "frontend", "fullstack", "full stack", "full-stack",
+//   ],
+//   finance: [
+//     "comptabilité", "comptable", "finance", "audit", "fiscalité", "bilan",
+//     "sap", "erp", "sage", "excel", "tableau de bord", "budget", "trésorerie",
+//     "accountant", "gaap", "ifrs", "cpa", "analyste financier",
+//   ],
+//   healthcare: [
+//     "infirmier", "infirmière", "soins", "médecin", "pharmacien", "kiné",
+//     "kinésithérapeute", "sage-femme", "aide-soignant", "hôpital", "clinique",
+//     "patient", "nursing", "doctor", "nurse", "pharmacist", "medical",
+//     "healthcare", "santé", "urgences",
+//   ],
+//   administrative: [
+//     "secrétaire", "secrétariat", "réceptionniste", "accueil", "administrative",
+//     "assistant", "assistante", "gestion", "planning", "agenda", "courrier",
+//     "classement", "bureautique", "word", "outlook", "powerpoint",
+//   ],
+//   trades: [
+//     "électricien", "electrician", "plombier", "plumber", "menuisier",
+//     "charpentier", "maçon", "peintre", "technicien", "maintenance",
+//     "installation", "câblage", "réseau électrique", "chauffage",
+//   ],
+//   // Catch-all: no signals — detected when no other domain scores ≥ 2
+//   general: [],
+// };
+
+
 type Domain =
   | "it_dev"
   | "finance"
   | "healthcare"
   | "administrative"
   | "trades"
+  | "legal"
+  | "engineering"
+  | "education"
+  | "business"
+  | "services"
   | "general";
 
 const DOMAIN_SIGNALS: Record<Domain, string[]> = {
@@ -97,6 +146,10 @@ const DOMAIN_SIGNALS: Record<Domain, string[]> = {
     "terraform", "ansible", "jenkins", "microservices", "api", "rest",
     "développeur", "developpeur", "informatique", "logiciel", "software",
     "backend", "frontend", "fullstack", "full stack", "full-stack",
+    "full stack developer", "développeur full stack",
+    "information technology", "technologies de l'information",
+    "systèmes d'information", "réseaux informatiques", "cybersécurité",
+    "administrateur système", "support informatique", "helpdesk",
   ],
   finance: [
     "comptabilité", "comptable", "finance", "audit", "fiscalité", "bilan",
@@ -108,18 +161,75 @@ const DOMAIN_SIGNALS: Record<Domain, string[]> = {
     "kinésithérapeute", "sage-femme", "aide-soignant", "hôpital", "clinique",
     "patient", "nursing", "doctor", "nurse", "pharmacist", "medical",
     "healthcare", "santé", "urgences",
+    "diplôme d'état", "ehpad", "gériatrie", "pédiatrie", "bloc opératoire",
+    "protocoles de soins", "dossier patient", "prise de constantes",
+    "administration de médicaments", "hygiène hospitalière", "vaccination",
+    "premiers secours", "soins palliatifs", "psychiatrie", "radiologie",
+    "laboratoire médical", "dentiste", "orthophoniste", "ergothérapeute",
   ],
   administrative: [
     "secrétaire", "secrétariat", "réceptionniste", "accueil", "administrative",
     "assistant", "assistante", "gestion", "planning", "agenda", "courrier",
     "classement", "bureautique", "word", "outlook", "powerpoint",
+    "accueil téléphonique", "saisie de données", "facturation", "devis",
+    "gestion administrative", "archivage", "rédaction de comptes-rendus",
+    "suivi de dossiers", "back-office", "ressources humaines", "paie",
   ],
   trades: [
     "électricien", "electrician", "plombier", "plumber", "menuisier",
-    "charpentier", "maçon", "peintre", "technicien", "maintenance",
-    "installation", "câblage", "réseau électrique", "chauffage",
+    "charpentier", "maçon", "peintre", "technicien", "technician",
+    "maintenance", "installation", "câblage", "réseau électrique", "chauffage",
+    "tableau électrique", "disjoncteur", "norme nf c15-100", "domotique",
+    "basse tension", "haute tension", "mise aux normes", "dépannage",
+    "sanitaire", "canalisation", "chauffe-eau", "évacuation", "raccordement",
+    "fuite", "plomberie", "chauffagiste", "climatisation", "cvc",
+    "soudure", "lecture de plans", "habilitation électrique", "b1v", "b2v",
+    "carrelage", "isolation", "rénovation", "bâtiment", "second œuvre",
+    "construction", "chantier", "btp", "gros œuvre", "ouvrier",
+    "conducteur de travaux", "génie climatique",
   ],
-  // Catch-all: no signals — detected when no other domain scores ≥ 2
+  legal: [
+    "avocat", "avocate", "lawyer", "attorney", "juriste", "droit",
+    "contentieux", "litige", "plaidoirie", "barreau", "cabinet d'avocats",
+    "notaire", "huissier", "droit des affaires", "droit du travail",
+    "droit civil", "droit pénal", "droit fiscal", "conseil juridique",
+    "rédaction de contrats", "veille juridique", "jurisprudence",
+    "code civil", "code du travail", "conformité", "compliance",
+  ],
+  engineering: [
+    "ingénieur", "engineer", "génie civil", "génie mécanique",
+    "génie industriel", "génie électrique", "bureau d'études",
+    "conception", "cao", "dao", "solidworks", "autocad", "catia",
+    "matlab", "simulation", "essais", "cahier des charges",
+    "gestion de projet technique", "normes iso", "qualité", "process",
+    "production industrielle", "lean manufacturing", "six sigma",
+    "maintenance industrielle", "automatisme", "robotique",
+  ],
+  education: [
+    "enseignant", "enseignante", "professeur", "teacher", "instituteur",
+    "institutrice", "formateur", "formatrice", "pédagogie", "éducation",
+    "école", "collège", "lycée", "université", "académie",
+    "programme scolaire", "évaluation des élèves", "gestion de classe",
+    "étudiant", "étudiante", "student", "stage", "stagiaire", "internship",
+    "alternance", "apprentissage", "mémoire", "projet de fin d'études",
+    "recherche de stage", "tuteur", "encadrement pédagogique",
+  ],
+  business: [
+    "commercial", "commerciale", "vente", "sales", "business developer",
+    "marketing", "communication", "négociation", "prospection",
+    "développement commercial", "chiffre d'affaires", "kpi", "crm",
+    "stratégie commerciale", "management", "chef de projet",
+    "business plan", "étude de marché", "relation client b2b",
+    "account manager", "gestion de portefeuille clients",
+  ],
+  services: [
+    "service client", "customer service", "relation client",
+    "accueil clientèle", "hôtellerie", "restauration", "hospitality",
+    "vente au détail", "retail", "caisse", "conseiller de vente",
+    "satisfaction client", "sav", "support client", "call center",
+    "centre d'appels", "tourisme", "événementiel", "conciergerie",
+  ],
+  // Catch-all: no signals --- detected when no other domain scores ≥ 2
   general: [],
 };
 
@@ -137,12 +247,26 @@ function detectDomain(existingCV: any, rawCvText?: string): Domain {
     .join(" ")
     .toLowerCase();
 
+  // const scores: Record<Domain, number> = {
+  //   it_dev: 0,
+  //   finance: 0,
+  //   healthcare: 0,
+  //   administrative: 0,
+  //   trades: 0,
+  //   general: 0,
+  // };
+
   const scores: Record<Domain, number> = {
     it_dev: 0,
     finance: 0,
     healthcare: 0,
     administrative: 0,
     trades: 0,
+    legal: 0,
+    engineering: 0,
+    education: 0,
+    business: 0,
+    services: 0,
     general: 0,
   };
 
@@ -531,13 +655,27 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
           : existingCV?.interests ?? [],
 
       // Merge skills: existing + AI-generated + domain-filtered missing keywords
-      skills: Array.from(
-        new Set([
-          ...(existingCV?.skills ?? []),
-          ...(parsed?.skills ?? []),
-          ...domainFilteredMissing,
-        ])
-      ),
+      // skills: Array.from(
+      //   new Set([
+      //     ...(existingCV?.skills ?? []),
+      //     ...(parsed?.skills ?? []),
+      //     ...domainFilteredMissing,
+      //   ])
+      // ),
+
+      skills: (() => {
+        const aiSkills = Array.isArray(parsed?.skills) ? parsed.skills : [];
+        const baseSkills = aiSkills.length > 0 ? aiSkills : (existingCV?.skills ?? []);
+        const combined = [...baseSkills, ...domainFilteredMissing];
+        const seen = new Set<string>();
+        return combined.filter((s: any) => {
+          if (typeof s !== "string") return false;
+          const key = s.trim().toLowerCase();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      })(),
     };
 
     console.log("========== FINAL MERGED CV ==========");
@@ -551,23 +689,50 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
   }
 }
 
+// export function matchKeywordSafely(text: string, keyword: string): boolean {
+//   const normalizedText = text.toLowerCase();
+//   const normalizedKw = keyword.toLowerCase().trim();
+
+//   if (!normalizedKw) return false;
+
+//   // Escape special regex characters except technical ones (+, #, ., -)
+//   const escaped = normalizedKw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+
+//   // Construct boundary rules:
+//   // Must be preceded by start of string, or a character that is NOT a word char, nor #, +, ., -
+//   const prefix = "(?<=^|[^a-zA-Z0-9_#+.-])";
+//   // Must be followed by end of string, or a character that is NOT a word char, nor #, +, ., -
+//   const suffix = "(?=$|[^a-zA-Z0-9_#+.-])";
+
+//   const regex = new RegExp(prefix + escaped + suffix, "i");
+//   return regex.test(normalizedText);
+// }
+
+
 export function matchKeywordSafely(text: string, keyword: string): boolean {
   const normalizedText = text.toLowerCase();
   const normalizedKw = keyword.toLowerCase().trim();
-
   if (!normalizedKw) return false;
 
-  // Escape special regex characters except technical ones (+, #, ., -)
-  const escaped = normalizedKw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+  // For short, generic keywords (SQL, API, CI, KPI, SAV, etc.) require a
+  // real word boundary, so we don't match "API" inside "rapide" or similar
+  // noise. For longer/compound keywords, a plain substring check is enough
+  // and correctly credits variants like "MySQL" or "TypeScript" as
+  // containing "SQL" / "Script" — which the previous strict-boundary regex
+  // rejected.
+  if (normalizedKw.length <= 3) {
+    const escaped = normalizedKw.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&");
+    // Include accented letters (À-ÖØ-öø-ÿ) as "word characters" too, so a
+    // short keyword sitting next to an accented French word (e.g. "sav"
+    // right before "élevé") isn't wrongly treated as having a boundary
+    // when it doesn't.
+    const prefix = "(?<=^|[^a-zA-Z0-9_#+.\\-À-ÖØ-öø-ÿ])";
+    const suffix = "(?=$|[^a-zA-Z0-9_#+.\\-À-ÖØ-öø-ÿ])";
+    const regex = new RegExp(prefix + escaped + suffix, "i");
+    return regex.test(normalizedText);
+  }
 
-  // Construct boundary rules:
-  // Must be preceded by start of string, or a character that is NOT a word char, nor #, +, ., -
-  const prefix = "(?<=^|[^a-zA-Z0-9_#+.-])";
-  // Must be followed by end of string, or a character that is NOT a word char, nor #, +, ., -
-  const suffix = "(?=$|[^a-zA-Z0-9_#+.-])";
-
-  const regex = new RegExp(prefix + escaped + suffix, "i");
-  return regex.test(normalizedText);
+  return normalizedText.includes(normalizedKw);
 }
 
 export function flattenStructuredCV(cv: any): string {
