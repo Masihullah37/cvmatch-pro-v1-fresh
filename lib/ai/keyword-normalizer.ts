@@ -92,12 +92,28 @@ function keywordsAreRelated(a: string, b: string): boolean {
 
 function dedupeList(list: string[]): string[] {
   const out: string[] = [];
+  const rejected: { kw: string; reason: string }[] = [];
   for (const kw of list) {
     const cleaned = cleanKeyword(kw);
-    if (!cleaned || !isTechnicalKeyword(cleaned)) continue;
-    if (out.some((existing) => keywordsAreRelated(existing, cleaned))) continue;
+    if (!cleaned) {
+      rejected.push({ kw, reason: "empty_after_clean" });
+      continue;
+    }
+    if (!isTechnicalKeyword(cleaned)) {
+      rejected.push({ kw, reason: "failed_isTechnicalKeyword" });
+      continue;
+    }
+    if (out.some((existing) => keywordsAreRelated(existing, cleaned))) {
+      rejected.push({ kw, reason: "duplicate_or_related" });
+      continue;
+    }
     out.push(cleaned);
   }
+  console.log("========== [STAGE 3 & 4] DEDUPE & NORMALIZATION ==========");
+  console.log("Input list:", list);
+  console.log("Accepted out:", out);
+  console.log("Rejected items:", rejected);
+  console.log("==========================================================");
   return out;
 }
 
@@ -105,6 +121,10 @@ export function reconcileKeywordLists(
   foundRaw: string[] = [],
   missingRaw: string[] = []
 ): { keywordsFound: string[]; keywordsMissing: string[] } {
+  console.log("========== [STAGE 5 START] RECONCILE ==========");
+  console.log("foundRaw:", foundRaw);
+  console.log("missingRaw:", missingRaw);
+
   let keywordsFound = dedupeList(foundRaw).slice(0, 15);
   let keywordsMissing = dedupeList(missingRaw).slice(0, 15);
 
@@ -125,6 +145,11 @@ export function reconcileKeywordLists(
     if (!WEAK_STANDALONE.has(f)) return true;
     return !keywordsMissing.some((missing) => keywordsAreRelated(found, missing));
   });
+
+  console.log("========== [STAGE 5 FINAL RECONCILED] ==========");
+  console.log("Final keywordsFound:", keywordsFound);
+  console.log("Final keywordsMissing:", keywordsMissing);
+  console.log("================================================");
 
   return { keywordsFound, keywordsMissing };
 }

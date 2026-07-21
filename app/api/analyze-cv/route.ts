@@ -461,6 +461,11 @@ export async function POST(req: Request) {
       analysisResult.suggestions.push(...compatResult.suggestions);
     }
 
+    console.log("========== [STAGE 6] BEFORE SAVING TO DB ==========");
+    console.log("keywordsFound to DB:", analysisResult.keywordsFound);
+    console.log("keywordsMissing to DB:", analysisResult.keywordsMissing);
+    console.log("===================================================");
+
     // ✅ Insert Analysis Record into DB
     const [insertedAnalysis] = await db
       .insert(cvAnalyses)

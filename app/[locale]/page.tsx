@@ -18,7 +18,9 @@ export default async function HomePage() {
         <HeroUploadSection />
       </section>
 
-      <HowItWorks />
+      <div className="hidden md:block">
+        <HowItWorks />
+      </div>
 
       <CVCarousel theme="light" />
 

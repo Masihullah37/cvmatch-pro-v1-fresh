@@ -417,13 +417,16 @@ ${structuredContext}`;
       maxTokens: 1800,
     });
 
-    console.log("========== RAW ANALYSIS RESPONSE ==========");
+    console.log("========== [STAGE 1] RAW LLM RESPONSE ==========");
     console.log(text);
-    console.log("===========================================");
+    console.log("================================================");
 
     const parsed = safeParse(text);
 
-    console.log("PARSED IS NULL:", parsed === null);
+    console.log("========== [STAGE 2] PARSED JSON ==========");
+    console.log("parsed.keywordsFound:", parsed?.keywordsFound);
+    console.log("parsed.keywordsMissing:", parsed?.keywordsMissing);
+    console.log("===========================================");
 
     if (!parsed) {
       throw new Error("The LLM returned invalid JSON.");

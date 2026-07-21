@@ -341,6 +341,11 @@ export default async function ResultsPage({
   });
   if (!analysis) notFound();
 
+  console.log("========== [STAGE 7 & 8] READ FROM DB & RENDERED TO FRONTEND ==========");
+  console.log("analysis.keywordsFound from DB:", analysis.keywordsFound);
+  console.log("analysis.keywordsMissing from DB:", analysis.keywordsMissing);
+  console.log("=====================================================================");
+
   const dbUser = userId
     ? await db.query.users.findFirst({ where: eq(users.clerkId, userId) })
     : null;
