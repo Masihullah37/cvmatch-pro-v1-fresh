@@ -42,7 +42,10 @@ export async function createCheckoutSession(
   // Fallback: If dbUser is missing (e.g. fresh signup on iPhone before webhook finishes), sync immediately
   if (!dbUser) {
     const { syncUserWithClerk } = await import("@/lib/auth/sync");
-    dbUser = await syncUserWithClerk();
+    const syncedUser = await syncUserWithClerk();
+    if (syncedUser) {
+      dbUser = syncedUser;
+    }
   }
 
   if (!dbUser) {
