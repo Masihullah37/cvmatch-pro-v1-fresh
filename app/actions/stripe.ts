@@ -35,12 +35,21 @@ export async function createCheckoutSession(
     throw new Error("SESSION_EXPIRED");
   }
 
-  const dbUser = await db.query.users.findFirst({
+  let dbUser = await db.query.users.findFirst({
     where: eq(users.clerkId, userId),
   });
 
+  // Fallback: If dbUser is missing (e.g. fresh signup on iPhone before webhook finishes), sync immediately
   if (!dbUser) {
-    throw new Error("User not found in DB.");
+    const { syncUserWithClerk } = await import("@/lib/auth/sync");
+    const syncedUser = await syncUserWithClerk();
+    if (syncedUser) {
+      dbUser = syncedUser;
+    }
+  }
+
+  if (!dbUser) {
+    throw new Error("SESSION_EXPIRED");
   }
 
   // Use returnUrl if provided (current page), otherwise build the standard path

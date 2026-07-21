@@ -78,9 +78,15 @@ export default function PaywallModal({
       // } 
     } catch (error: any) {
       console.error("Checkout failed", error);
-      if (error.message?.includes("déjà un plan actif")) {
+      const msg = error?.message || "";
+      if (msg.includes("déjà un plan actif")) {
         setShowActiveModal(true);
-      } else if (error.message === "SESSION_EXPIRED") {
+      } else if (
+        msg === "SESSION_EXPIRED" ||
+        msg.includes("SESSION_EXPIRED") ||
+        msg.includes("Unauthorized") ||
+        msg.includes("User not found")
+      ) {
         router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
       } else {
         toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
