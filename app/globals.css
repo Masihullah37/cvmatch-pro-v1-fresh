@@ -295,3 +295,53 @@
     transform: translateX(100%);
   }
 }
+
+/* ── Mobile Touch Interaction Improvements ───────────────── */
+
+/* Remove default iOS/Android tap blue flash on all interactive elements */
+button,
+a,
+label[for],
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* On touch-only devices (no hover capability), use :active as the hover proxy
+   so all buttons show visual feedback on tap — matching laptop hover effects */
+@media (hover: none) and (pointer: coarse) {
+  /* Emerald / green buttons */
+  .bg-emerald-600:active,
+  .hover\:bg-emerald-700:active {
+    background-color: rgb(4 120 87) !important; /* emerald-800 */
+    transform: scale(0.95);
+  }
+
+  /* Red / danger buttons */
+  .bg-red-600:active,
+  .hover\:bg-red-700:active {
+    background-color: rgb(153 27 27) !important; /* red-800 */
+    transform: scale(0.95);
+  }
+
+  /* Slate / neutral buttons */
+  .bg-slate-100:active,
+  .hover\:bg-slate-200:active {
+    background-color: rgb(203 213 225) !important; /* slate-300 */
+    transform: scale(0.92);
+  }
+
+  /* Icon-only round buttons */
+  .rounded-xl:active {
+    opacity: 0.8;
+  }
+
+  /* Scale-down for any active:scale-95 or active:scale-90 buttons */
+  .active\:scale-95:active {
+    transform: scale(0.95) !important;
+  }
+
+  .active\:scale-90:active {
+    transform: scale(0.9) !important;
+  }
+}

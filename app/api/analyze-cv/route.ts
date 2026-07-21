@@ -84,10 +84,150 @@ export async function POST(req: Request) {
     }
 
     const plan = getUserPlan(dbUser);
-    const isPaid = plan === "trial" || plan === "pro";
+    // const isPaid = plan === "trial" || plan === "pro" || plan === "one_time";
+    // const credits = dbUser ? getEffectiveCredits(dbUser) : 0;
+    // const hasCredits = credits > 0;
+    // const isExpired = dbUser ? isCreditsExpired(dbUser) : false;
+
+    // // ✅ Soft-block check for non-paid users
+    // if (!isPaid) {
+    //   const softBlockKey = `soft_block:${hashedIp}`;
+    //   const isSoftBlocked = await redis.get(softBlockKey);
+    //   if (isSoftBlocked) {
+    //     return NextResponse.json(
+    //       { error: "Accès temporairement bloqué pour activité suspecte." },
+    //       { status: 429 }
+    //     );
+    //   }
+    // }
+
+    // // ✅ SECURE NATIVE REDIS RATE LIMITS (No high-level wrappers)
+    // let limit = 3;
+    // let redisKey = "";
+    // const hashedToken = await getHashedTrackingToken();
+
+    // if (isPaid) {
+    //   limit = 10;
+    //   redisKey = `ats_daily_paid_${userId}`;
+    // } else if (plan === "free") {
+    //   limit = 3;
+    //   redisKey = `ats_daily_free_${userId || "unknown"}`;
+    // } else { // anonymous
+    //   limit = 3;
+    //   redisKey = `ats_daily_anon_${hashedToken}`;
+    // }
+
+    // // Check if the anonymous token key is already exhausted for free/anon users
+    // // to prevent logging out to bypass limits on the same device.
+    // if (!isPaid) {
+    //   const anonKey = `ats_daily_anon_${hashedToken}`;
+    //   const anonCount = Number(await redis.get(anonKey)) || 0;
+    //   if (anonCount >= 3) {
+    //     return NextResponse.json(
+    //       {
+    //         error: "Limite d'analyses gratuites atteinte (3 par jour). Veuillez passer à un plan payant pour continuer.",
+    //         resetAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    //       },
+    //       { status: 429 }
+    //     );
+    //   }
+    // }
+
+    // const count = await redis.incr(redisKey);
+    // if (count === 1) {
+    //   await redis.expire(redisKey, 24 * 60 * 60); // 24 hours
+    // }
+
+    // // Sync the anonymous tracking token key for free users
+    // if (plan === "free") {
+    //   const anonKey = `ats_daily_anon_${hashedToken}`;
+    //   const anonCount = await redis.incr(anonKey);
+    //   if (anonCount === 1) {
+    //     await redis.expire(anonKey, 24 * 60 * 60);
+    //   }
+    // }
+
+    // const ttl = await redis.ttl(redisKey);
+    // const resetTime = ttl > 0 ? Date.now() + ttl * 1000 : Date.now() + 24 * 60 * 60 * 1000;
+    // const resetDate = new Date(resetTime);
+    // const resetAt = resetDate.toISOString();
+
+    // // Format reset time for French display (Europe/Paris)
+    // const formattedTimeOnly = resetDate.toLocaleTimeString('fr-FR', {
+    //   hour: '2-digit',
+    //   minute: '2-digit',
+    //   timeZone: 'Europe/Paris'
+    // });
+    // const formattedTime = `demain à ${formattedTimeOnly}`;
+
+    // if (count > limit) {
+    //   if (isPaid) {
+    //     if (!hasCredits || isExpired) {
+    //       return NextResponse.json(
+    //         {
+    //           error: "Vos crédits sont épuisés ou votre plan a expiré. Veuillez renouveler votre abonnement pour continuer.",
+    //           resetAt,
+    //           reason: "credits_exhausted",
+    //           isPaid: true
+    //         },
+    //         { status: 402 }
+    //       );
+    //     }
+    //     return NextResponse.json(
+    //       {
+    //         error: `Limite quotidienne atteinte (10 analyses). Pour des raisons de sécurité, nous limitons l'usage intensif. Veuillez revenir ${formattedTime}.`,
+    //         resetAt,
+    //         reason: "rate_limit_reached",
+    //         isPaid: true
+    //       },
+    //       { status: 429 }
+    //     );
+    //   } else if (plan === "free") {
+    //     return NextResponse.json(
+    //       {
+    //         error: `Limite d'analyses gratuites atteinte (3 par jour). Veuillez passer à un plan payant pour continuer. Prochaine réinitialisation : ${formattedTime}.`,
+    //         resetAt,
+    //         reason: "free_limit_reached",
+    //         isPaid: false
+    //       },
+    //       { status: 429 }
+    //     );
+    //   } else {
+    //     return NextResponse.json(
+    //       {
+    //         error: `Limite d'analyses gratuites atteinte (3 par jour). Veuillez vous connecter ou souscrire à un plan pour continuer. Prochaine réinitialisation : ${formattedTime}.`,
+    //         resetAt,
+    //         reason: "anon_limit_reached",
+    //         isPaid: false
+    //       },
+    //       { status: 429 }
+    //     );
+    //   }
+    // }
+
+    // // Check credits before proceeding for paid users
+    // if (isPaid && (!hasCredits || isExpired)) {
+    //   return NextResponse.json(
+    //     {
+    //       error: "Crédits insuffisants. Veuillez renouveler votre plan pour continuer.",
+    //       reason: "credits_exhausted",
+    //       isPaid: true
+    //     },
+    //     { status: 402 }
+    //   );
+    // }
+
+    // Rate-limit tiers:
+    //   anonymous / free / trial (unpaid, incl. the 1 free bonus credit) → 3 per 24h,
+    //     plus a one-time-ever extra scan on a user's first login if they've
+    //     already used up their 3 anonymous scans on this device.
+    //   one_time (credit pack)                                            → 5/hour AND 15/24h
+    //   pro (active subscription)                                         → 7/hour AND 15/24h
+    const isPaid = plan === "one_time" || plan === "pro";
     const credits = dbUser ? getEffectiveCredits(dbUser) : 0;
     const hasCredits = credits > 0;
     const isExpired = dbUser ? isCreditsExpired(dbUser) : false;
+    const hashedToken = await getHashedTrackingToken();
 
     // ✅ Soft-block check for non-paid users
     if (!isPaid) {
@@ -101,120 +241,107 @@ export async function POST(req: Request) {
       }
     }
 
-    // ✅ SECURE NATIVE REDIS RATE LIMITS (No high-level wrappers)
-    let limit = 3;
-    let redisKey = "";
-    const hashedToken = await getHashedTrackingToken();
-
-    if (isPaid) {
-      limit = 10;
-      redisKey = `ats_daily_paid_${userId}`;
-    } else if (plan === "free") {
-      limit = 3;
-      redisKey = `ats_daily_free_${userId || "unknown"}`;
-    } else { // anonymous
-      limit = 3;
-      redisKey = `ats_daily_anon_${hashedToken}`;
+    function formatResetMessage(resetMs: number): string {
+      const resetDate = new Date(resetMs);
+      const diffMinutes = Math.max(1, Math.round((resetMs - Date.now()) / 60000));
+      if (diffMinutes < 60) {
+        return `dans ${diffMinutes} minute${diffMinutes > 1 ? "s" : ""}`;
+      }
+      const formattedTimeOnly = resetDate.toLocaleTimeString('fr-FR', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris'
+      });
+      const isToday = resetDate.toDateString() === new Date().toDateString();
+      return isToday ? `aujourd'hui à ${formattedTimeOnly}` : `demain à ${formattedTimeOnly}`;
     }
 
-    // Check if the anonymous token key is already exhausted for free/anon users
-    // to prevent logging out to bypass limits on the same device.
-    if (!isPaid) {
-      const anonKey = `ats_daily_anon_${hashedToken}`;
-      const anonCount = Number(await redis.get(anonKey)) || 0;
-      if (anonCount >= 3) {
+    if (plan === "one_time" || plan === "pro") {
+      const hourlyLimit = plan === "pro" ? 7 : 5;
+      const dailyLimit = 15;
+      const hourlyKey = `ats_hourly_${plan}_${userId}`;
+      const dailyKey = `ats_daily_paid_${userId}`;
+
+      const hourlyCount = await redis.incr(hourlyKey);
+      if (hourlyCount === 1) await redis.expire(hourlyKey, 60 * 60);
+
+      const dailyCount = await redis.incr(dailyKey);
+      if (dailyCount === 1) await redis.expire(dailyKey, 24 * 60 * 60);
+
+      if (!hasCredits || isExpired) {
         return NextResponse.json(
           {
-            error: "Limite d'analyses gratuites atteinte (3 par jour). Veuillez passer à un plan payant pour continuer.",
-            resetAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+            error: "Vos crédits sont épuisés ou votre plan a expiré. Veuillez renouveler votre abonnement pour continuer.",
+            reason: "credits_exhausted",
+            isPaid: true
           },
-          { status: 429 }
+          { status: 402 }
         );
       }
-    }
 
-    const count = await redis.incr(redisKey);
-    if (count === 1) {
-      await redis.expire(redisKey, 24 * 60 * 60); // 24 hours
-    }
-
-    // Sync the anonymous tracking token key for free users
-    if (plan === "free") {
-      const anonKey = `ats_daily_anon_${hashedToken}`;
-      const anonCount = await redis.incr(anonKey);
-      if (anonCount === 1) {
-        await redis.expire(anonKey, 24 * 60 * 60);
-      }
-    }
-
-    const ttl = await redis.ttl(redisKey);
-    const resetTime = ttl > 0 ? Date.now() + ttl * 1000 : Date.now() + 24 * 60 * 60 * 1000;
-    const resetDate = new Date(resetTime);
-    const resetAt = resetDate.toISOString();
-
-    // Format reset time for French display (Europe/Paris)
-    const formattedTimeOnly = resetDate.toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Europe/Paris'
-    });
-    const formattedTime = `demain à ${formattedTimeOnly}`;
-
-    if (count > limit) {
-      if (isPaid) {
-        if (!hasCredits || isExpired) {
-          return NextResponse.json(
-            {
-              error: "Vos crédits sont épuisés ou votre plan a expiré. Veuillez renouveler votre abonnement pour continuer.",
-              resetAt,
-              reason: "credits_exhausted",
-              isPaid: true
-            },
-            { status: 402 }
-          );
-        }
+      if (hourlyCount > hourlyLimit) {
+        const ttl = await redis.ttl(hourlyKey);
+        const resetAt = new Date(Date.now() + (ttl > 0 ? ttl * 1000 : 60 * 60 * 1000));
         return NextResponse.json(
           {
-            error: `Limite quotidienne atteinte (10 analyses). Pour des raisons de sécurité, nous limitons l'usage intensif. Veuillez revenir ${formattedTime}.`,
-            resetAt,
-            reason: "rate_limit_reached",
+            error: `Limite horaire atteinte (${hourlyLimit} analyses/heure). Veuillez revenir ${formatResetMessage(resetAt.getTime())}.`,
+            resetAt: resetAt.toISOString(),
+            reason: "hourly_limit_reached",
             isPaid: true
           },
           { status: 429 }
         );
-      } else if (plan === "free") {
+      }
+
+      if (dailyCount > dailyLimit) {
+        const ttl = await redis.ttl(dailyKey);
+        const resetAt = new Date(Date.now() + (ttl > 0 ? ttl * 1000 : 24 * 60 * 60 * 1000));
         return NextResponse.json(
           {
-            error: `Limite d'analyses gratuites atteinte (3 par jour). Veuillez passer à un plan payant pour continuer. Prochaine réinitialisation : ${formattedTime}.`,
-            resetAt,
-            reason: "free_limit_reached",
-            isPaid: false
-          },
-          { status: 429 }
-        );
-      } else {
-        return NextResponse.json(
-          {
-            error: `Limite d'analyses gratuites atteinte (3 par jour). Veuillez vous connecter ou souscrire à un plan pour continuer. Prochaine réinitialisation : ${formattedTime}.`,
-            resetAt,
-            reason: "anon_limit_reached",
-            isPaid: false
+            error: `Limite quotidienne atteinte (${dailyLimit} analyses/24h). Veuillez revenir ${formatResetMessage(resetAt.getTime())}.`,
+            resetAt: resetAt.toISOString(),
+            reason: "daily_limit_reached",
+            isPaid: true
           },
           { status: 429 }
         );
       }
-    }
+    } else {
+      // Anonymous, free, and trial (free bonus credit) all share the same
+      // 3-per-24h cap, keyed by the device's tracking token so switching
+      // between anonymous browsing and a free login on the same browser
+      // can't be used to reset the count.
+      const anonKey = `ats_daily_anon_${hashedToken}`;
+      const anonCount = await redis.incr(anonKey);
+      if (anonCount === 1) await redis.expire(anonKey, 24 * 60 * 60);
 
-    // Check credits before proceeding for paid users
-    if (isPaid && (!hasCredits || isExpired)) {
-      return NextResponse.json(
-        {
-          error: "Crédits insuffisants. Veuillez renouveler votre plan pour continuer.",
-          reason: "credits_exhausted",
-          isPaid: true
-        },
-        { status: 402 }
-      );
+      if (anonCount > 3) {
+        // One-time bonus: the very first time someone logs in, they get one
+        // extra scan even if they already used up their 3 anonymous scans on
+        // this device. This is a permanent, once-per-account flag — it never
+        // touches credits, which stay reserved for AI generation and downloads
+        // exactly as they already work today.
+        const bonusKey = userId ? `ats_bonus_scan_used:${userId}` : null;
+        const bonusAlreadyUsed = bonusKey ? await redis.get(bonusKey) : true;
+
+        if (bonusKey && !bonusAlreadyUsed) {
+          await redis.set(bonusKey, "1"); // no expiry — one-time for the life of the account
+          // Let this request through as their one-time login bonus scan.
+        } else {
+          const ttl = await redis.ttl(anonKey);
+          const resetAt = new Date(Date.now() + (ttl > 0 ? ttl * 1000 : 24 * 60 * 60 * 1000));
+          const message = userId
+            ? `Limite d'analyses gratuites atteinte (3 par jour). Veuillez passer à un plan payant pour continuer. Prochaine réinitialisation : ${formatResetMessage(resetAt.getTime())}.`
+            : `Limite d'analyses gratuites atteinte (3 par jour). Veuillez vous connecter ou souscrire à un plan pour continuer. Prochaine réinitialisation : ${formatResetMessage(resetAt.getTime())}.`;
+          return NextResponse.json(
+            {
+              error: message,
+              resetAt: resetAt.toISOString(),
+              reason: userId ? "free_limit_reached" : "anon_limit_reached",
+              isPaid: false
+            },
+            { status: 429 }
+          );
+        }
+      }
     }
 
     // ✅ Content-Type check — must be JSON

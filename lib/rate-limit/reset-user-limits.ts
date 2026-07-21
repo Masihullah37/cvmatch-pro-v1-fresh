@@ -15,22 +15,42 @@ export async function resetAnalysisRateLimitsForUser(
 
   try {
     // 1. Resolve keys to delete first (Fast)
+    // const baseKeys = [
+    //   `ats_daily_paid_${clerkUserId}`,
+    //   `ats_daily_free_${clerkUserId}`,
+    //   `ai_rewrite_pro_${clerkUserId}`,
+    //   `ai_rewrite_trial_${clerkUserId}`,
+    // ];
+
+    // const libPrefixes = [
+    //   'ats_daily_paid',
+    //   'ats_daily_free',
+    //   'pdf_hourly',
+    //   'pdf_daily',
+    //   'cvboost_paid',
+    //   'cvboost_pdf',
+    //   'ai_rewrite_pro',
+    //   'ai_rewrite_trial'
+    // ];
+
     const baseKeys = [
       `ats_daily_paid_${clerkUserId}`,
-      `ats_daily_free_${clerkUserId}`,
+      `ats_hourly_one_time_${clerkUserId}`,
+      `ats_hourly_pro_${clerkUserId}`,
       `ai_rewrite_pro_${clerkUserId}`,
       `ai_rewrite_trial_${clerkUserId}`,
+      `ai_rewrite_one_time_${clerkUserId}`,
     ];
 
     const libPrefixes = [
       'ats_daily_paid',
-      'ats_daily_free',
       'pdf_hourly',
       'pdf_daily',
       'cvboost_paid',
       'cvboost_pdf',
       'ai_rewrite_pro',
-      'ai_rewrite_trial'
+      'ai_rewrite_trial',
+      'ai_rewrite_one_time'
     ];
 
     const finalKeys = [...baseKeys];
@@ -50,7 +70,7 @@ export async function resetAnalysisRateLimitsForUser(
     // 3. ATOMIC DELETE (Critical for user access)
     // Removed SCAN loop to avoid timeouts in webhook context
     await redis.del(...finalKeys);
-    
+
     // 4. Background Logging (Don't block access)
     snapshotPromise.then(async (results) => {
       const used = results.filter(r => r.count > 0);
