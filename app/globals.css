@@ -286,6 +286,36 @@
 }
 
 
+/* ── Clerk social login buttons — mobile safe ─────────────── */
+/* Force vertical stacking on small screens so provider names
+   (Facebook / Google / LinkedIn) aren't cut off; laptop layout
+   is untouched since this only applies under 480px. */
+@media (max-width: 480px) {
+
+  .cl-socialButtons,
+  .cl-socialButtonsBlockButton__container {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .cl-socialButtonsBlockButton {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .cl-socialButtonsBlockButtonText {
+    font-size: 0.8rem !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+  }
+
+  .cl-socialButtonsProviderIcon {
+    flex-shrink: 0 !important;
+  }
+}
+
+
 @keyframes cross-shimmer {
   0% {
     transform: translateX(-100%);
@@ -310,24 +340,28 @@ label[for],
 /* On touch-only devices (no hover capability), use :active as the hover proxy
    so all buttons show visual feedback on tap — matching laptop hover effects */
 @media (hover: none) and (pointer: coarse) {
+
   /* Emerald / green buttons */
   .bg-emerald-600:active,
   .hover\:bg-emerald-700:active {
-    background-color: rgb(4 120 87) !important; /* emerald-800 */
+    background-color: rgb(4 120 87) !important;
+    /* emerald-800 */
     transform: scale(0.95);
   }
 
   /* Red / danger buttons */
   .bg-red-600:active,
   .hover\:bg-red-700:active {
-    background-color: rgb(153 27 27) !important; /* red-800 */
+    background-color: rgb(153 27 27) !important;
+    /* red-800 */
     transform: scale(0.95);
   }
 
   /* Slate / neutral buttons */
   .bg-slate-100:active,
   .hover\:bg-slate-200:active {
-    background-color: rgb(203 213 225) !important; /* slate-300 */
+    background-color: rgb(203 213 225) !important;
+    /* slate-300 */
     transform: scale(0.92);
   }
 
