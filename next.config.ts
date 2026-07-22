@@ -25,10 +25,12 @@ const prodOrigins = [
 
 const cspHeader = `
     default-src 'self';
-    script-src 'self' ${isProd ? "" : "'unsafe-eval'"} 'unsafe-inline' blob: https://clerk.com https://*.clerk.accounts.dev https://js.stripe.com https://cdn.tailwindcss.com https://challenges.cloudflare.com https://hcaptcha.com
-        https://*.hcaptcha.com;
+    script-src 'self' ${isProd ? "" : "'unsafe-eval'"} 'unsafe-inline' blob: https://www.googletagmanager.com
+    https://www.google-analytics.com https://clerk.com https://*.clerk.accounts.dev https://js.stripe.com https://cdn.tailwindcss.com https://challenges.cloudflare.com https://hcaptcha.com
+    https://*.hcaptcha.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://challenges.cloudflare.com;
-    img-src 'self' blob: data: https://img.clerk.com https://utfs.io https://challenges.cloudflare.com https://i.pravatar.cc https://upload.wikimedia.org;
+    img-src 'self' blob: data: https://img.clerk.com https://utfs.io  https://www.googletagmanager.com
+    https://www.google-analytics.com https://challenges.cloudflare.com https://i.pravatar.cc https://upload.wikimedia.org;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
@@ -45,6 +47,8 @@ const cspHeader = `
         https://*.uploadthing.com
         https://www.google-analytics.com
         https://stats.g.doubleclick.net
+        https://www.googletagmanager.com
+        https://region1.google-analytics.com
         https://clerk-telemetry.com
         https://*.turnstile.cloudflareresolve.com
         https://challenges.cloudflare.com
@@ -76,7 +80,7 @@ const nextConfig: NextConfig = {
       allowedOrigins: isProd ? prodOrigins : devOrigins,
     },
     staleTimes: {
-      dynamic: 0,
+      dynamic: 30,
       static: 180,
     },
   },
