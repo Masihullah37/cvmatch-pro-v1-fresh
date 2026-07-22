@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { cookies } from 'next/headers';
@@ -6,7 +7,49 @@ import Script from 'next/script';
 import { ClerkProvider } from '@clerk/nextjs';
 import { getLocale } from 'next-intl/server';
 
+// const inter = Inter({ subsets: ['latin'] });
+
 const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://cvmatch-pro-v1-fresh-production.up.railway.app'),
+  title: {
+    default: 'OuiCV — Optimisez votre CV pour les recruteurs et les ATS',
+    template: '%s | OuiCV',
+  },
+  description: "OuiCV analyse votre CV, calcule votre score ATS et l'optimise avec l'IA pour maximiser vos chances face aux logiciels de recrutement.",
+  applicationName: 'OuiCV',
+  icons: {
+    icon: [{ url: '/ouicvlogo.png', type: 'image/png' }],
+    shortcut: '/ouicvlogo.png',
+    apple: '/ouicvlogo.png',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'OuiCV',
+    title: 'OuiCV — Optimisez votre CV pour les recruteurs et les ATS',
+    description: "Analyse ATS gratuite, score instantané, et optimisation IA de votre CV.",
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'OuiCV — Créer et Optimisez votre CV' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'OuiCV — Optimisez votre CV pour les recruteurs et les ATS',
+    description: "Analyse ATS gratuite, score instantané, et optimisation IA de votre CV.",
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+  },
+  verification: {
+    google: 'Mr1tTqaZLRRgiYdigCiHWLW_p_JfTEDdcqCD56UpceQ',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#059669',
+};
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
@@ -103,7 +146,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         </head>
         <body className={inter.className}>
           {children}
-          {consent === 'accepted' && (
+          {/* {consent === 'accepted' && (
             <>
               <Script src="https://www.googletagmanager.com/gtag/js?id=G-PLACEHOLDER" strategy="afterInteractive" />
               <Script id="google-analytics" strategy="afterInteractive">
@@ -115,7 +158,39 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 `}
               </Script>
             </>
-          )}
+          )} */}
+
+          <Script id="ld-json-org" type="application/ld+json" strategy="afterInteractive">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "OuiCV",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "description": "Analyse ATS et optimisation de CV par intelligence artificielle.",
+              "offers": {
+                "@type": "Offer",
+                "priceCurrency": "EUR",
+                "price": "0"
+              }
+            })}
+          </Script>
+          {/* <Script src="https://www.googletagmanager.com/gtag/js?id=G-PLACEHOLDER" strategy="afterInteractive" /> */}
+          <Script src="https://www.googletagmanager.com/gtag/js?id=G-NHCB5N7F1N" strategy="afterInteractive" />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      'analytics_storage': '${consent === 'accepted' ? 'granted' : 'denied'}',
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied'
+    });
+    gtag('js', new Date());
+    gtag('config', 'G-NHCB5N7F1N');
+  `}
+          </Script>
 
 
         </body>
