@@ -13,9 +13,16 @@ async function getFranceTravailToken(): Promise<string> {
             }),
         }
     );
-    if (!res.ok) throw new Error(`France Travail auth failed: ${res.status}`);
-    const data = await res.json();
-    return data.access_token;
+    const rawText = await res.text();
+    if (!res.ok) {
+        throw new Error(`France Travail auth failed: ${res.status} — ${rawText.slice(0, 200)}`);
+    }
+    try {
+        const data = JSON.parse(rawText);
+        return data.access_token;
+    } catch {
+        throw new Error(`France Travail auth returned non-JSON response: ${rawText.slice(0, 200)}`);
+    }
 }
 
 export async function fetchFranceTravailJobs(query: string, location: string) {
@@ -61,8 +68,18 @@ export async function fetchAdzunaJobs(query: string, location: string) {
             results_per_page: "10",
         });
         const res = await fetch(`https://api.adzuna.com/v1/api/jobs/fr/search/1?${params}`);
-        if (!res.ok) return [];
-        const data = await res.json();
+        const rawText = await res.text();
+        if (!res.ok) {
+            console.error(`[job-providers] Adzuna returned ${res.status}: ${rawText.slice(0, 200)}`);
+            return [];
+        }
+        let data;
+        try {
+            data = JSON.parse(rawText);
+        } catch {
+            console.error(`[job-providers] Adzuna returned non-JSON: ${rawText.slice(0, 200)}`);
+            return [];
+        }
         return (data.results || []).map((job: any) => ({
             source: "adzuna" as const,
             title: job.title,

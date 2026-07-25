@@ -31,7 +31,7 @@ export default function JobRecommendations({ analysisId }: { analysisId: string 
 
     return h(
         "div",
-        { className: "space-y-4" },
+        { className: "bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4" },
         h(
             "h3",
             { className: "text-base font-black text-slate-900 flex items-center gap-2" },
