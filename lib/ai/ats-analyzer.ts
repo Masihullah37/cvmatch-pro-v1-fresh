@@ -80,50 +80,6 @@ function safeParse(text: string): any {
 // that are relevant to their field.
 // ─────────────────────────────────────────────────────────────
 
-// type Domain =
-//   | "it_dev"
-//   | "finance"
-//   | "healthcare"
-//   | "administrative"
-//   | "trades"
-//   | "general";
-
-// const DOMAIN_SIGNALS: Record<Domain, string[]> = {
-//   it_dev: [
-//     "java", "python", "javascript", "typescript", "react", "vue", "angular",
-//     "node", "spring", "docker", "kubernetes", "k8s", "aws", "azure", "gcp",
-//     "sql", "mongodb", "postgresql", "redis", "graphql", "php", "laravel",
-//     "symfony", "django", "flask", "git", "devops", "ci/cd", "linux",
-//     "terraform", "ansible", "jenkins", "microservices", "api", "rest",
-//     "développeur", "developpeur", "informatique", "logiciel", "software",
-//     "backend", "frontend", "fullstack", "full stack", "full-stack",
-//   ],
-//   finance: [
-//     "comptabilité", "comptable", "finance", "audit", "fiscalité", "bilan",
-//     "sap", "erp", "sage", "excel", "tableau de bord", "budget", "trésorerie",
-//     "accountant", "gaap", "ifrs", "cpa", "analyste financier",
-//   ],
-//   healthcare: [
-//     "infirmier", "infirmière", "soins", "médecin", "pharmacien", "kiné",
-//     "kinésithérapeute", "sage-femme", "aide-soignant", "hôpital", "clinique",
-//     "patient", "nursing", "doctor", "nurse", "pharmacist", "medical",
-//     "healthcare", "santé", "urgences",
-//   ],
-//   administrative: [
-//     "secrétaire", "secrétariat", "réceptionniste", "accueil", "administrative",
-//     "assistant", "assistante", "gestion", "planning", "agenda", "courrier",
-//     "classement", "bureautique", "word", "outlook", "powerpoint",
-//   ],
-//   trades: [
-//     "électricien", "electrician", "plombier", "plumber", "menuisier",
-//     "charpentier", "maçon", "peintre", "technicien", "maintenance",
-//     "installation", "câblage", "réseau électrique", "chauffage",
-//   ],
-//   // Catch-all: no signals — detected when no other domain scores ≥ 2
-//   general: [],
-// };
-
-
 type Domain =
   | "it_dev"
   | "finance"
@@ -525,7 +481,7 @@ export async function generateOptimizedCV(
   const compactCV = buildCompactCVSummary(existingCV || {});
   const finalCVContext = compactCV.length > 50
     ? compactCV
-    : cvText.substring(0, 2500); // raw _originalCvText from DB
+    : cvText.substring(0, 6000); // raw _originalCvText from DB
 
   console.log("[generateOptimizedCV] Compact CV length:", compactCV.length);
   console.log("[generateOptimizedCV] Context source:", compactCV.length > 50 ? "structured" : "raw text");
@@ -563,7 +519,7 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
     const text = await generateLLMResponse({
       prompt,
       temperature: 0.15,
-      maxTokens: 4000,
+      maxTokens: 6000,
     });
 
     const parsed = safeParse(text);
@@ -588,10 +544,92 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
         ...(parsed?.contact ?? {}),
       },
 
-      experience:
-        Array.isArray(parsed?.experience) &&
-          parsed.experience.length > 0 &&
-          parsed.experience.some(
+      // experience:
+      //   Array.isArray(parsed?.experience) &&
+      //     parsed.experience.length > 0 &&
+      //     parsed.experience.some(
+      //       (e: any) =>
+      //         e &&
+      //         (
+      //           (typeof e.title === "string" && e.title.trim()) ||
+      //           (typeof e.company === "string" && e.company.trim()) ||
+      //           (typeof e.description === "string" && e.description.trim())
+      //         )
+      //     )
+      //     ? parsed.experience
+      //     : existingCV?.experience ?? [],
+
+      // education:
+      //   Array.isArray(parsed?.education) &&
+      //     parsed.education.length > 0 &&
+      //     parsed.education.some(
+      //       (e: any) =>
+      //         e &&
+      //         (
+      //           (typeof e.degree === "string" && e.degree.trim()) ||
+      //           (typeof e.school === "string" && e.school.trim()) ||
+      //           (typeof e.details === "string" && e.details.trim())
+      //         )
+      //     )
+      //     ? parsed.education
+      //     : existingCV?.education ?? [],
+
+      // projects:
+      //   Array.isArray(parsed?.projects) &&
+      //     parsed.projects.length > 0 &&
+      //     parsed.projects.some(
+      //       (p: any) =>
+      //         p &&
+      //         (
+      //           (typeof p.name === "string" && p.name.trim()) ||
+      //           (typeof p.description === "string" && p.description.trim())
+      //         )
+      //     )
+      //     ? parsed.projects
+      //     : existingCV?.projects ?? [],
+
+      // languages:
+      //   Array.isArray(parsed?.languages) &&
+      //     parsed.languages.length > 0 &&
+      //     parsed.languages.some(
+      //       (l: any) =>
+      //         l &&
+      //         (
+      //           (typeof l.language === "string" && l.language.trim()) ||
+      //           (typeof l.level === "string" && l.level.trim())
+      //         )
+      //     )
+      //     ? parsed.languages
+      //     : existingCV?.languages ?? [],
+
+      // interests:
+      //   Array.isArray(parsed?.interests) &&
+      //     parsed.interests.length > 0 &&
+      //     parsed.interests.some(
+      //       (i: any) =>
+      //         (typeof i === "string" && i.trim().length > 0) ||
+      //         (i && typeof i.name === "string" && i.name.trim().length > 0)
+      //     )
+      //     ? parsed.interests
+      //     : existingCV?.interests ?? [],
+
+      // skills: (() => {
+      //   const aiSkills = Array.isArray(parsed?.skills) ? parsed.skills : [];
+      //   const baseSkills = aiSkills.length > 0 ? aiSkills : (existingCV?.skills ?? []);
+      //   const combined = [...baseSkills, ...domainFilteredMissing];
+      //   const seen = new Set<string>();
+      //   return combined.filter((s: any) => {
+      //     if (typeof s !== "string") return false;
+      //     const key = s.trim().toLowerCase();
+      //     if (!key || seen.has(key)) return false;
+      //     seen.add(key);
+      //     return true;
+      //   });
+      // })(),
+
+      experience: (() => {
+        const valid = Array.isArray(parsed?.experience)
+          ? parsed.experience.filter(
             (e: any) =>
               e &&
               (
@@ -600,13 +638,14 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
                 (typeof e.description === "string" && e.description.trim())
               )
           )
-          ? parsed.experience
-          : existingCV?.experience ?? [],
+          : [];
 
-      education:
-        Array.isArray(parsed?.education) &&
-          parsed.education.length > 0 &&
-          parsed.education.some(
+        return valid.length > 0 ? valid : (existingCV?.experience ?? []);
+      })(),
+
+      education: (() => {
+        const valid = Array.isArray(parsed?.education)
+          ? parsed.education.filter(
             (e: any) =>
               e &&
               (
@@ -615,13 +654,14 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
                 (typeof e.details === "string" && e.details.trim())
               )
           )
-          ? parsed.education
-          : existingCV?.education ?? [],
+          : [];
 
-      projects:
-        Array.isArray(parsed?.projects) &&
-          parsed.projects.length > 0 &&
-          parsed.projects.some(
+        return valid.length > 0 ? valid : (existingCV?.education ?? []);
+      })(),
+
+      projects: (() => {
+        const valid = Array.isArray(parsed?.projects)
+          ? parsed.projects.filter(
             (p: any) =>
               p &&
               (
@@ -629,13 +669,14 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
                 (typeof p.description === "string" && p.description.trim())
               )
           )
-          ? parsed.projects
-          : existingCV?.projects ?? [],
+          : [];
 
-      languages:
-        Array.isArray(parsed?.languages) &&
-          parsed.languages.length > 0 &&
-          parsed.languages.some(
+        return valid.length > 0 ? valid : (existingCV?.projects ?? []);
+      })(),
+
+      languages: (() => {
+        const valid = Array.isArray(parsed?.languages)
+          ? parsed.languages.filter(
             (l: any) =>
               l &&
               (
@@ -643,38 +684,49 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
                 (typeof l.level === "string" && l.level.trim())
               )
           )
-          ? parsed.languages
-          : existingCV?.languages ?? [],
+          : [];
 
-      interests:
-        Array.isArray(parsed?.interests) &&
-          parsed.interests.length > 0 &&
-          parsed.interests.some(
+        return valid.length > 0 ? valid : (existingCV?.languages ?? []);
+      })(),
+
+      interests: (() => {
+        const valid = Array.isArray(parsed?.interests)
+          ? parsed.interests.filter(
             (i: any) =>
               (typeof i === "string" && i.trim().length > 0) ||
-              (i && typeof i.name === "string" && i.name.trim().length > 0)
+              (i &&
+                typeof i.name === "string" &&
+                i.name.trim().length > 0)
           )
-          ? parsed.interests
-          : existingCV?.interests ?? [],
+          : [];
 
-      // Merge skills: existing + AI-generated + domain-filtered missing keywords
-      // skills: Array.from(
-      //   new Set([
-      //     ...(existingCV?.skills ?? []),
-      //     ...(parsed?.skills ?? []),
-      //     ...domainFilteredMissing,
-      //   ])
-      // ),
+        return valid.length > 0 ? valid : (existingCV?.interests ?? []);
+      })(),
 
       skills: (() => {
-        const aiSkills = Array.isArray(parsed?.skills) ? parsed.skills : [];
-        const baseSkills = aiSkills.length > 0 ? aiSkills : (existingCV?.skills ?? []);
+        const aiSkills = Array.isArray(parsed?.skills)
+          ? parsed.skills.filter(
+            (s: any) =>
+              typeof s === "string" && s.trim().length > 0
+          )
+          : [];
+
+        const baseSkills =
+          aiSkills.length > 0
+            ? aiSkills
+            : (existingCV?.skills ?? []);
+
         const combined = [...baseSkills, ...domainFilteredMissing];
+
         const seen = new Set<string>();
+
         return combined.filter((s: any) => {
           if (typeof s !== "string") return false;
+
           const key = s.trim().toLowerCase();
+
           if (!key || seen.has(key)) return false;
+
           seen.add(key);
           return true;
         });

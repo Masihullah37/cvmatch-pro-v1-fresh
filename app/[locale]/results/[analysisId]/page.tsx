@@ -291,11 +291,13 @@ export default async function ResultsPage({
       </div>
 
       {/* Job Recommendations */}
-      {hasATSAnalysis && (
+      {/* {hasATSAnalysis && (
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
           <JobRecommendations analysisId={analysisId} />
         </div>
-      )}
+      )} */}
+
+      {hasATSAnalysis && <JobRecommendations analysisId={analysisId} />}
 
       {/* Templates Grid */}
       <div className="mt-20 border-t border-slate-200">

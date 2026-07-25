@@ -24,9 +24,18 @@ async function launchBrowser() {
 // One shared browser instance for the entire server process, launched
 // once and reused for every request — not relaunched per-download.
 export async function getSharedBrowser() {
-    if (browserInstance && browserInstance.isConnected()) {
-        return browserInstance;
+    if (browserInstance) {
+        try {
+            if (typeof browserInstance.isConnected === "function" && browserInstance.isConnected()) {
+                return browserInstance;
+            }
+        } catch (e) {
+            console.warn("[PDF] Error checking existing browser connection, relaunching:", e);
+        }
+        // Existing instance is unusable for any reason — discard it and relaunch below.
+        browserInstance = null;
     }
+
     if (launching) return launching;
 
     launching = launchBrowser().then((b) => {

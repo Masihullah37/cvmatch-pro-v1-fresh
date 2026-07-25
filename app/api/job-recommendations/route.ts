@@ -33,7 +33,13 @@ export async function GET(req: Request) {
 
     const optimizedData = analysis.optimizedData as any;
     const jobTitle = optimizedData?.jobTitle || analysis.jobTitle || "";
-    const location = optimizedData?.contact?.location || "";
+    const rawLocation = optimizedData?.contact?.location || "";
+    // French addresses typically come as "Street, City, PostalCode, Country" —
+    // extract just the city segment rather than passing the full address to
+    // job search APIs, which expect a place name, not a street address.
+    const location = rawLocation.includes(",")
+        ? rawLocation.split(",")[1]?.trim() || rawLocation
+        : rawLocation;
 
     if (!jobTitle) {
         return NextResponse.json({ jobs: [], cached: false });
