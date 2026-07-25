@@ -6,13 +6,6 @@ import { useLocale } from 'next-intl';
 import { Sparkles, AlertCircle, X, Lock } from 'lucide-react';
 import OuiCVLoader from '@/components/common/OuiCVLoader';
 
-// interface AnalyzeButtonProps {
-//   cvFile: File | null;
-//   cvUrl: string;
-//   jobTitle: string;
-//   jobDescription: string;
-//   profileDescription?: string;
-// }
 
 interface AnalyzeButtonProps {
   cvFile: File | null;
@@ -28,7 +21,8 @@ export default function AnalyzeButton({
   cvUrl,
   jobTitle,
   jobDescription,
-  profileDescription
+  profileDescription,
+  onScrapeError
 }: AnalyzeButtonProps) {
   const router = useRouter();
   const locale = useLocale();
