@@ -10,6 +10,7 @@ import { CVRenderer } from "@/components/templates/CVRenderer";
 import { pdfHourlyUserLimit, pdfDailyUserLimit, pdfIpLimit } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
 import crypto from "crypto";
+import { getSharedBrowser, withRenderSlot } from "@/lib/pdf/browser-pool";
 
 // CACHE BUSTER: 2026-05-05-V3
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
 
   let browser: any;
+  let page: any;
   try {
     const { userId } = await auth();
     const body = await req.json();
@@ -152,33 +154,36 @@ export async function POST(req: Request) {
     }
 
     // 2. Browser Launch
-    if (process.env.NODE_ENV === 'production') {
-      const chromium = (await import("@sparticuz/chromium")).default as any;
-      const puppeteerCore = (await import("puppeteer-core")) as any;
-      browser = await puppeteerCore.launch({
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
-        headless: chromium.headless,
-      });
-    } else {
-      // Dev mode: use local Puppeteer with Chromium
-      try {
-        const executablePath = puppeteer.executablePath();
-        console.log("[PDF] Puppeteer executable path:", executablePath);
+    // if (process.env.NODE_ENV === 'production') {
+    //   const chromium = (await import("@sparticuz/chromium")).default as any;
+    //   const puppeteerCore = (await import("puppeteer-core")) as any;
+    //   browser = await puppeteerCore.launch({
+    //     args: chromium.args,
+    //     defaultViewport: chromium.defaultViewport,
+    //     executablePath: await chromium.executablePath(),
+    //     headless: chromium.headless,
+    //   });
+    // } else {
+    //   // Dev mode: use local Puppeteer with Chromium
+    //   try {
+    //     const executablePath = puppeteer.executablePath();
+    //     console.log("[PDF] Puppeteer executable path:", executablePath);
 
-        browser = await puppeteer.launch({
-          headless: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox"],
-          timeout: 60000, // Increase timeout to 60s for slower systems
-        });
-      } catch (err: any) {
-        console.error("[PDF] Puppeteer launch error:", err.message);
-        throw new Error(`Chromium not available. Run: npm run install-browsers`);
-      }
-    }
+    //     browser = await puppeteer.launch({
+    //       headless: true,
+    //       args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    //       timeout: 60000, // Increase timeout to 60s for slower systems
+    //     });
+    //   } catch (err: any) {
+    //     console.error("[PDF] Puppeteer launch error:", err.message);
+    //     throw new Error(`Chromium not available. Run: npm run install-browsers`);
+    //   }
+    // }
 
-    const page = await browser.newPage();
+    // 2. Get shared browser instance (reused across requests, not relaunched)
+    browser = await withRenderSlot(() => getSharedBrowser());
+
+    page = await browser.newPage();
 
     // ✅ Block external trackers to speed up load
     await page.setRequestInterception(true);
@@ -275,7 +280,28 @@ export async function POST(req: Request) {
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
 
-    // ✅ SHRINK TO FIT & FILL WIDTH LOGIC
+    // // ✅ SHRINK TO FIT & FILL WIDTH LOGIC
+    // await page.evaluate(() => {
+    //   const container = document.getElementById("cv-ready");
+    //   if (!container) return;
+
+    //   const A4_HEIGHT_PX = 1122; // A4 height at 96dpi
+    //   const contentHeight = container.offsetHeight || container.scrollHeight;
+
+    //   if (contentHeight > A4_HEIGHT_PX) {
+    //     const scale = (A4_HEIGHT_PX - 1) / contentHeight;
+    //     // Scale vertically and horizontally
+    //     container.style.transform = `scale(${scale})`;
+    //     container.style.transformOrigin = "top left";
+    //     // CRITICAL: Expand the container width before scaling
+    //     // so that after scaling it equals exactly 100% of the page width
+    //     container.style.width = 100 / scale + "%";
+    //   } else {
+    //     container.style.width = "100%";
+    //   }
+    // });
+
+
     await page.evaluate(() => {
       const container = document.getElementById("cv-ready");
       if (!container) return;
@@ -283,17 +309,21 @@ export async function POST(req: Request) {
       const A4_HEIGHT_PX = 1122; // A4 height at 96dpi
       const contentHeight = container.offsetHeight || container.scrollHeight;
 
-      if (contentHeight > A4_HEIGHT_PX) {
-        const scale = (A4_HEIGHT_PX - 1) / contentHeight;
-        // Scale vertically and horizontally
-        container.style.transform = `scale(${scale})`;
-        container.style.transformOrigin = "top left";
-        // CRITICAL: Expand the container width before scaling
-        // so that after scaling it equals exactly 100% of the page width
-        container.style.width = 100 / scale + "%";
-      } else {
-        container.style.width = "100%";
-      }
+      // Always scale to exactly fill one A4 page — whether the CV's natural
+      // content is taller (shrink it down) or shorter (stretch it up) than a
+      // full page, so the final PDF always looks evenly filled, never with
+      // leftover blank space at the bottom.
+      const rawScale = (A4_HEIGHT_PX - 1) / contentHeight;
+
+      // Cap how much a very short CV gets stretched — filling the page
+      // completely is fine for a slightly-short CV, but blowing up a very
+      // sparse one to 2-3x its natural size would look distorted rather
+      // than professional. 1.15 = at most 15% larger than natural size.
+      const scale = rawScale > 1 ? Math.min(rawScale, 1.15) : rawScale;
+
+      container.style.transform = `scale(${scale})`;
+      container.style.transformOrigin = "top left";
+      container.style.width = 100 / scale + "%";
     });
 
     const pdfBuffer = await page.pdf({
@@ -304,6 +334,16 @@ export async function POST(req: Request) {
       pageRanges: "1",
     });
 
+    // console.log(
+    //   "[PDF SIZE]",
+    //   pdfBuffer.length,
+    //   "bytes",
+    //   (pdfBuffer.length / 1024 / 1024).toFixed(2),
+    //   "MB"
+    // );
+
+    // await browser.close();
+
     console.log(
       "[PDF SIZE]",
       pdfBuffer.length,
@@ -312,7 +352,7 @@ export async function POST(req: Request) {
       "MB"
     );
 
-    await browser.close();
+    await page.close();
 
     // ✅ Log the generation to cv_generations table
     try {
@@ -346,8 +386,14 @@ export async function POST(req: Request) {
       pdfBase64: Buffer.from(pdfBuffer).toString("base64"),
       fileName: `CV_${template.templateStyle}.pdf`,
     });
+    // } catch (error: any) {
+    //   if (browser) await browser.close();
+    //   console.error("PDF Error:", error);
+    //   return NextResponse.json({ error: error.message }, { status: 500 });
+    // }
+
   } catch (error: any) {
-    if (browser) await browser.close();
+    if (typeof page !== "undefined" && page) await page.close();
     console.error("PDF Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

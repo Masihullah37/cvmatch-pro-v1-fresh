@@ -12,9 +12,22 @@ export default function HeroUploadSection() {
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [profileDescription, setProfileDescription] = useState('');
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
 
   const { userId } = useAuth();
   const [prevUserId, setPrevUserId] = useState<string | null | undefined>(userId);
+
+  // useEffect(() => {
+  //   // Reset form states if user logs out
+  //   if (prevUserId && !userId) {
+  //     setCvFile(null);
+  //     setCvUrl('');
+  //     setJobTitle('');
+  //     setJobDescription('');
+  //     setProfileDescription('');
+  //   }
+  //   setPrevUserId(userId);
+  // }, [userId, prevUserId]);
 
   useEffect(() => {
     // Reset form states if user logs out
@@ -24,19 +37,35 @@ export default function HeroUploadSection() {
       setJobTitle('');
       setJobDescription('');
       setProfileDescription('');
+      setScrapeError(null);
     }
     setPrevUserId(userId);
   }, [userId, prevUserId]);
+
+  // Clear the scrape-failure message the moment the user edits the
+  // description themselves — they're already acting on the suggestion.
+  const handleJobDescriptionChange = (val: string) => {
+    setJobDescription(val);
+    if (scrapeError) setScrapeError(null);
+  };
 
   return (
     <div className="w-full mt-4 relative">
 
       <div className="grid grid-cols-1 gap-14 lg:grid-cols-2 lg:gap-8 w-full">
-        <JobInputPanel
+        {/* <JobInputPanel
           jobTitle={jobTitle}
           setJobTitle={setJobTitle}
           jobDescription={jobDescription}
           setJobDescription={setJobDescription}
+        /> */}
+
+        <JobInputPanel
+          jobTitle={jobTitle}
+          setJobTitle={setJobTitle}
+          jobDescription={jobDescription}
+          setJobDescription={handleJobDescriptionChange}
+          scrapeError={scrapeError}
         />
         <CVUploadPanel
           cvFile={cvFile}
@@ -49,12 +78,21 @@ export default function HeroUploadSection() {
       </div>
 
       <div className="mt-12 flex justify-center pb-10">
+        {/* <AnalyzeButton
+          cvFile={cvFile}
+          cvUrl={cvUrl}
+          jobTitle={jobTitle}
+          jobDescription={jobDescription}
+          profileDescription={profileDescription}
+        /> */}
+
         <AnalyzeButton
           cvFile={cvFile}
           cvUrl={cvUrl}
           jobTitle={jobTitle}
           jobDescription={jobDescription}
           profileDescription={profileDescription}
+          onScrapeError={setScrapeError}
         />
       </div>
     </div>

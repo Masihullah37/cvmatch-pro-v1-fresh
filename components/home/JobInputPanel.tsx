@@ -3,18 +3,34 @@
 import { Briefcase, Info } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+// interface JobInputPanelProps {
+//   jobTitle: string;
+//   setJobTitle: (val: string) => void;
+//   jobDescription: string;
+//   setJobDescription: (val: string) => void;
+// }
+
 interface JobInputPanelProps {
   jobTitle: string;
   setJobTitle: (val: string) => void;
   jobDescription: string;
   setJobDescription: (val: string) => void;
+  scrapeError?: string | null;
 }
+
+// export default function JobInputPanel({
+//   jobTitle,
+//   setJobTitle,
+//   jobDescription,
+//   setJobDescription
+// }: JobInputPanelProps) {
 
 export default function JobInputPanel({
   jobTitle,
   setJobTitle,
   jobDescription,
-  setJobDescription
+  setJobDescription,
+  scrapeError
 }: JobInputPanelProps) {
   const t = useTranslations('Index.job_panel');
 
@@ -58,12 +74,26 @@ export default function JobInputPanel({
             <label className="text-xs font-black text-gray-900 uppercase tracking-widest">{t('description_label')}</label>
             <span className="text-[9px] font-bold text-gray-500 uppercase">{t('description_optional')}</span>
           </div>
+          {/* <textarea
+            placeholder={t('description_placeholder')}
+            value={jobDescription}
+            onChange={(e) => setJobDescription(e.target.value)}
+            className="w-full flex-1 min-h-[200px] sm:min-h-[250px] bg-slate-50 border-none rounded-xl sm:rounded-[2rem] px-4 py-4 sm:px-6 sm:py-6 text-sm font-medium focus:ring-4 focus:ring-primary/10 outline-none resize-none leading-relaxed text-slate-700 placeholder:text-gray-400 transition-all"
+          />
+        </div> */}
+
           <textarea
             placeholder={t('description_placeholder')}
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
             className="w-full flex-1 min-h-[200px] sm:min-h-[250px] bg-slate-50 border-none rounded-xl sm:rounded-[2rem] px-4 py-4 sm:px-6 sm:py-6 text-sm font-medium focus:ring-4 focus:ring-primary/10 outline-none resize-none leading-relaxed text-slate-700 placeholder:text-gray-400 transition-all"
           />
+          {scrapeError && (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 flex items-start gap-2">
+              <Info size={14} className="text-primary mt-0.5 shrink-0" />
+              <p className="text-xs font-medium text-slate-600">{scrapeError}</p>
+            </div>
+          )}
         </div>
       </div>
 

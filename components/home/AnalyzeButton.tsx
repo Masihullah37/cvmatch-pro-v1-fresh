@@ -6,12 +6,21 @@ import { useLocale } from 'next-intl';
 import { Sparkles, AlertCircle, X, Lock } from 'lucide-react';
 import OuiCVLoader from '@/components/common/OuiCVLoader';
 
+// interface AnalyzeButtonProps {
+//   cvFile: File | null;
+//   cvUrl: string;
+//   jobTitle: string;
+//   jobDescription: string;
+//   profileDescription?: string;
+// }
+
 interface AnalyzeButtonProps {
   cvFile: File | null;
   cvUrl: string;
   jobTitle: string;
   jobDescription: string;
   profileDescription?: string;
+  onScrapeError?: (message: string | null) => void;
 }
 
 export default function AnalyzeButton({
@@ -86,6 +95,18 @@ export default function AnalyzeButton({
 
       const data = await response.json();
 
+      // if (!response.ok) {
+      //   if (response.status === 429 || response.status === 402) {
+      //     setLimitMessage(data.error || "Quota atteint.");
+      //     setIsPaidUser(data.isPaid || false);
+      //     setLimitReason(data.reason || null);
+      //     setIsLimitModalOpen(true);
+      //     setIsAnalyzing(false);
+      //     return;
+      //   }
+      //   throw new Error(data.error || data.message || "Une erreur est survenue lors de l'analyse.");
+      // }
+
       if (!response.ok) {
         if (response.status === 429 || response.status === 402) {
           setLimitMessage(data.error || "Quota atteint.");
@@ -95,6 +116,13 @@ export default function AnalyzeButton({
           setIsAnalyzing(false);
           return;
         }
+
+        if (data.reason === "scraping_failed" && onScrapeError) {
+          onScrapeError(data.error);
+          setIsAnalyzing(false);
+          return;
+        }
+
         throw new Error(data.error || data.message || "Une erreur est survenue lors de l'analyse.");
       }
 

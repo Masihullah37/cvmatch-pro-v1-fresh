@@ -56,9 +56,29 @@ export async function generateLLMResponse({
     apiKey: process.env.FALLBACK_LLM_API_KEY || '',
   };
 
+  // try {
+  //   // Attempt Primary
+  //   return await executeGenerate(primaryConfig);
+  // } catch (error: any) {
+  //   console.warn(`Primary LLM failed (${primaryConfig.provider}):`, error.message);
+
+  //   // Attempt Fallback
+  //   if (fallbackConfig.apiKey && fallbackConfig.provider) {
+  //     console.log(`Triggering Fallback LLM (${fallbackConfig.provider})...`);
+  //     try {
+  //       return await executeGenerate(fallbackConfig);
+  //     } catch (fallbackError: any) {
+  //       console.error(`Fallback LLM also failed:`, fallbackError.message);
+  //       throw fallbackError;
+  //     }
+  //   }
+
+  //   throw error;
+  // }
+
   try {
     // Attempt Primary
-    return await executeGenerate(primaryConfig);
+    return await executeWithRetry(primaryConfig);
   } catch (error: any) {
     console.warn(`Primary LLM failed (${primaryConfig.provider}):`, error.message);
 
@@ -66,7 +86,7 @@ export async function generateLLMResponse({
     if (fallbackConfig.apiKey && fallbackConfig.provider) {
       console.log(`Triggering Fallback LLM (${fallbackConfig.provider})...`);
       try {
-        return await executeGenerate(fallbackConfig);
+        return await executeWithRetry(fallbackConfig);
       } catch (fallbackError: any) {
         console.error(`Fallback LLM also failed:`, fallbackError.message);
         throw fallbackError;
@@ -74,6 +94,21 @@ export async function generateLLMResponse({
     }
 
     throw error;
+  }
+
+  async function executeWithRetry(config: LLMConfig, attempts = 2): Promise<string> {
+    let lastError: any;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await executeGenerate(config);
+      } catch (error: any) {
+        lastError = error;
+        const isTransient = /high demand|rate limit|overloaded|503|429/i.test(error.message || "");
+        if (!isTransient || i === attempts - 1) throw error;
+        await new Promise((r) => setTimeout(r, 1000 * (i + 1))); // 1s, then 2s
+      }
+    }
+    throw lastError;
   }
 
   async function executeGenerate(config: LLMConfig) {
@@ -109,7 +144,7 @@ export async function generateLLMResponse({
     // OPENAI / ANTHROPIC: standard models, use maxTokens as-is
     const effectiveMaxTokens =
       config.provider.toLowerCase() === "groq"
-        ? Math.min(maxTokens, 2500)
+        ? Math.min(maxTokens, 6000)
         : config.provider.toLowerCase() === "google"
           ? 8192
           : maxTokens;

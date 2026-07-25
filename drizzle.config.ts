@@ -7,6 +7,8 @@ import { neonConfig } from '@neondatabase/serverless';
 neonConfig.webSocketConstructor = ws;
 
 dotenv.config({ path: '.env.local' });
+
+console.log("DATABASE_URL:", process.env.DATABASE_URL);
 if (!process.env.DATABASE_URL) {
   dotenv.config({ path: '.env.example' });
 }
