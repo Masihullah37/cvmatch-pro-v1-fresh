@@ -148,3 +148,17 @@ export const stripeEvents = pgTable('stripe_events', {
   processedAt: timestamp('processed_at').defaultNow(),
   skippedReason: varchar('skipped_reason', { length: 255 }), // Added for audit trail
 });
+
+
+export const jobRecommendations = pgTable('job_recommendations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  analysisId: uuid('analysis_id').notNull().references(() => cvAnalyses.id, { onDelete: 'cascade' }),
+  source: text('source').notNull(), // 'france_travail' | 'adzuna'
+  title: text('title').notNull(),
+  company: text('company'),
+  location: text('location'),
+  url: text('url').notNull(),
+  description: text('description'),
+  postedAt: timestamp('posted_at'),
+  fetchedAt: timestamp('fetched_at').notNull().defaultNow(),
+});
