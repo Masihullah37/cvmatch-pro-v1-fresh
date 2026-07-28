@@ -11,11 +11,13 @@ import FlawsList from "@/components/results/FlawsList";
 import ImprovementSuggestions from "@/components/results/ImprovementSuggestions";
 import UnlockButton from "@/components/results/UnlockButton";
 import { Link } from "@/i18n/routing";
-import { ArrowRight, Sparkles, Target, TrendingUp } from "lucide-react";
+import { ArrowRight, Sparkles, Target, TrendingUp, Info } from "lucide-react";
 import PaymentSync from "@/components/results/PaymentSync";
 import DemoTemplateCarousel from "@/components/results/DemoTemplateCarousel";
 import OuiCVLoader from "@/components/common/OuiCVLoader";
 import JobRecommendations from "@/components/results/JobRecommendations";
+import { getHashedTrackingToken } from "@/lib/anonymous-tracking";
+
 
 export default async function ResultsPage({
   params,
@@ -33,6 +35,19 @@ export default async function ResultsPage({
   const analysis = await db.query.cvAnalyses.findFirst({
     where: eq(cvAnalyses.id, analysisId),
   });
+  // if (!analysis) notFound();
+
+  // console.log("========== [STAGE 7 & 8] READ FROM DB & RENDERED TO FRONTEND ==========");
+  // console.log("analysis.keywordsFound from DB:", analysis.keywordsFound);
+  // console.log("analysis.keywordsMissing from DB:", analysis.keywordsMissing);
+  // console.log("=====================================================================");
+
+  // const dbUser = userId
+  //   ? await db.query.users.findFirst({ where: eq(users.clerkId, userId) })
+  //   : null;
+
+  // const userCredits = dbUser?.credits || 0;
+
   if (!analysis) notFound();
 
   console.log("========== [STAGE 7 & 8] READ FROM DB & RENDERED TO FRONTEND ==========");
@@ -43,6 +58,19 @@ export default async function ResultsPage({
   const dbUser = userId
     ? await db.query.users.findFirst({ where: eq(users.clerkId, userId) })
     : null;
+
+  // ✅ Ownership check — same reasoning as the templates page: a shared
+  // link must not expose this CV's data to anyone but its actual owner.
+  if (analysis.userId) {
+    if (!dbUser || analysis.userId !== dbUser.id) {
+      notFound();
+    }
+  } else {
+    const currentTrackingToken = await getHashedTrackingToken();
+    if (!analysis.guestSessionId || analysis.guestSessionId !== currentTrackingToken) {
+      notFound();
+    }
+  }
 
   const userCredits = dbUser?.credits || 0;
 
@@ -66,8 +94,16 @@ export default async function ResultsPage({
 
   const redirectToParam = encodeURIComponent(`/${locale}/results/${analysisId}`);
 
+  // const hasATSAnalysis =
+  //   analysis.detectedPlatform !== "manual_cv_creation";
+
   const hasATSAnalysis =
     analysis.detectedPlatform !== "manual_cv_creation";
+
+  // True when the user chose to run a scan without providing a specific
+  // job posting — matches the "Optimisation standard" fallback set in
+  // app/api/analyze-cv/route.ts when jobDescription/jobUrl was left blank.
+  const isGeneralScan = analysis.jobDescription === "Optimisation standard";
 
   // 1. Safe extraction helper to pull pure integers out of formats like "21/30" or string blocks
   const parseSafeNumber = (val: any): number => {
@@ -181,18 +217,33 @@ export default async function ResultsPage({
 
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
             {[
+              // {
+              //   label: 'Mots-clés',
+              //   icon: Target,
+              //   value: hasATSAnalysis
+              //     ? `${(analysis?.keywordsFound as string[])?.length || 0} trouvés`
+              //     : "0"
+              // },
+              // {
+              //   label: 'Manquants',
+              //   icon: TrendingUp,
+              //   value: hasATSAnalysis
+              //     ? `${(analysis?.keywordsMissing as string[])?.length || 0} keywords`
+              //     : "0"
+              // },
+
               {
                 label: 'Mots-clés',
                 icon: Target,
                 value: hasATSAnalysis
-                  ? `${(analysis?.keywordsFound as string[])?.length || 0} trouvés`
+                  ? (isGeneralScan ? "—" : `${(analysis?.keywordsFound as string[])?.length || 0} trouvés`)
                   : "0"
               },
               {
                 label: 'Manquants',
                 icon: TrendingUp,
                 value: hasATSAnalysis
-                  ? `${(analysis?.keywordsMissing as string[])?.length || 0} keywords`
+                  ? (isGeneralScan ? "—" : `${(analysis?.keywordsMissing as string[])?.length || 0} keywords`)
                   : "0"
               },
               {
@@ -252,40 +303,50 @@ export default async function ResultsPage({
 
             {/* Keywords */}
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6">
-              {/* Keywords found/missing UI blocks */}
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Target size={18} className="text-primary" />
                 Analyse des Mots-clés
               </h3>
 
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-emerald-600 mb-3 flex items-center gap-1.5">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full" />
-                  Mots-clés trouvés ({(analysis.keywordsFound as string[])?.length || 0})
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {(analysis.keywordsFound as string[])?.map((kw, i) => (
-                    <span key={i} className="bg-emerald-500/10 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-bold border border-emerald-500/20">
-                      {kw}
-                    </span>
-                  ))}
+              {isGeneralScan ? (
+                <div className="bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4 flex items-start gap-3">
+                  <Info size={16} className="text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-sm font-medium text-amber-800">
+                    Cette analyse est une évaluation générale — aucune offre d'emploi n'a été fournie, donc la correspondance par mots-clés n'est pas applicable ici. Ajoutez une offre pour obtenir une analyse de mots-clés précise.
+                  </p>
                 </div>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-red-500 mb-3 flex items-center gap-1.5">
-                  <span className="w-2 h-2 bg-red-500 rounded-full" />
-                  Mots-clés manquants ({(analysis.keywordsMissing as string[])?.length || 0})
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {(analysis.keywordsMissing as string[])?.map((kw, i) => (
-                    <span key={i} className="bg-red-500/10 text-red-600 px-3 py-1.5 rounded-xl text-xs font-bold border border-red-500/20">
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-emerald-600 mb-3 flex items-center gap-1.5">
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full" />
+                      Mots-clés trouvés ({(analysis.keywordsFound as string[])?.length || 0})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {(analysis.keywordsFound as string[])?.map((kw, i) => (
+                        <span key={i} className="bg-emerald-500/10 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-bold border border-emerald-500/20">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-red-500 mb-3 flex items-center gap-1.5">
+                      <span className="w-2 h-2 bg-red-500 rounded-full" />
+                      Mots-clés manquants ({(analysis.keywordsMissing as string[])?.length || 0})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {(analysis.keywordsMissing as string[])?.map((kw, i) => (
+                        <span key={i} className="bg-red-500/10 text-red-600 px-3 py-1.5 rounded-xl text-xs font-bold border border-red-500/20">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
+
           </div>
         </div>
       </div>

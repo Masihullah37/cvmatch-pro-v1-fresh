@@ -161,4 +161,5 @@ export const jobRecommendations = pgTable('job_recommendations', {
   description: text('description'),
   postedAt: timestamp('posted_at'),
   fetchedAt: timestamp('fetched_at').notNull().defaultNow(),
+  matchType: text('match_type').notNull().default('direct'),
 });

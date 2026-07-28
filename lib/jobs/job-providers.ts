@@ -1,5 +1,36 @@
-// ── France Travail ──────────────────────────────────────────
+// // ── France Travail ──────────────────────────────────────────
+// async function getFranceTravailToken(): Promise<string> {
+//     const res = await fetch(
+//         "https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=%2Fpartenaire",
+//         {
+//             method: "POST",
+//             headers: { "Content-Type": "application/x-www-form-urlencoded" },
+//             body: new URLSearchParams({
+//                 grant_type: "client_credentials",
+//                 client_id: process.env.FRANCE_TRAVAIL_CLIENT_ID || "",
+//                 client_secret: process.env.FRANCE_TRAVAIL_CLIENT_SECRET || "",
+//                 scope: "api_offresdemploiv2 o2dsoffre",
+//             }),
+//         }
+//     );
+//     const rawText = await res.text();
+//     if (!res.ok) {
+//         throw new Error(`France Travail auth failed: ${res.status} — ${rawText.slice(0, 200)}`);
+//     }
+//     try {
+//         const data = JSON.parse(rawText);
+//         return data.access_token;
+//     } catch {
+//         throw new Error(`France Travail auth returned non-JSON response: ${rawText.slice(0, 200)}`);
+//     }
+// }
+
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
 async function getFranceTravailToken(): Promise<string> {
+    if (cachedToken && Date.now() < cachedToken.expiresAt) {
+        return cachedToken.token;
+    }
     const res = await fetch(
         "https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=%2Fpartenaire",
         {
@@ -19,7 +50,8 @@ async function getFranceTravailToken(): Promise<string> {
     }
     try {
         const data = JSON.parse(rawText);
-        return data.access_token;
+        cachedToken = { token: data.access_token, expiresAt: Date.now() + (data.expires_in - 60) * 1000 };
+        return cachedToken.token;
     } catch {
         throw new Error(`France Travail auth returned non-JSON response: ${rawText.slice(0, 200)}`);
     }
