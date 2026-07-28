@@ -436,7 +436,7 @@ const schema = z.object({
   cvUrl: z.string().url().optional(),
   cvName: z.string().optional(),
   profileDescription: z.string().optional(),
-  jobDescription: z.string().min(10),
+  jobDescription: z.string().optional(),
   jobUrl: z.string().optional(),
   guestSessionId: z.string().optional(),
   locale: z.string().optional(),

@@ -1,6 +1,24 @@
 let browserInstance: any = null;
 let launching: Promise<any> | null = null;
 
+// Track last browser usage so we can close idle Chromium
+let lastUsedAt = Date.now();
+const IDLE_TIMEOUT_MS = 3 * 60 * 1000; // close after 3 minutes idle
+
+setInterval(async () => {
+    if (browserInstance && Date.now() - lastUsedAt > IDLE_TIMEOUT_MS) {
+        console.log("[PDF] Closing idle shared browser to free memory.");
+
+        try {
+            await browserInstance.close();
+        } catch (e) {
+            console.warn("[PDF] Error closing idle browser:", e);
+        }
+
+        browserInstance = null;
+    }
+}, 60 * 1000); // check every minute
+
 async function launchBrowser() {
     if (process.env.NODE_ENV === "production") {
         const chromium = (await import("@sparticuz/chromium")).default as any;
@@ -24,6 +42,8 @@ async function launchBrowser() {
 // One shared browser instance for the entire server process, launched
 // once and reused for every request — not relaunched per-download.
 export async function getSharedBrowser() {
+
+    lastUsedAt = Date.now();
     if (browserInstance) {
         try {
             if (typeof browserInstance.isConnected === "function" && browserInstance.isConnected()) {

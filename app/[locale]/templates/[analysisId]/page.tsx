@@ -13,6 +13,7 @@ import { syncUserWithClerk } from "@/lib/auth/sync";
 import { Link } from "@/i18n/routing";
 import { PlanType } from "@/lib/billing/get-user-plan";
 import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
+import { getHashedTrackingToken } from "@/lib/anonymous-tracking";
 
 // Revert to original unique templates
 // const STYLES = [...CV_TEMPLATE_STYLES]; // 28 templates
@@ -98,10 +99,31 @@ export default async function TemplatesPage({
 
   const dbUser = await syncUserWithClerk();
 
+  // const analysisResults = await db.select().from(cvAnalyses).where(eq(cvAnalyses.id, analysisId)).limit(1);
+  // const analysis = analysisResults[0];
+
+  // if (!analysis) notFound();
+
+  // const userCredits = dbUser ? getEffectiveCredits(dbUser) : 0;
+
   const analysisResults = await db.select().from(cvAnalyses).where(eq(cvAnalyses.id, analysisId)).limit(1);
   const analysis = analysisResults[0];
 
   if (!analysis) notFound();
+
+  // ✅ Ownership check — prevents anyone who merely has this URL (e.g. via
+  // a shared link) from viewing another person's CV. A shared link must
+  // only work for the person who actually created this analysis.
+  if (analysis.userId) {
+    if (!dbUser || analysis.userId !== dbUser.id) {
+      notFound();
+    }
+  } else {
+    const currentTrackingToken = await getHashedTrackingToken();
+    if (!analysis.guestSessionId || analysis.guestSessionId !== currentTrackingToken) {
+      notFound();
+    }
+  }
 
   const userCredits = dbUser ? getEffectiveCredits(dbUser) : 0;
   const isExpired = dbUser ? isUserExpired(dbUser) : false;

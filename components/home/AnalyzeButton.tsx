@@ -32,6 +32,8 @@ export default function AnalyzeButton({
   const [limitMessage, setLimitMessage] = useState("");
   const [isPaidUser, setIsPaidUser] = useState(false);
   const [limitReason, setLimitReason] = useState<string | null>(null);
+  const [showGeneralModeConfirm, setShowGeneralModeConfirm] = useState(false);
+
 
   // Auto-clear error after 8 seconds
   useEffect(() => {
@@ -40,6 +42,18 @@ export default function AnalyzeButton({
       return () => clearTimeout(timer);
     }
   }, [error]);
+
+  // const handleAnalyze = async () => {
+  //   setError(null);
+
+  //   // Validation: We need either a CV file or a Profile Description
+  //   if (!cvFile && !cvUrl && (!profileDescription || profileDescription.trim().length < 50)) {
+  //     setError("Veuillez importer un CV ou décrire votre profil avec plus de détails (min. 50 caractères).");
+  //     return;
+  //   }
+
+  //   setIsAnalyzing(true);
+  //   try {
 
   const handleAnalyze = async () => {
     setError(null);
@@ -50,6 +64,20 @@ export default function AnalyzeButton({
       return;
     }
 
+    // If no real job target was provided, confirm with the user before
+    // silently running a general (non-job-specific) optimization instead
+    // of deciding for them.
+    const hasJobTarget = jobDescription && jobDescription.trim().length >= 10;
+    if (!hasJobTarget) {
+      setShowGeneralModeConfirm(true);
+      return;
+    }
+
+    await runAnalysis();
+  };
+
+  const runAnalysis = async () => {
+    setShowGeneralModeConfirm(false);
     setIsAnalyzing(true);
     try {
       let finalCvUrl = cvUrl;
@@ -88,18 +116,6 @@ export default function AnalyzeButton({
       });
 
       const data = await response.json();
-
-      // if (!response.ok) {
-      //   if (response.status === 429 || response.status === 402) {
-      //     setLimitMessage(data.error || "Quota atteint.");
-      //     setIsPaidUser(data.isPaid || false);
-      //     setLimitReason(data.reason || null);
-      //     setIsLimitModalOpen(true);
-      //     setIsAnalyzing(false);
-      //     return;
-      //   }
-      //   throw new Error(data.error || data.message || "Une erreur est survenue lors de l'analyse.");
-      // }
 
       if (!response.ok) {
         if (response.status === 429 || response.status === 402) {
@@ -201,6 +217,44 @@ export default function AnalyzeButton({
         <p className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] animate-pulse">
           Analyse ATS et optimisation sémantique en cours
         </p>
+      )}
+
+      {/* General-mode confirmation — shown when no job target was provided */}
+      {showGeneralModeConfirm && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 md:p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] max-w-[500px] w-full p-8 md:p-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.18)] relative border border-slate-100 flex flex-col items-center text-center">
+            <button
+              onClick={() => setShowGeneralModeConfirm(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-all hover:rotate-90 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl"
+            >
+              <X size={16} strokeWidth={2.5} />
+            </button>
+            <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-3xl flex items-center justify-center mb-6 shadow-lg shadow-amber-100/50">
+              <Sparkles size={28} strokeWidth={2.5} />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">
+              Analyse générale
+            </h3>
+            <p className="text-slate-500 font-medium text-sm leading-relaxed mb-8">
+              Vous n'avez pas ajouté d'offre d'emploi. Nous allons évaluer votre CV selon les standards ATS généraux plutôt que pour un poste précis. Voulez-vous continuer ?
+            </p>
+            <div className="flex flex-col gap-3 w-full">
+              <button
+                onClick={runAnalysis}
+                className="w-full py-4 px-6 rounded-2xl bg-primary text-white font-black hover:bg-primary/95 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 active:scale-95"
+              >
+                <Sparkles size={18} className="fill-white" />
+                Continuer sans offre
+              </button>
+              <button
+                onClick={() => setShowGeneralModeConfirm(false)}
+                className="w-full py-4 px-6 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold transition-all active:scale-95"
+              >
+                Ajouter une offre
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Stunning Rate Limit Exceeded Modal */}

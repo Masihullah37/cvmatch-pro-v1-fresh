@@ -1,0 +1,1 @@
+ALTER TABLE "job_recommendations" ADD COLUMN "match_type" text DEFAULT 'direct' NOT NULL;
