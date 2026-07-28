@@ -677,7 +677,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const { cvUrl, cvName, profileDescription, jobDescription, jobUrl, guestSessionId, locale } = parsed.data;
+    // const { cvUrl, cvName, profileDescription, jobDescription, jobUrl, guestSessionId, locale } = parsed.data;
+
+    const { cvUrl, cvName, profileDescription, jobDescription: rawJobDescription, jobUrl, guestSessionId, locale } = parsed.data;
+
+    // If the user didn't provide a real job target, fall back to the same
+    // "general optimization" marker generateOptimizedCV already checks for —
+    // this guarantees every downstream function always receives a real,
+    // non-empty string, never undefined.
+    const jobDescription =
+      rawJobDescription && rawJobDescription.trim().length >= 10
+        ? rawJobDescription
+        : "Optimisation standard";
 
     let cvText = "";
     const originalCvUrlForDb = cvUrl || "";
