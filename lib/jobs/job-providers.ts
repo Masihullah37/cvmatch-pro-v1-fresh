@@ -1,30 +1,4 @@
-// // ── France Travail ──────────────────────────────────────────
-// async function getFranceTravailToken(): Promise<string> {
-//     const res = await fetch(
-//         "https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=%2Fpartenaire",
-//         {
-//             method: "POST",
-//             headers: { "Content-Type": "application/x-www-form-urlencoded" },
-//             body: new URLSearchParams({
-//                 grant_type: "client_credentials",
-//                 client_id: process.env.FRANCE_TRAVAIL_CLIENT_ID || "",
-//                 client_secret: process.env.FRANCE_TRAVAIL_CLIENT_SECRET || "",
-//                 scope: "api_offresdemploiv2 o2dsoffre",
-//             }),
-//         }
-//     );
-//     const rawText = await res.text();
-//     if (!res.ok) {
-//         throw new Error(`France Travail auth failed: ${res.status} — ${rawText.slice(0, 200)}`);
-//     }
-//     try {
-//         const data = JSON.parse(rawText);
-//         return data.access_token;
-//     } catch {
-//         throw new Error(`France Travail auth returned non-JSON response: ${rawText.slice(0, 200)}`);
-//     }
-// }
-
+// ── France Travail ──────────────────────────────────────────
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 async function getFranceTravailToken(): Promise<string> {
@@ -46,45 +20,50 @@ async function getFranceTravailToken(): Promise<string> {
     );
     const rawText = await res.text();
     if (!res.ok) {
-        throw new Error(`France Travail auth failed: ${res.status} — ${rawText.slice(0, 200)}`);
+        throw new Error(`France Travail auth failed: ${res.status} — ${rawText.slice(0, 300)}`);
     }
     try {
         const data = JSON.parse(rawText);
         cachedToken = { token: data.access_token, expiresAt: Date.now() + (data.expires_in - 60) * 1000 };
         return cachedToken.token;
     } catch {
-        throw new Error(`France Travail auth returned non-JSON response: ${rawText.slice(0, 200)}`);
+        throw new Error(`France Travail auth returned non-JSON response: ${rawText.slice(0, 300)}`);
     }
 }
 
 export async function fetchFranceTravailJobs(query: string, location: string) {
     try {
         const token = await getFranceTravailToken();
-        // France Travail's `commune` param requires a 5-digit INSEE code, not a
-        // city name — so instead of passing a raw location string (which would
-        // cause a 400 error), fold the location into the free-text keyword search.
         const searchKeywords = location ? `${query} ${location}` : query;
         const params = new URLSearchParams({ motsCles: searchKeywords });
         const res = await fetch(
             `https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
-        if (!res.ok) return [];
-        const data = await res.json();
+        const rawText = await res.text();
+        if (!res.ok) {
+            console.error(`[job-providers] France Travail search returned ${res.status}: ${rawText.slice(0, 300)}`);
+            return [];
+        }
+        let data;
+        try {
+            data = JSON.parse(rawText);
+        } catch {
+            console.error(`[job-providers] France Travail search returned non-JSON: ${rawText.slice(0, 300)}`);
+            return [];
+        }
         return (data.resultats || []).slice(0, 10).map((job: any) => ({
             source: "france_travail" as const,
             title: job.intitule,
             company: job.entreprise?.nom || null,
             location: job.lieuTravail?.libelle || null,
-            // Some listings don't provide an external origin URL — fall back to
-            // France Travail's own hosted listing page rather than a broken link.
             url: job.origineOffre?.urlOrigine ||
                 `https://candidat.francetravail.fr/offres/recherche/detail/${job.id}`,
             description: (job.description || "").slice(0, 300),
             postedAt: job.dateCreation ? new Date(job.dateCreation) : null,
         }));
-    } catch (e) {
-        console.error("[job-providers] France Travail fetch failed:", e);
+    } catch (e: any) {
+        console.error("[job-providers] France Travail fetch failed:", e.message || e);
         return [];
     }
 }
@@ -102,14 +81,14 @@ export async function fetchAdzunaJobs(query: string, location: string) {
         const res = await fetch(`https://api.adzuna.com/v1/api/jobs/fr/search/1?${params}`);
         const rawText = await res.text();
         if (!res.ok) {
-            console.error(`[job-providers] Adzuna returned ${res.status}: ${rawText.slice(0, 200)}`);
+            console.error(`[job-providers] Adzuna returned ${res.status}: ${rawText.slice(0, 300)}`);
             return [];
         }
         let data;
         try {
             data = JSON.parse(rawText);
         } catch {
-            console.error(`[job-providers] Adzuna returned non-JSON: ${rawText.slice(0, 200)}`);
+            console.error(`[job-providers] Adzuna returned non-JSON: ${rawText.slice(0, 300)}`);
             return [];
         }
         return (data.results || []).map((job: any) => ({
@@ -121,8 +100,8 @@ export async function fetchAdzunaJobs(query: string, location: string) {
             description: (job.description || "").slice(0, 300),
             postedAt: job.created ? new Date(job.created) : null,
         }));
-    } catch (e) {
-        console.error("[job-providers] Adzuna fetch failed:", e);
+    } catch (e: any) {
+        console.error("[job-providers] Adzuna fetch failed:", e.message || e);
         return [];
     }
 }
