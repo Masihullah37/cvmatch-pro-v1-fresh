@@ -1916,13 +1916,19 @@ export const CVRenderer = ({
           {/* Left sidebar */}
           <div className="w-[35%] flex flex-col">
             {/* Large photo at top */}
-            {hasPhotoSlot ? (
+            {/* {hasPhotoSlot ? (
               <div className="w-full aspect-[3/4] overflow-hidden bg-[#e8e0d5]">
                 <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
               </div>
             ) : (
               <div className="w-full aspect-[3/4] bg-[#e8e0d5]" />
-            )}
+            )} */}
+
+            {hasPhotoSlot ? (
+              <div className="w-full aspect-[3/4] overflow-hidden bg-[#e8e0d5]">
+                <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+              </div>
+            ) : null}
 
             {/* Sidebar content below photo */}
             <div className="flex-1 bg-[#f5f0e8] p-6 flex flex-col gap-6 overflow-hidden min-w-0">
