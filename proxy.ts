@@ -32,10 +32,18 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     return NextResponse.next();
   }
 
-  // 2. IGNORE CLERK INTERNALS, CACHE ACTIONS & STRIPE
+  // 1b. CRON BYPASS
+  const cronSecret = req.headers.get("x-cron-secret");
+  const expectedCronSecret = process.env.CRON_SECRET;
+  if (cronSecret && expectedCronSecret && cronSecret === expectedCronSecret) {
+    return NextResponse.next();
+  }
+
+  // 2. IGNORE CLERK INTERNALS, CACHE ACTIONS, STRIPE & MONITORING
   if (
     pathname.includes("/api/stripe/webhook") ||
     pathname.includes("/__clerk") ||
+    pathname.includes("/monitoring") ||
     pathname.includes(".js") ||
     // Bypass next-intl routing manipulation during Clerk's action-invalidation cycles
     req.headers.get("next-action") !== null

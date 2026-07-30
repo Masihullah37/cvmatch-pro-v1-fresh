@@ -1925,7 +1925,7 @@ export const CVRenderer = ({
             )} */}
 
             {hasPhotoSlot ? (
-              <div className="w-full aspect-[3/4] overflow-hidden bg-[#e8e0d5]">
+              <div className="w-full max-h-[160px] aspect-[4/3] overflow-hidden bg-[#e8e0d5] shrink-0">
                 <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
               </div>
             ) : null}

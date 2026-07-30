@@ -1,9 +1,10 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { CVRenderer } from '@/components/templates/CVRenderer';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 
 const DEMO_DATA = {
@@ -27,9 +28,98 @@ const DEMO_DATA = {
 
 const STYLES = [...CV_TEMPLATE_STYLES];
 
+function TemplateCard({
+  template,
+  isLoading,
+  onClick,
+  onPrefetch
+}: {
+  template: { id: string; templateNumber: number; templateStyle: string; templateData: typeof DEMO_DATA };
+  isLoading: boolean;
+  onClick: (num: number) => void;
+  onPrefetch: (num: number) => void;
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!cardRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={cardRef} className="h-56 sm:h-[280px] w-full">
+      <button
+        onClick={() => onClick(template.templateNumber)}
+        onMouseEnter={() => onPrefetch(template.templateNumber)}
+        onTouchStart={() => onPrefetch(template.templateNumber)}
+        disabled={isLoading}
+        style={{
+          WebkitTapHighlightColor: "transparent",
+          touchAction: "manipulation",
+        }}
+        className="group relative w-full h-full bg-white rounded-2xl border border-slate-100 overflow-hidden cursor-pointer transition-all duration-300 text-left hover:shadow-2xl hover:-translate-y-1 hover:border-emerald-200 active:shadow-2xl active:-translate-y-1 active:border-emerald-200 disabled:cursor-wait"
+      >
+        {/* Preview Container */}
+        <div className="relative bg-slate-50 overflow-hidden flex justify-center h-full w-full">
+          {isVisible ? (
+            <div className="absolute inset-0 flex justify-center items-start pt-4">
+              <div className="scale-[0.25] sm:scale-[0.28] origin-top transform-gpu pointer-events-none transition-transform">
+                <CVRenderer template={template} isPaid={true} analysisData={null} />
+              </div>
+            </div>
+          ) : (
+            <div className="absolute inset-0 bg-slate-100/60 animate-pulse flex items-center justify-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {template.templateStyle}
+              </span>
+            </div>
+          )}
+
+          {/* Hover / Active Overlay */}
+          <div className={`absolute inset-0 transition-colors flex items-center justify-center ${
+            isLoading 
+              ? 'bg-slate-900/60 backdrop-blur-xs' 
+              : 'bg-emerald-600/0 group-hover:bg-emerald-600/10 group-active:bg-emerald-600/10'
+          }`}>
+            {isLoading ? (
+              <div className="bg-white text-slate-900 px-4 py-2.5 rounded-xl font-black text-xs shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
+                <Loader2 size={16} className="animate-spin text-pink-500" />
+                <span>Chargement du modèle...</span>
+              </div>
+            ) : (
+              <span className="bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs opacity-0 translate-y-2 transition-all shadow-xl flex items-center gap-2 group-hover:opacity-100 group-hover:translate-y-0 group-active:opacity-100 group-active:translate-y-0">
+                Utiliser ce modèle <ArrowRight size={14} />
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Style Name Tag */}
+        <div className="absolute bottom-2 left-2 z-10 px-2.5 py-1 bg-white/90 backdrop-blur-xs rounded-lg border border-slate-200/60 shadow-xs">
+          <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">
+            {template.templateStyle}
+          </span>
+        </div>
+      </button>
+    </div>
+  );
+}
+
 export default function DemoTemplateCarousel({ analysisId }: { analysisId: string }) {
   const router = useRouter();
   const locale = useLocale();
+  const [loadingTemplateId, setLoadingTemplateId] = useState<number | null>(null);
 
   const demoTemplates = STYLES.map((style, i) => ({
     id: `demo-${i + 1}`,
@@ -39,7 +129,13 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
     pdfUrl: undefined,
   }));
 
+  const handlePrefetch = (templateNumber: number) => {
+    router.prefetch(`/${locale}/templates/${analysisId}?template=${templateNumber}`);
+  };
+
   const handleClick = (templateNumber: number) => {
+    if (loadingTemplateId !== null) return;
+    setLoadingTemplateId(templateNumber);
     router.push(`/${locale}/templates/${analysisId}?template=${templateNumber}`);
   };
 
@@ -55,66 +151,24 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
           <h2 className="text-3xl md:text-4xl font-black text-slate-950 leading-tight mb-4">
             Modèles CV Recommandés
           </h2>
-          <p className="text-slate-500 font-medium max-w-xl mx-auto">
+          <p className="text-slate-500 font-medium max-w-xl mx-auto text-sm sm:text-base">
             Choisissez votre style préféré. Cliquez pour ouvrir l'éditeur et personnaliser avec vos vraies informations.
           </p>
         </div>
 
         {/* Template Grid */}
-        {/* ✨ FIX 2a: Dropped to grid-cols-1 on mobile so layout handles wider rendering space safely */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {demoTemplates.map((template) => (
-            <button
+            <TemplateCard
               key={template.id}
-              onClick={() => handleClick(template.templateNumber)}
-              style={{
-                WebkitTapHighlightColor: "transparent",
-                touchAction: "manipulation",
-              }}
-              // className="group bg-white rounded-2xl border border-slate-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-1 hover:border-emerald-200 transition-all duration-300 text-left"
-              className="group bg-white rounded-2xl border border-slate-100 overflow-hidden cursor-pointer transition-all duration-300 text-left hover:shadow-2xl hover:-translate-y-1 hover:border-emerald-200 active:shadow-2xl active:-translate-y-1 active:border-emerald-200"
-            >
-              {/* Preview */}
-              {/* ✨ FIX 2b: Changed to use layout height classes h-56 mobile to improve visible space */}
-              <div className="relative bg-slate-50 overflow-hidden flex justify-center h-56 sm:h-[280px]">
-                <div className="absolute inset-0 flex justify-center items-start pt-4">
-                  <div className="scale-[0.25] sm:scale-[0.28] origin-top transform-gpu pointer-events-none transition-transform">
-                    <CVRenderer template={template} isPaid={true} analysisData={null} />
-                  </div>
-                </div>
-                {/* Hover overlay */}
-                {/* <div className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/10 transition-colors flex items-center justify-center"> */}
-                <div className="absolute inset-0 bg-emerald-600/0 transition-colors flex items-center justify-center group-hover:bg-emerald-600/10 group-active:bg-emerald-600/10">
-                  {/* <span className="bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all shadow-xl flex items-center gap-2"> */}
-                  <span className="bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs opacity-0 translate-y-2 transition-all shadow-xl flex items-center gap-2 group-hover:opacity-100 group-hover:translate-y-0 group-active:opacity-100 group-active:translate-y-0">
-                    Utiliser ce modèle <ArrowRight size={14} />
-                  </span>
-                </div>
-              </div>
-              {/* Label */}
-              <div className="p-3 border-t border-slate-100">
-              </div>
-            </button>
+              template={template}
+              isLoading={loadingTemplateId === template.templateNumber}
+              onClick={handleClick}
+              onPrefetch={handlePrefetch}
+            />
           ))}
         </div>
-
-        {/* CTA
-        <div className="mt-12 text-center">
-          <button
-            onClick={() => handleClick(1)}
-            className="inline-flex items-center gap-3 bg-primary text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-          >
-            <Sparkles size={18} />
-            Personnaliser avec mon vrai CV
-            <ArrowRight size={18} />
-          </button>
-          <p className="text-slate-400 text-xs font-medium mt-3">
-            Données de démonstration — vos vraies informations seront utilisées après déblocage
-          </p>
-        </div> */}
-
-        {/* CTA removed - button now lives in Results header */}
       </div>
     </div>
   );
-}
+}
