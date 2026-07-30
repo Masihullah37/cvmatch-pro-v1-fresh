@@ -4,7 +4,7 @@ import { Lock, Download, CreditCard, Check, ShieldCheck, Zap, Loader2 } from 'lu
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { toast } from 'sonner';
-import { createCheckoutSession } from '@/app/actions/stripe';
+// import { createCheckoutSession } from '@/app/actions/stripe';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import ActivePlanModal from '../home/ActivePlanModal';
@@ -45,6 +45,58 @@ export default function PaywallModal({
 
   if (!isOpen) return null;
 
+  // const handleCheckout = async (type: 'one-time' | 'subscription') => {
+  //   if (!userId) {
+  //     router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
+  //     return;
+  //   }
+
+  //   setLoading(type);
+  //   try {
+  //     const path = window.location.href;
+  //     if (typeof window !== "undefined") {
+  //       sessionStorage.setItem(
+  //         "cvmatch_checkout_return",
+  //         JSON.stringify({
+  //           analysisId,
+  //           templateNumber: templateNumber ?? null,
+  //           templateId: templateId ?? null,
+  //           mobileView: mobileView ?? null,
+  //           path,
+  //         })
+  //       );
+  //     }
+  //     const checkoutUrl = await createCheckoutSession(type, analysisId, locale, templateNumber, path);
+  //     window.location.href = checkoutUrl;
+  //     // } catch (error: any) {
+  //     //   console.error("Checkout failed", error);
+  //     //   if (error.message.includes("déjà un plan actif")) {
+  //     //     setShowActiveModal(true);
+  //     //   } else {
+  //     //     toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
+  //     //   }
+  //     // } 
+  //   } catch (error: any) {
+  //     console.error("Checkout failed", error);
+  //     const msg = error?.message || "";
+  //     if (msg.includes("déjà un plan actif")) {
+  //       setShowActiveModal(true);
+  //     } else if (
+  //       msg === "SESSION_EXPIRED" ||
+  //       msg.includes("SESSION_EXPIRED") ||
+  //       msg.includes("Unauthorized") ||
+  //       msg.includes("User not found")
+  //     ) {
+  //       router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
+  //     } else {
+  //       toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
+  //     }
+  //   }
+  //   finally {
+  //     setLoading(null);
+  //   }
+  // };
+
   const handleCheckout = async (type: 'one-time' | 'subscription') => {
     if (!userId) {
       router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
@@ -66,37 +118,50 @@ export default function PaywallModal({
           })
         );
       }
-      const checkoutUrl = await createCheckoutSession(type, analysisId, locale, templateNumber, path);
-      window.location.href = checkoutUrl;
-      // } catch (error: any) {
-      //   console.error("Checkout failed", error);
-      //   if (error.message.includes("déjà un plan actif")) {
-      //     setShowActiveModal(true);
-      //   } else {
-      //     toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
-      //   }
-      // } 
+
+      const endpoint =
+        type === "one-time"
+          ? "/api/stripe/create-checkout"
+          : "/api/stripe/create-subscription";
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analysisId,
+          locale,
+          returnPath: path,
+          templateNumber: templateNumber ?? undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const msg = data?.error || "";
+        if (msg.includes("déjà un plan actif")) {
+          setShowActiveModal(true);
+        } else if (
+          msg === "SESSION_EXPIRED" ||
+          msg.includes("SESSION_EXPIRED") ||
+          msg.includes("Unauthorized") ||
+          msg.includes("User not found")
+        ) {
+          router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
+        } else {
+          toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
+        }
+        return;
+      }
+
+      window.location.href = data.url;
     } catch (error: any) {
       console.error("Checkout failed", error);
-      const msg = error?.message || "";
-      if (msg.includes("déjà un plan actif")) {
-        setShowActiveModal(true);
-      } else if (
-        msg === "SESSION_EXPIRED" ||
-        msg.includes("SESSION_EXPIRED") ||
-        msg.includes("Unauthorized") ||
-        msg.includes("User not found")
-      ) {
-        router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
-      } else {
-        toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
-      }
-    }
-    finally {
+      toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
+    } finally {
       setLoading(null);
     }
   };
-
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-white rounded-[3rem] max-w-[900px] w-full max-h-[95vh] overflow-y-auto custom-scrollbar shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] relative border border-slate-100">

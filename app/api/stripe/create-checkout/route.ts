@@ -111,8 +111,12 @@ export async function POST(req: Request) {
     const { userId } = await auth();
 
     // Safety check: Don't allow session creation if not logged in
+    // if (!userId) {
+    //   return new NextResponse("Unauthorized", { status: 401 });
+    // }
+
     if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const { analysisId, locale = "fr", returnPath, templateData } = await req.json();
 
