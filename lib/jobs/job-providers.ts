@@ -40,9 +40,29 @@ export async function fetchFranceTravailJobs(query: string, location: string) {
             `https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
+        // const rawText = await res.text();
+        // if (!res.ok) {
+        //     console.error(`[job-providers] France Travail search returned ${res.status}: ${rawText.slice(0, 300)}`);
+        //     return [];
+        // }
+        // let data;
+        // try {
+        //     data = JSON.parse(rawText);
+        // } catch {
+        //     console.error(`[job-providers] France Travail search returned non-JSON: ${rawText.slice(0, 300)}`);
+        //     return [];
+        // }
+
         const rawText = await res.text();
         if (!res.ok) {
             console.error(`[job-providers] France Travail search returned ${res.status}: ${rawText.slice(0, 300)}`);
+            return [];
+        }
+        // An empty body (often a 204 No Content) means the search legitimately
+        // found zero matching jobs — this is a normal, valid outcome, not an
+        // error, so we return an empty array quietly instead of trying (and
+        // failing) to JSON.parse an empty string.
+        if (!rawText.trim()) {
             return [];
         }
         let data;
