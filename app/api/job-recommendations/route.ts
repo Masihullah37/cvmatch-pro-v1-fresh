@@ -70,6 +70,7 @@ export async function GET(req: Request) {
     const location = rawLocation.includes(",")
         ? rawLocation.split(",")[1]?.trim() || rawLocation
         : rawLocation;
+    console.log("[Jobs] Extracted location:", location);
 
     if (!jobTitle) {
         return NextResponse.json({ jobs: [], cached: false });
@@ -79,23 +80,129 @@ export async function GET(req: Request) {
 
     // 1. Primary search — job title plus a couple of top skills for a
     // sharper, more specific match than the title alone.
-    const primaryQuery = [jobTitle, ...skills.slice(0, 2)].join(" ");
+    // const primaryQuery = [jobTitle, ...skills.slice(0, 2)].join(" ");
+    const primaryQuery = jobTitle;
+    console.log("[Jobs] Primary query:", primaryQuery);
     let jobs = (await fetchJobRecommendations(primaryQuery, location))
         .map((j) => ({ ...j, matchType: "direct" as const }));
+    console.log("[Jobs] Primary results:", jobs.length);
 
     // 2. If the specific search came back thin, broaden to the candidate's
     // professional domain and search again, merging in any new results.
+    // const MIN_RESULTS_BEFORE_FALLBACK = 3;
+    // if (jobs.length < MIN_RESULTS_BEFORE_FALLBACK) {
+    //     const domain = detectDomain(optimizedData, optimizedData?._originalCvText || "");
+    //     const fallbackQuery = DOMAIN_FALLBACK_QUERIES[domain];
+    //     if (fallbackQuery) {
+    //         const fallbackJobs = (await fetchJobRecommendations(fallbackQuery, location))
+    //             .map((j) => ({ ...j, matchType: "related" as const }));
+    //         const existingUrls = new Set(jobs.map((j) => j.url));
+    //         jobs = [...jobs, ...fallbackJobs.filter((j) => !existingUrls.has(j.url))];
+    //     }
+    // }
+
     const MIN_RESULTS_BEFORE_FALLBACK = 3;
+
     if (jobs.length < MIN_RESULTS_BEFORE_FALLBACK) {
-        const domain = detectDomain(optimizedData, optimizedData?._originalCvText || "");
-        const fallbackQuery = DOMAIN_FALLBACK_QUERIES[domain];
-        if (fallbackQuery) {
-            const fallbackJobs = (await fetchJobRecommendations(fallbackQuery, location))
-                .map((j) => ({ ...j, matchType: "related" as const }));
-            const existingUrls = new Set(jobs.map((j) => j.url));
-            jobs = [...jobs, ...fallbackJobs.filter((j) => !existingUrls.has(j.url))];
+        const domain = detectDomain(
+            optimizedData,
+            optimizedData?._originalCvText || ""
+        );
+
+        const FALLBACK_SEARCHES: Record<string, string[]> = {
+            it_dev: [
+                "développeur",
+                "informatique",
+                "IT",
+            ],
+
+            finance: [
+                "comptable",
+                "finance",
+                "gestion",
+            ],
+
+            healthcare: [
+                "infirmier",
+                "santé",
+                "médical",
+            ],
+
+            administrative: [
+                "assistant administratif",
+                "administratif",
+                "bureau",
+            ],
+
+            trades: [
+                "technicien",
+                "maintenance",
+                "ouvrier",
+            ],
+
+            legal: [
+                "juriste",
+                "droit",
+                "juridique",
+            ],
+
+            engineering: [
+                "ingénieur",
+                "bureau d'études",
+                "industrie",
+            ],
+
+            education: [
+                "enseignant",
+                "formateur",
+                "éducation",
+            ],
+
+            business: [
+                "commercial",
+                "vente",
+                "business",
+            ],
+
+            services: [
+                "service client",
+                "relation client",
+                "accueil",
+            ],
+
+            general: [
+                "emploi",
+            ],
+        };
+
+        const fallbackQueries =
+            FALLBACK_SEARCHES[domain] ?? ["emploi"];
+
+        const existingUrls = new Set(jobs.map((j) => j.url));
+
+        for (const fallbackQuery of fallbackQueries) {
+            // Stop if we already have enough jobs.
+            if (jobs.length >= 20) break;
+
+            console.log("[Jobs] Trying fallback query:", fallbackQuery);
+
+            const fallbackJobs = (
+                await fetchJobRecommendations(fallbackQuery, location)
+            ).map((j) => ({
+                ...j,
+                matchType: "related" as const,
+            }));
+
+            for (const job of fallbackJobs) {
+                if (!existingUrls.has(job.url)) {
+                    existingUrls.add(job.url);
+                    jobs.push(job);
+                }
+            }
         }
     }
+
+
 
     jobs = jobs.slice(0, 20);
 
