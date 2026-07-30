@@ -216,16 +216,6 @@ export default async function TemplatesPage({
 
       {/* Grid */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
-        {/* <TemplateGrid
-          templates={safeTemplates}
-          isPaid={isPaid}
-          userCredits={userCredits}
-          isExpired={isExpired}
-          analysisId={analysisId}
-          analysisData={analysis}
-          initialTemplate={initialTemplate}
-          plan={plan}
-        /> */}
 
         <TemplateGrid
           templates={safeTemplates}

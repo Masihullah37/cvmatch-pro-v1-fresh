@@ -3,13 +3,6 @@
 import { Briefcase, Info } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-// interface JobInputPanelProps {
-//   jobTitle: string;
-//   setJobTitle: (val: string) => void;
-//   jobDescription: string;
-//   setJobDescription: (val: string) => void;
-// }
-
 interface JobInputPanelProps {
   jobTitle: string;
   setJobTitle: (val: string) => void;

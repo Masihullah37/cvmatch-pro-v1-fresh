@@ -17,18 +17,6 @@ export default function HeroUploadSection() {
   const { userId } = useAuth();
   const [prevUserId, setPrevUserId] = useState<string | null | undefined>(userId);
 
-  // useEffect(() => {
-  //   // Reset form states if user logs out
-  //   if (prevUserId && !userId) {
-  //     setCvFile(null);
-  //     setCvUrl('');
-  //     setJobTitle('');
-  //     setJobDescription('');
-  //     setProfileDescription('');
-  //   }
-  //   setPrevUserId(userId);
-  // }, [userId, prevUserId]);
-
   useEffect(() => {
     // Reset form states if user logs out
     if (prevUserId && !userId) {

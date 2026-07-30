@@ -280,28 +280,6 @@ export async function POST(req: Request) {
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
 
-    // // ✅ SHRINK TO FIT & FILL WIDTH LOGIC
-    // await page.evaluate(() => {
-    //   const container = document.getElementById("cv-ready");
-    //   if (!container) return;
-
-    //   const A4_HEIGHT_PX = 1122; // A4 height at 96dpi
-    //   const contentHeight = container.offsetHeight || container.scrollHeight;
-
-    //   if (contentHeight > A4_HEIGHT_PX) {
-    //     const scale = (A4_HEIGHT_PX - 1) / contentHeight;
-    //     // Scale vertically and horizontally
-    //     container.style.transform = `scale(${scale})`;
-    //     container.style.transformOrigin = "top left";
-    //     // CRITICAL: Expand the container width before scaling
-    //     // so that after scaling it equals exactly 100% of the page width
-    //     container.style.width = 100 / scale + "%";
-    //   } else {
-    //     container.style.width = "100%";
-    //   }
-    // });
-
-
     await page.evaluate(() => {
       const container = document.getElementById("cv-ready");
       if (!container) return;

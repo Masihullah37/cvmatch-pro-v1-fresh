@@ -189,24 +189,6 @@ const DOMAIN_SIGNALS: Record<Domain, string[]> = {
   general: [],
 };
 
-// When an exact job-title search returns too few results, fall back to
-// a broader, domain-level search using these related role titles — e.g.
-// a full-stack developer with no exact match sees Cloud/DevOps/Network
-// roles instead of nothing.
-// export const DOMAIN_FALLBACK_QUERIES: Record<Domain, string> = {
-//   it_dev: "développeur OR ingénieur logiciel OR devops OR cloud OR administrateur réseau OR support informatique",
-//   finance: "comptable OR contrôleur de gestion OR analyste financier OR audit",
-//   healthcare: "infirmier OR aide-soignant OR personnel médical OR santé",
-//   administrative: "assistant administratif OR ressources humaines OR RH OR gestion de projet OR coordination",
-//   trades: "électricien OR plombier OR technicien OR chauffagiste OR ouvrier du bâtiment",
-//   legal: "juriste OR assistant juridique OR conformité",
-//   engineering: "ingénieur OR bureau d'études OR technicien industriel",
-//   education: "enseignant OR formateur OR éducation",
-//   business: "commercial OR vente OR business developer OR chargé de clientèle",
-//   services: "service client OR accueil OR hôtellerie OR restauration",
-//   general: "",
-// };
-
 export const DOMAIN_FALLBACK_QUERIES: Record<Domain, string> = {
   it_dev: "développeur",
   finance: "comptable",
@@ -234,15 +216,6 @@ export function detectDomain(existingCV: any, rawCvText?: string): Domain {
   ]
     .join(" ")
     .toLowerCase();
-
-  // const scores: Record<Domain, number> = {
-  //   it_dev: 0,
-  //   finance: 0,
-  //   healthcare: 0,
-  //   administrative: 0,
-  //   trades: 0,
-  //   general: 0,
-  // };
 
   const scores: Record<Domain, number> = {
     it_dev: 0,
