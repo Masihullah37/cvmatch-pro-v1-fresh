@@ -1,8 +1,3 @@
-// 
-
-
-
-
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { auth, currentUser } from "@clerk/nextjs/server";
@@ -17,86 +12,86 @@ const resend = new Resend(resendApiKey);
 
 // Rate limit: 5 requests per IP per hour
 const ratelimit = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(5, "1 h"),
-    analytics: false,
+  redis,
+  limiter: Ratelimit.slidingWindow(5, "1 h"),
+  analytics: false,
 });
 
 export async function POST(req: NextRequest) {
-    try {
-        // ── Rate limiting ─────────────────────────────────────
-        const ip =
-            req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-            req.headers.get("x-real-ip") ||
-            "anonymous";
+  try {
+    // ── Rate limiting ─────────────────────────────────────
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "anonymous";
 
-        const { success: rateLimitOk } = await ratelimit.limit(`contact:${ip}`);
-        if (!rateLimitOk) {
-            return NextResponse.json(
-                { error: "Trop de demandes. Réessayez dans une heure." },
-                { status: 429 }
-            );
-        }
+    const { success: rateLimitOk } = await ratelimit.limit(`contact:${ip}`);
+    if (!rateLimitOk) {
+      return NextResponse.json(
+        { error: "Trop de demandes. Réessayez dans une heure." },
+        { status: 429 }
+      );
+    }
 
-        // ── Parse body ────────────────────────────────────────
-        const body = await req.json();
-        const { name, email, subject, message, captchaToken, currentUrl } = body;
+    // ── Parse body ────────────────────────────────────────
+    const body = await req.json();
+    const { name, email, subject, message, captchaToken, currentUrl } = body;
 
-        // ── Server-side validation ────────────────────────────
-        if (!name || name.trim().length < 2 || name.trim().length > 100) {
-            return NextResponse.json({ error: "Nom invalide." }, { status: 400 });
-        }
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            return NextResponse.json({ error: "Email invalide." }, { status: 400 });
-        }
-        if (!subject || subject.trim().length < 3 || subject.trim().length > 150) {
-            return NextResponse.json({ error: "Sujet invalide." }, { status: 400 });
-        }
-        if (!message || message.trim().length < 10 || message.trim().length > 3000) {
-            return NextResponse.json(
-                { error: "Message trop court ou trop long (10–3000 caractères)." },
-                { status: 400 }
-            );
-        }
-        if (!captchaToken) {
-            return NextResponse.json({ error: "CAPTCHA requis." }, { status: 400 });
-        }
+    // ── Server-side validation ────────────────────────────
+    if (!name || name.trim().length < 2 || name.trim().length > 100) {
+      return NextResponse.json({ error: "Nom invalide." }, { status: 400 });
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "Email invalide." }, { status: 400 });
+    }
+    if (!subject || subject.trim().length < 3 || subject.trim().length > 150) {
+      return NextResponse.json({ error: "Sujet invalide." }, { status: 400 });
+    }
+    if (!message || message.trim().length < 10 || message.trim().length > 3000) {
+      return NextResponse.json(
+        { error: "Message trop court ou trop long (10–3000 caractères)." },
+        { status: 400 }
+      );
+    }
+    if (!captchaToken) {
+      return NextResponse.json({ error: "CAPTCHA requis." }, { status: 400 });
+    }
 
-        // ── Verify hCaptcha ───────────────────────────────────
-        const captchaVerify = await fetch("https://api.hcaptcha.com/siteverify", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({
-                secret: process.env.HCAPTCHA_SECRET_KEY || "",
-                response: captchaToken,
-                remoteip: ip,
-            }),
-        });
-        const captchaResult = await captchaVerify.json();
-        if (!captchaResult.success) {
-            return NextResponse.json(
-                { error: "CAPTCHA invalide. Réessayez." },
-                { status: 400 }
-            );
-        }
+    // ── Verify hCaptcha ───────────────────────────────────
+    const captchaVerify = await fetch("https://api.hcaptcha.com/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        secret: process.env.HCAPTCHA_SECRET_KEY || "",
+        response: captchaToken,
+        remoteip: ip,
+      }),
+    });
+    const captchaResult = await captchaVerify.json();
+    if (!captchaResult.success) {
+      return NextResponse.json(
+        { error: "CAPTCHA invalide. Réessayez." },
+        { status: 400 }
+      );
+    }
 
-        // ── Get user info if logged in ────────────────────────
-        const { userId: clerkId } = await auth();
-        let userSection = "";
+    // ── Get user info if logged in ────────────────────────
+    const { userId: clerkId } = await auth();
+    let userSection = "";
 
-        if (clerkId) {
-            const clerkUser = await currentUser();
-            const dbUser = await db.query.users.findFirst({
-                where: and(eq(users.clerkId, clerkId), isNull(users.deletedAt)),
-            });
+    if (clerkId) {
+      const clerkUser = await currentUser();
+      const dbUser = await db.query.users.findFirst({
+        where: and(eq(users.clerkId, clerkId), isNull(users.deletedAt)),
+      });
 
-            const plan = dbUser?.plan || "free";
-            const credits = dbUser?.credits ?? 0;
-            // const isPaid = plan !== "free" || credits > 0;
-            // The account is only paid if the plan name itself is not "free"
-            const isPaid = plan.toLowerCase() !== "free";
+      const plan = dbUser?.plan || "free";
+      const credits = dbUser?.credits ?? 0;
+      // const isPaid = plan !== "free" || credits > 0;
+      // The account is only paid if the plan name itself is not "free"
+      const isPaid = plan.toLowerCase() !== "free";
 
-            userSection = `
+      userSection = `
         <tr><td colspan="2" style="padding:12px 0 4px;font-weight:700;color:#059669;font-size:13px;border-top:1px solid #e2e8f0;">COMPTE UTILISATEUR</td></tr>
         <tr><td style="padding:4px 0;color:#64748b;font-size:13px;width:160px;">Authentification</td><td style="padding:4px 0;font-size:13px;color:#1e293b;font-weight:600;">✅ Connecté</td></tr>
         <tr><td style="padding:4px 0;color:#64748b;font-size:13px;">Clerk ID</td><td style="padding:4px 0;font-size:13px;color:#1e293b;font-family:monospace;">${clerkId}</td></tr>
@@ -106,24 +101,24 @@ export async function POST(req: NextRequest) {
         <tr><td style="padding:4px 0;color:#64748b;font-size:13px;">Crédits restants</td><td style="padding:4px 0;font-size:13px;color:#1e293b;">${credits}</td></tr>
         <tr><td style="padding:4px 0;color:#64748b;font-size:13px;">Type de compte</td><td style="padding:4px 0;font-size:13px;color:#1e293b;">${isPaid ? "Payant" : "Gratuit"}</td></tr>
       `;
-        } else {
-            userSection = `
+    } else {
+      userSection = `
         <tr><td colspan="2" style="padding:12px 0 4px;font-weight:700;color:#64748b;font-size:13px;border-top:1px solid #e2e8f0;">COMPTE UTILISATEUR</td></tr>
         <tr><td style="padding:4px 0;color:#64748b;font-size:13px;width:160px;">Authentification</td><td style="padding:4px 0;font-size:13px;color:#1e293b;">👤 Visiteur anonyme</td></tr>
         <tr><td style="padding:4px 0;color:#64748b;font-size:13px;">Clerk ID</td><td style="padding:4px 0;font-size:13px;color:#94a3b8;">N/A</td></tr>
         <tr><td style="padding:4px 0;color:#64748b;font-size:13px;">Plan</td><td style="padding:4px 0;font-size:13px;color:#94a3b8;">N/A</td></tr>
         <tr><td style="padding:4px 0;color:#64748b;font-size:13px;">Crédits</td><td style="padding:4px 0;font-size:13px;color:#94a3b8;">N/A</td></tr>
       `;
-        }
+    }
 
-        // ── Build email HTML ──────────────────────────────────
-        const now = new Date().toLocaleString("fr-FR", {
-            timeZone: "Europe/Paris",
-            dateStyle: "full",
-            timeStyle: "short",
-        });
+    // ── Build email HTML ──────────────────────────────────
+    const now = new Date().toLocaleString("fr-FR", {
+      timeZone: "Europe/Paris",
+      dateStyle: "full",
+      timeStyle: "short",
+    });
 
-        const emailHtml = `
+    const emailHtml = `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -174,65 +169,65 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`;
 
-        // // ── Dynamic Environment Config ────────────────────────
-        // const isDevelopment = process.env.NODE_ENV === "development";
+    // // ── Dynamic Environment Config ────────────────────────
+    // const isDevelopment = process.env.NODE_ENV === "development";
 
-        // // In dev phase, Resend requires 'onboarding@resend.dev'
-        // const fromEmail = isDevelopment
-        //     ? "OuiCV Contact <onboarding@resend.dev>"
-        //     : `OuiCV Contact <${process.env.CONTACT_EMAIL || "contact@ouicv.fr"}>`;
+    // // In dev phase, Resend requires 'onboarding@resend.dev'
+    // const fromEmail = isDevelopment
+    //     ? "OuiCV Contact <onboarding@resend.dev>"
+    //     : `OuiCV Contact <${process.env.CONTACT_EMAIL || "contact@ouicv.fr"}>`;
 
-        // // Destination target email setup
-        // const toEmail = process.env.CONTACT_EMAIL || "contact@ouicv.fr";
+    // // Destination target email setup
+    // const toEmail = process.env.CONTACT_EMAIL || "contact@ouicv.fr";
 
-        // // ADD THIS LINE RIGHT HERE BEFORE SENDING:
-        // const recipients = isDevelopment ? [toEmail, toEmail] : [toEmail, email];
+    // // ADD THIS LINE RIGHT HERE BEFORE SENDING:
+    // const recipients = isDevelopment ? [toEmail, toEmail] : [toEmail, email];
 
-        // // ── Send email via Resend ─────────────────────────────
-        // const { error: sendError } = await resend.emails.send({
-        //     from: fromEmail,
-        //     to: recipients, // <-- This will now compile perfectly
-        //     replyTo: email,
-        //     subject: `[OuiCV Contact] ${subject}`,
-        //     html: emailHtml,
-        // });
+    // // ── Send email via Resend ─────────────────────────────
+    // const { error: sendError } = await resend.emails.send({
+    //     from: fromEmail,
+    //     to: recipients, // <-- This will now compile perfectly
+    //     replyTo: email,
+    //     subject: `[OuiCV Contact] ${subject}`,
+    //     html: emailHtml,
+    // });
 
-        // ── Dynamic Environment Config ────────────────────────
-        // This pulls the sender from your environment variables, falling back to sandbox if empty
-        const fromEmail = process.env.RESEND_FROM_EMAIL || "OuiCV Contact <onboarding@resend.dev>";
+    // ── Dynamic Environment Config ────────────────────────
+    // This pulls the sender from your environment variables, falling back to sandbox if empty
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "OuiCV Contact <onboarding@resend.dev>";
 
-        // Destination target email setup (Pulling your verified Resend account sign up email)
-        const toEmail = process.env.CONTACT_EMAIL || "p90156705@gmail.com";
+    // Destination target email setup (Pulling your verified Resend account sign up email)
+    const toEmail = process.env.CONTACT_EMAIL || "p90156705@gmail.com";
 
-        // Determine if we are running in full production mode with a custom verified domain
-        const isRealProduction = !fromEmail.includes("onboarding@resend.dev");
+    // Determine if we are running in full production mode with a custom verified domain
+    const isRealProduction = !fromEmail.includes("onboarding@resend.dev");
 
-        // Sandbox only allows sending to yourself. Production sends a copy to both you and the user!
-        const recipients = isRealProduction ? [toEmail, email] : [toEmail];
+    // Sandbox only allows sending to yourself. Production sends a copy to both you and the user!
+    const recipients = isRealProduction ? [toEmail, email] : [toEmail];
 
-        // ── Send email via Resend ─────────────────────────────
-        const { error: sendError } = await resend.emails.send({
-            from: fromEmail,
-            to: recipients,
-            replyTo: email,
-            subject: `[OuiCV Contact] ${subject}`,
-            html: emailHtml,
-        });
+    // ── Send email via Resend ─────────────────────────────
+    const { error: sendError } = await resend.emails.send({
+      from: fromEmail,
+      to: recipients,
+      replyTo: email,
+      subject: `[OuiCV Contact] ${subject}`,
+      html: emailHtml,
+    });
 
-        if (sendError) {
-            console.error("Resend error:", sendError);
-            return NextResponse.json(
-                { error: "Erreur lors de l'envoi. Réessayez plus tard." },
-                { status: 500 }
-            );
-        }
-
-        return NextResponse.json({ success: true });
-    } catch (err: any) {
-        console.error("Contact API error:", err);
-        return NextResponse.json(
-            { error: "Une erreur est survenue." },
-            { status: 500 }
-        );
+    if (sendError) {
+      console.error("Resend error:", sendError);
+      return NextResponse.json(
+        { error: "Erreur lors de l'envoi. Réessayez plus tard." },
+        { status: 500 }
+      );
     }
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("Contact API error:", err);
+    return NextResponse.json(
+      { error: "Une erreur est survenue." },
+      { status: 500 }
+    );
+  }
 }

@@ -420,14 +420,6 @@ export const CVRenderer = ({
     configs: Record<string, { headerClass: string; itemClass: string; layout?: string }>;
   }) => {
     const order: string[] = data.sectionOrder || sidebarKeys;
-    // const sorted = [...sidebarKeys].sort((a: string, b: string) => {
-    //   const ai = order.indexOf(a), bi = order.indexOf(b);
-    //   if (ai === -1 && bi === -1) return 0;
-    //   if (ai === -1) return 1;
-    //   if (bi === -1) return -1;
-    //   return ai - bi;
-    // });
-
     const sorted = [...sidebarKeys].sort((a: string, b: string) => {
       const ai = order.indexOf(a), bi = order.indexOf(b);
       if (ai === -1 && bi === -1) return 0;

@@ -15,23 +15,6 @@ export async function resetAnalysisRateLimitsForUser(
 
   try {
     // 1. Resolve keys to delete first (Fast)
-    // const baseKeys = [
-    //   `ats_daily_paid_${clerkUserId}`,
-    //   `ats_daily_free_${clerkUserId}`,
-    //   `ai_rewrite_pro_${clerkUserId}`,
-    //   `ai_rewrite_trial_${clerkUserId}`,
-    // ];
-
-    // const libPrefixes = [
-    //   'ats_daily_paid',
-    //   'ats_daily_free',
-    //   'pdf_hourly',
-    //   'pdf_daily',
-    //   'cvboost_paid',
-    //   'cvboost_pdf',
-    //   'ai_rewrite_pro',
-    //   'ai_rewrite_trial'
-    // ];
 
     const baseKeys = [
       `ats_daily_paid_${clerkUserId}`,

@@ -104,15 +104,6 @@ export async function POST(req: Request) {
       "";
 
     try {
-      // optimizedContent = await generateOptimizedCV(
-      //   "",                     // cvText no longer needed (compact summary built internally)
-      //   analysis.jobDescription || "",
-      //   analysisResult,
-      //   undefined,
-      //   existingStructuredCV
-      // );
-
-
 
       // Execute the optimized AI call with clean, defined arguments
       optimizedContent = await generateOptimizedCV(

@@ -45,58 +45,6 @@ export default function PaywallModal({
 
   if (!isOpen) return null;
 
-  // const handleCheckout = async (type: 'one-time' | 'subscription') => {
-  //   if (!userId) {
-  //     router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
-  //     return;
-  //   }
-
-  //   setLoading(type);
-  //   try {
-  //     const path = window.location.href;
-  //     if (typeof window !== "undefined") {
-  //       sessionStorage.setItem(
-  //         "cvmatch_checkout_return",
-  //         JSON.stringify({
-  //           analysisId,
-  //           templateNumber: templateNumber ?? null,
-  //           templateId: templateId ?? null,
-  //           mobileView: mobileView ?? null,
-  //           path,
-  //         })
-  //       );
-  //     }
-  //     const checkoutUrl = await createCheckoutSession(type, analysisId, locale, templateNumber, path);
-  //     window.location.href = checkoutUrl;
-  //     // } catch (error: any) {
-  //     //   console.error("Checkout failed", error);
-  //     //   if (error.message.includes("déjà un plan actif")) {
-  //     //     setShowActiveModal(true);
-  //     //   } else {
-  //     //     toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
-  //     //   }
-  //     // } 
-  //   } catch (error: any) {
-  //     console.error("Checkout failed", error);
-  //     const msg = error?.message || "";
-  //     if (msg.includes("déjà un plan actif")) {
-  //       setShowActiveModal(true);
-  //     } else if (
-  //       msg === "SESSION_EXPIRED" ||
-  //       msg.includes("SESSION_EXPIRED") ||
-  //       msg.includes("Unauthorized") ||
-  //       msg.includes("User not found")
-  //     ) {
-  //       router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
-  //     } else {
-  //       toast.error("Une erreur est survenue lors de la redirection vers le paiement.");
-  //     }
-  //   }
-  //   finally {
-  //     setLoading(null);
-  //   }
-  // };
-
   const handleCheckout = async (type: 'one-time' | 'subscription') => {
     if (!userId) {
       router.push(`/${locale}/sign-in?redirectTo=${encodeURIComponent(window.location.href)}`);
