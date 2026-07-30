@@ -37,7 +37,11 @@ export async function fetchFranceTravailJobs(query: string, location: string) {
         console.log("[France Travail] Token received.");
         const searchKeywords = location ? `${query} ${location}` : query;
         console.log("[France Travail] Search keywords:", searchKeywords);
-        const params = new URLSearchParams({ motsCles: searchKeywords });
+        const params = new URLSearchParams({ motsCles: searchKeywords, range: "0-19", });
+        console.log(
+            "[France Travail] URL:",
+            `https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`
+        );
         const res = await fetch(
             `https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`,
             { headers: { Authorization: `Bearer ${token}` } }
