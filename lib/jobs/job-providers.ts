@@ -34,12 +34,15 @@ async function getFranceTravailToken(): Promise<string> {
 export async function fetchFranceTravailJobs(query: string, location: string) {
     try {
         const token = await getFranceTravailToken();
+        console.log("[France Travail] Token received.");
         const searchKeywords = location ? `${query} ${location}` : query;
+        console.log("[France Travail] Search keywords:", searchKeywords);
         const params = new URLSearchParams({ motsCles: searchKeywords });
         const res = await fetch(
             `https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
+        console.log("[France Travail] HTTP status:", res.status);
         // const rawText = await res.text();
         // if (!res.ok) {
         //     console.error(`[job-providers] France Travail search returned ${res.status}: ${rawText.slice(0, 300)}`);
@@ -54,6 +57,8 @@ export async function fetchFranceTravailJobs(query: string, location: string) {
         // }
 
         const rawText = await res.text();
+        console.log("[France Travail] Body:");
+        console.log(rawText.slice(0, 500));
         if (!res.ok) {
             console.error(`[job-providers] France Travail search returned ${res.status}: ${rawText.slice(0, 300)}`);
             return [];
@@ -72,6 +77,13 @@ export async function fetchFranceTravailJobs(query: string, location: string) {
             console.error(`[job-providers] France Travail search returned non-JSON: ${rawText.slice(0, 300)}`);
             return [];
         }
+        if (data.code) {
+            console.error("[France Travail] API error:", data);
+            return [];
+        }
+
+        console.log("[France Travail] Parsed response:");
+        console.log(data);
         console.log(`[job-providers] France Travail returned ${(data.resultats || []).length} raw results.`);
         return (data.resultats || []).slice(0, 10).map((job: any) => ({
             source: "france_travail" as const,
