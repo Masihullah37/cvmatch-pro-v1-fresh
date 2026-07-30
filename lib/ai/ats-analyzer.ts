@@ -193,17 +193,31 @@ const DOMAIN_SIGNALS: Record<Domain, string[]> = {
 // a broader, domain-level search using these related role titles — e.g.
 // a full-stack developer with no exact match sees Cloud/DevOps/Network
 // roles instead of nothing.
+// export const DOMAIN_FALLBACK_QUERIES: Record<Domain, string> = {
+//   it_dev: "développeur OR ingénieur logiciel OR devops OR cloud OR administrateur réseau OR support informatique",
+//   finance: "comptable OR contrôleur de gestion OR analyste financier OR audit",
+//   healthcare: "infirmier OR aide-soignant OR personnel médical OR santé",
+//   administrative: "assistant administratif OR ressources humaines OR RH OR gestion de projet OR coordination",
+//   trades: "électricien OR plombier OR technicien OR chauffagiste OR ouvrier du bâtiment",
+//   legal: "juriste OR assistant juridique OR conformité",
+//   engineering: "ingénieur OR bureau d'études OR technicien industriel",
+//   education: "enseignant OR formateur OR éducation",
+//   business: "commercial OR vente OR business developer OR chargé de clientèle",
+//   services: "service client OR accueil OR hôtellerie OR restauration",
+//   general: "",
+// };
+
 export const DOMAIN_FALLBACK_QUERIES: Record<Domain, string> = {
-  it_dev: "développeur OR ingénieur logiciel OR devops OR cloud OR administrateur réseau OR support informatique",
-  finance: "comptable OR contrôleur de gestion OR analyste financier OR audit",
-  healthcare: "infirmier OR aide-soignant OR personnel médical OR santé",
-  administrative: "assistant administratif OR ressources humaines OR RH OR gestion de projet OR coordination",
-  trades: "électricien OR plombier OR technicien OR chauffagiste OR ouvrier du bâtiment",
-  legal: "juriste OR assistant juridique OR conformité",
-  engineering: "ingénieur OR bureau d'études OR technicien industriel",
-  education: "enseignant OR formateur OR éducation",
-  business: "commercial OR vente OR business developer OR chargé de clientèle",
-  services: "service client OR accueil OR hôtellerie OR restauration",
+  it_dev: "développeur",
+  finance: "comptable",
+  healthcare: "infirmier",
+  administrative: "assistant administratif",
+  trades: "technicien",
+  legal: "juriste",
+  engineering: "ingénieur",
+  education: "enseignant",
+  business: "commercial",
+  services: "service client",
   general: "",
 };
 

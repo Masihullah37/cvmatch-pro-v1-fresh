@@ -72,6 +72,7 @@ export async function fetchFranceTravailJobs(query: string, location: string) {
             console.error(`[job-providers] France Travail search returned non-JSON: ${rawText.slice(0, 300)}`);
             return [];
         }
+        console.log(`[job-providers] France Travail returned ${(data.resultats || []).length} raw results.`);
         return (data.resultats || []).slice(0, 10).map((job: any) => ({
             source: "france_travail" as const,
             title: job.intitule,
@@ -111,6 +112,7 @@ export async function fetchAdzunaJobs(query: string, location: string) {
             console.error(`[job-providers] Adzuna returned non-JSON: ${rawText.slice(0, 300)}`);
             return [];
         }
+        console.log(`[job-providers] Adzuna returned ${(data.results || []).length} raw results.`);
         return (data.results || []).map((job: any) => ({
             source: "adzuna" as const,
             title: job.title,
