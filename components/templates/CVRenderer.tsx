@@ -1303,55 +1303,6 @@ export const CVRenderer = ({
         </div>
       )}
 
-      {/* --- STYLE: VERTEX --- */}
-      {/* {style === "Vertex" && (
-        <div className="min-h-[297mm] font-sans bg-white">
-          <header className="bg-[#1e3a8a] text-white px-10 py-8 flex items-center gap-8 relative overflow-hidden">
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "12px 12px" }} />
-            {hasPhotoSlot && (
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/30 shrink-0 relative z-10">
-                <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
-              </div>
-            )}
-            <div className="relative z-10 flex-1">
-              <h1 className="text-4xl font-black tracking-tight">
-                <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
-              </h1>
-              <p className="text-lg font-medium opacity-90 mt-1">
-                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
-              </p>
-            </div>
-            <div className="relative z-10 text-right text-xs space-y-1 opacity-90 shrink-0">
-              <p><InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
-              <p><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
-            </div>
-          </header>
-          <div className="p-10 grid grid-cols-12 gap-10">
-            <div className="col-span-4 flex flex-col gap-8">
-              <section className="bg-slate-50 p-6 rounded-xl">
-                <SectionTitle sectionKey="summary" className="text-xs font-black uppercase text-[#1e3a8a] mb-3" />
-                <p className="text-xs leading-relaxed text-slate-600">
-                  <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
-                </p>
-              </section>
-              <DynamicSidebarSections
-                sidebarKeys={["languages", "skills"]}
-                configs={{
-                  languages: { headerClass: "text-xs font-black uppercase text-[#1e3a8a] mb-3", itemClass: "text-xs text-slate-600" },
-                  skills: { headerClass: "text-xs font-black uppercase text-[#1e3a8a] mb-3", itemClass: "text-xs text-slate-600 font-bold" },
-                }}
-              />
-            </div>
-            <div className="col-span-8">
-              <DynamicMainSections
-                headerClass="text-sm font-black uppercase text-[#1e3a8a] mb-6 border-b-2 border-blue-100 pb-2"
-                itemClass="text-sm text-slate-600 leading-relaxed"
-              />
-            </div>
-          </div>
-        </div> 
-      )} */}
-
 
       {/* --- STYLE: VERTEX --- */}
       {style === "Vertex" && (
