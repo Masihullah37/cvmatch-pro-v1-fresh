@@ -27,6 +27,7 @@ export const users = pgTable('users', {
   cookieConsentAt: timestamp('cookie_consent_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+  deletedEmailHash: varchar('deleted_email_hash', { length: 64 }),
   deletedAt: timestamp('deleted_at'), // Added for soft delete
 });
 

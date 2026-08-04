@@ -14,10 +14,12 @@ import {
   usageLogs,
 } from '@/lib/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
+import crypto from 'crypto';
 import { stripe } from '@/lib/stripe'; // 🌟 Optimized: Static import prevents runtime execution blocks
 
 export async function POST(req: Request) {
   console.log("========== CLERK WEBHOOK HIT ==========");
+
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
@@ -51,6 +53,7 @@ export async function POST(req: Request) {
 
   const { id } = evt.data;
   const eventType = evt.type;
+  console.log("[WEBHOOK] Event:", eventType);
 
   // ─── user.created ──────────────────────────────────────────────────────
   if (eventType === 'user.created') {
@@ -161,7 +164,10 @@ export async function POST(req: Request) {
 
       await Promise.all(dataCleanupPromises);
       console.log(`[CLERK_WEBHOOK] ✅ All associated data records cleaned/unlinked safely`);
-
+      const emailVerificationHash = crypto
+        .createHash('sha256')
+        .update(dbUser.email + (process.env.TRACKING_SALT || ''))
+        .digest('hex');
       // Final Step: Anonymization update execution
       await db.update(users)
         .set({
@@ -170,6 +176,7 @@ export async function POST(req: Request) {
           clerkId: null,
           email: `deleted_${dbUser.id}@deleted.ouicv`,
           name: 'Compte supprimé',
+          deletedEmailHash: emailVerificationHash,
           stripeCustomerId: null,
           stripeSubscriptionId: null,
           subscriptionStatus: null,
