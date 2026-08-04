@@ -153,13 +153,24 @@ export default async function DashboardPage({
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</span>
             </div>
-            <div className="relative z-10">
+            {/* <div className="relative z-10">
               <p className="text-3xl font-black text-white uppercase italic leading-tight">{planLabel}</p>
               <Link
                 href={dbUser?.plan === 'free' ? '/#pricing' : '/dashboard#manage-plan'}
                 className="text-primary text-xs font-black uppercase tracking-widest flex items-center gap-1.5 mt-2 hover:gap-2.5 transition-all"
               >
                 {dbUser?.plan === 'free' ? 'Passer en PRO' : 'Gérer mon plan'}
+                <ArrowRight size={12} />
+              </Link>
+            </div> */}
+
+            <div className="relative z-10">
+              <p className="text-3xl font-black text-white uppercase italic leading-tight">{planLabel}</p>
+              <Link
+                href={dbUser?.plan === 'monthly' ? '/dashboard#manage-plan' : '/#pricing'}
+                className="text-primary text-xs font-black uppercase tracking-widest flex items-center gap-1.5 mt-2 hover:gap-2.5 transition-all"
+              >
+                {dbUser?.plan === 'monthly' ? 'Gérer mon plan' : 'Passer en PRO'}
                 <ArrowRight size={12} />
               </Link>
             </div>

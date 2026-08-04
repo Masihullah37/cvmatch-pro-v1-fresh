@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { toast, Toaster } from 'sonner';
-import { 
-  Users, 
-  CreditCard, 
-  BarChart3, 
-  ShieldAlert, 
-  Gift, 
-  Trash2, 
+import {
+  Users,
+  CreditCard,
+  BarChart3,
+  ShieldAlert,
+  Gift,
+  Trash2,
   Calendar,
   Search,
   ArrowUpRight,
@@ -21,13 +21,13 @@ import {
 } from 'lucide-react';
 import OuiCVLoader from '@/components/common/OuiCVLoader';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  getAllUsers, 
-  updateUserCredits, 
-  toggleUserBlock, 
-  deleteUser, 
-  getAdminStats, 
-  getSiteSettings, 
+import {
+  getAllUsers,
+  updateUserCredits,
+  toggleUserBlock,
+  deleteUser,
+  getAdminStats,
+  getSiteSettings,
   updateSiteSettings,
   getAllPayments
 } from '@/lib/actions/admin';
@@ -86,8 +86,8 @@ export default function AdminDashboard() {
     }
   }
 
-  const filteredUsers = users.filter(u => 
-    u.email?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredUsers = users.filter(u =>
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -121,7 +121,7 @@ export default function AdminDashboard() {
 
   const handleRefund = async (stripePaymentIntentId: string) => {
     if (refundingId) return;
-    
+
     triggerConfirm(
       'Remboursement',
       'Voulez-vous vraiment rembourser cette transaction ? L\'accès Pro de l\'utilisateur sera réinitialisé.',
@@ -133,12 +133,12 @@ export default function AdminDashboard() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ stripePaymentIntentId })
           });
-          
+
           if (!res.ok) {
             const errorText = await res.text();
             throw new Error(errorText);
           }
-          
+
           toast.success("Remboursement effectué avec succès !");
           await loadData();
         } catch (err: any) {
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
           </div>
           <h2 className="text-2xl font-black text-slate-900">Accès Refusé</h2>
           <p className="text-slate-500 font-medium leading-relaxed">{error}</p>
-          <button 
+          <button
             onClick={() => loadData()}
             className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-4 rounded-2xl font-black transition-all shadow-lg active:scale-95"
           >
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
@@ -190,13 +190,13 @@ export default function AdminDashboard() {
             <p className="text-slate-500 font-medium mt-2 text-lg">Gérez vos utilisateurs et suivez les performances de OuiCV Pro.</p>
           </div>
           <div className="bg-white px-6 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 w-full md:w-auto">
-             <div className="flex -space-x-3">
-               {[1,2,3].map(i => <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200" />)}
-             </div>
-             <div>
-               <p className="text-xs font-black text-slate-400 uppercase tracking-widest">En ligne</p>
-               <p className="text-sm font-bold text-slate-900">{stats?.totalUsers || 0} Utilisateurs</p>
-             </div>
+            <div className="flex -space-x-3">
+              {[1, 2, 3].map(i => <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200" />)}
+            </div>
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">En ligne</p>
+              <p className="text-sm font-bold text-slate-900">{stats?.totalUsers || 0} Utilisateurs</p>
+            </div>
           </div>
         </div>
 
@@ -211,30 +211,30 @@ export default function AdminDashboard() {
         {/* Main Content */}
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
           <div className="flex flex-wrap border-b border-slate-100 p-2 gap-2">
-             <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={<Users size={18} />} label="Utilisateurs" />
-             <TabButton active={activeTab === 'transactions'} onClick={() => setActiveTab('transactions')} icon={<CreditCard size={18} />} label="Transactions" />
-             <TabButton active={activeTab === 'marketing'} onClick={() => setActiveTab('marketing')} icon={<Gift size={18} />} label="Marketing & Offres" />
+            <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={<Users size={18} />} label="Utilisateurs" />
+            <TabButton active={activeTab === 'transactions'} onClick={() => setActiveTab('transactions')} icon={<CreditCard size={18} />} label="Transactions" />
+            <TabButton active={activeTab === 'marketing'} onClick={() => setActiveTab('marketing')} icon={<Gift size={18} />} label="Marketing & Offres" />
           </div>
 
           <div className="p-4 md:p-8">
             {activeTab === 'users' && (
               <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
-                   <div className="relative flex-1 max-w-md">
-                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                     <input 
-                       className="w-full pl-12 pr-6 py-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 ring-emerald-500/20 transition-all font-medium"
-                       placeholder="Rechercher par nom ou email..."
-                       value={searchTerm}
-                       onChange={(e) => setSearchTerm(e.target.value)}
-                     />
-                   </div>
-                   <button 
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 ring-emerald-500/20 transition-all font-medium"
+                      placeholder="Rechercher par nom ou email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <button
                     onClick={() => setIsUserModalOpen(true)}
                     className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-8 py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
-                   >
-                     <UserPlus size={18} /> Ajouter Utilisateur
-                   </button>
+                  >
+                    <UserPlus size={18} /> Ajouter Utilisateur
+                  </button>
                 </div>
 
                 <div className="overflow-x-auto rounded-3xl border border-slate-100">
@@ -264,11 +264,10 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-6 py-6">
                             <div className="flex items-center gap-3">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                                user.plan === 'monthly' ? 'bg-purple-100 text-purple-700' : 
-                                user.plan === 'one_time' ? 'bg-blue-100 text-blue-700' : 
-                                'bg-slate-100 text-slate-500'
-                              }`}>
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${user.plan === 'monthly' ? 'bg-purple-100 text-purple-700' :
+                                  user.plan === 'one_time' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-slate-100 text-slate-500'
+                                }`}>
                                 {user.plan}
                               </span>
                               <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-black text-[11px]">
@@ -286,21 +285,21 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-6 py-6">
                             <div className="flex items-center justify-end gap-2">
-                              <ActionButton 
-                                onClick={() => { setTargetUser(user); setIsCreditModalOpen(true); }} 
-                                icon={<Gift size={16} />} 
+                              <ActionButton
+                                onClick={() => { setTargetUser(user); setIsCreditModalOpen(true); }}
+                                icon={<Gift size={16} />}
                                 tooltip="Offrir crédits"
                                 className="text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
                               />
-                              <ActionButton 
-                                onClick={() => handleToggleBlock(user.id, user.isBlocked)} 
-                                icon={user.isBlocked ? <Unlock size={16} /> : <Lock size={16} />} 
+                              <ActionButton
+                                onClick={() => handleToggleBlock(user.id, user.isBlocked)}
+                                icon={user.isBlocked ? <Unlock size={16} /> : <Lock size={16} />}
                                 tooltip={user.isBlocked ? "Débloquer" : "Bloquer"}
                                 className={user.isBlocked ? "text-amber-600 bg-amber-50 hover:bg-amber-100" : "text-slate-400 bg-slate-50 hover:bg-slate-100"}
                               />
-                              <ActionButton 
-                                onClick={() => handleDeleteUser(user.id)} 
-                                icon={<Trash2 size={16} />} 
+                              <ActionButton
+                                onClick={() => handleDeleteUser(user.id)}
+                                icon={<Trash2 size={16} />}
                                 tooltip="Supprimer"
                                 className="text-red-500 bg-red-50 hover:bg-red-100"
                               />
@@ -347,11 +346,10 @@ export default function AdminDashboard() {
                             {(payment.amount / 100).toFixed(2)} {payment.currency}
                           </td>
                           <td className="px-6 py-6">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                              payment.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 
-                              payment.status === 'refunded' ? 'bg-amber-100 text-amber-700' : 
-                              'bg-slate-100 text-slate-500'
-                            }`}>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${payment.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                                payment.status === 'refunded' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-slate-100 text-slate-500'
+                              }`}>
                               {payment.status}
                             </span>
                           </td>
@@ -391,65 +389,65 @@ export default function AdminDashboard() {
             {activeTab === 'marketing' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                   <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center">
-                          <Gift size={28} />
+                  <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center">
+                        <Gift size={28} />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-black text-slate-900">Promotion Actuelle</h3>
+                        <p className="text-slate-500 font-medium">Gérez l'offre flash pour les utilisateurs</p>
+                      </div>
+                    </div>
+
+                    <form className="space-y-6" onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.target as any;
+                      const offer = {
+                        discount: parseInt(form.discount.value),
+                        description: form.description.value,
+                        expiresAt: form.expires.value || null,
+                        isActive: form.isActive.checked
+                      };
+                      await updateSiteSettings(offer);
+                      loadData();
+                      toast.success("Offre mise à jour !");
+                    }}>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                          <span className="font-bold text-slate-700">Activer l'offre</span>
+                          <input name="isActive" type="checkbox" defaultChecked={settings?.activeOffer?.isActive} className="w-6 h-6 accent-emerald-600 cursor-pointer" />
                         </div>
                         <div>
-                          <h3 className="text-2xl font-black text-slate-900">Promotion Actuelle</h3>
-                          <p className="text-slate-500 font-medium">Gérez l'offre flash pour les utilisateurs</p>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Remise (%)</label>
+                          <input name="discount" type="number" defaultValue={settings?.activeOffer?.discount || 20} className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Description motivante</label>
+                          <textarea name="description" defaultValue={settings?.activeOffer?.description || "Boostez votre carrière dès aujourd'hui !"} className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold h-32" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Date d'expiration (optionnel)</label>
+                          <input name="expires" type="date" defaultValue={settings?.activeOffer?.expiresAt || ""} className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold" />
                         </div>
                       </div>
+                      <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl hover:bg-slate-800 transition-all active:scale-95">Mettre à jour l'offre</button>
+                    </form>
+                  </div>
 
-                      <form className="space-y-6" onSubmit={async (e) => {
-                        e.preventDefault();
-                        const form = e.target as any;
-                        const offer = {
-                          discount: parseInt(form.discount.value),
-                          description: form.description.value,
-                          expiresAt: form.expires.value || null,
-                          isActive: form.isActive.checked
-                        };
-                        await updateSiteSettings(offer);
-                        loadData();
-                        toast.success("Offre mise à jour !");
-                      }}>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                             <span className="font-bold text-slate-700">Activer l'offre</span>
-                             <input name="isActive" type="checkbox" defaultChecked={settings?.activeOffer?.isActive} className="w-6 h-6 accent-emerald-600 cursor-pointer" />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Remise (%)</label>
-                            <input name="discount" type="number" defaultValue={settings?.activeOffer?.discount || 20} className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold" />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Description motivante</label>
-                            <textarea name="description" defaultValue={settings?.activeOffer?.description || "Boostez votre carrière dès aujourd'hui !"} className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold h-32" />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Date d'expiration (optionnel)</label>
-                            <input name="expires" type="date" defaultValue={settings?.activeOffer?.expiresAt || ""} className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold" />
-                          </div>
-                        </div>
-                        <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl hover:bg-slate-800 transition-all active:scale-95">Mettre à jour l'offre</button>
-                      </form>
-                   </div>
-
-                   <div className="space-y-8">
-                      <StatCard 
-                        icon={<TrendingUp className="text-emerald-500" size={24} />} 
-                        label="Conversion" 
-                        value="12.4%" 
-                        subValue="+2.1% ce mois-ci" 
-                      />
-                      <div className="bg-emerald-600 p-10 rounded-[2.5rem] text-white space-y-4">
-                        <Sparkles size={32} className="opacity-50" />
-                        <h4 className="text-2xl font-bold">Conseil Marketing</h4>
-                        <p className="text-emerald-100 font-medium">Une remise de 30% pendant 48h génère statistiquement 3x plus de conversions qu'une remise permanente de 10%.</p>
-                      </div>
-                   </div>
+                  <div className="space-y-8">
+                    <StatCard
+                      icon={<TrendingUp className="text-emerald-500" size={24} />}
+                      label="Conversion"
+                      value="12.4%"
+                      subValue="+2.1% ce mois-ci"
+                    />
+                    <div className="bg-emerald-600 p-10 rounded-[2.5rem] text-white space-y-4">
+                      <Sparkles size={32} className="opacity-50" />
+                      <h4 className="text-2xl font-bold">Conseil Marketing</h4>
+                      <p className="text-emerald-100 font-medium">Une remise de 30% pendant 48h génère statistiquement 3x plus de conversions qu'une remise permanente de 10%.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -461,37 +459,37 @@ export default function AdminDashboard() {
       <AnimatePresence>
         {isConfirmModalOpen && confirmConfig && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
-             <motion.div 
-               initial={{ opacity: 0 }} exit={{ opacity: 0 }}
-               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
-               onClick={() => setIsConfirmModalOpen(false)} 
-             />
-             <motion.div 
-               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-               className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 space-y-8"
-             >
-                <div className={`w-16 h-16 rounded-3xl flex items-center justify-center ${confirmConfig.variant === 'danger' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600'}`}>
-                   {confirmConfig.variant === 'danger' ? <Trash2 size={32} /> : <ShieldAlert size={32} />}
-                </div>
-                <div>
-                   <h3 className="text-2xl font-black text-slate-900">{confirmConfig.title}</h3>
-                   <p className="text-slate-500 font-medium leading-relaxed mt-2">{confirmConfig.message}</p>
-                </div>
-                <div className="flex gap-4">
-                   <button 
-                    onClick={() => setIsConfirmModalOpen(false)}
-                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-4 rounded-2xl font-black transition-all active:scale-95"
-                   >
-                     Annuler
-                   </button>
-                   <button 
-                    onClick={() => { confirmConfig.onConfirm(); setIsConfirmModalOpen(false); }}
-                    className={`flex-1 py-4 rounded-2xl font-black text-white transition-all shadow-lg active:scale-95 ${confirmConfig.variant === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'}`}
-                   >
-                     Confirmer
-                   </button>
-                </div>
-             </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => setIsConfirmModalOpen(false)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 space-y-8"
+            >
+              <div className={`w-16 h-16 rounded-3xl flex items-center justify-center ${confirmConfig.variant === 'danger' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600'}`}>
+                {confirmConfig.variant === 'danger' ? <Trash2 size={32} /> : <ShieldAlert size={32} />}
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-slate-900">{confirmConfig.title}</h3>
+                <p className="text-slate-500 font-medium leading-relaxed mt-2">{confirmConfig.message}</p>
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setIsConfirmModalOpen(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-4 rounded-2xl font-black transition-all active:scale-95"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => { confirmConfig.onConfirm(); setIsConfirmModalOpen(false); }}
+                  className={`flex-1 py-4 rounded-2xl font-black text-white transition-all shadow-lg active:scale-95 ${confirmConfig.variant === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'}`}
+                >
+                  Confirmer
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
@@ -500,45 +498,45 @@ export default function AdminDashboard() {
       <AnimatePresence>
         {isCreditModalOpen && targetUser && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-             <motion.div 
-               initial={{ opacity: 0 }} exit={{ opacity: 0 }}
-               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
-               onClick={() => setIsCreditModalOpen(false)} 
-             />
-             <motion.div 
-               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-               className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 space-y-8"
-             >
-                <div className="flex justify-between items-start">
-                   <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center">
-                      <Gift size={32} />
-                   </div>
-                   <button onClick={() => setIsCreditModalOpen(false)} className="text-slate-400 hover:text-slate-600"><Search size={24} className="rotate-45" /></button>
+            <motion.div
+              initial={{ opacity: 0 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => setIsCreditModalOpen(false)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 space-y-8"
+            >
+              <div className="flex justify-between items-start">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center">
+                  <Gift size={32} />
                 </div>
-                <div>
-                   <h3 className="text-2xl font-black text-slate-900">Offrir des crédits</h3>
-                   <p className="text-slate-500 font-medium">À {targetUser.email}</p>
+                <button onClick={() => setIsCreditModalOpen(false)} className="text-slate-400 hover:text-slate-600"><Search size={24} className="rotate-45" /></button>
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-slate-900">Offrir des crédits</h3>
+                <p className="text-slate-500 font-medium">À {targetUser.email}</p>
+              </div>
+              <form className="space-y-6" onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.target as any;
+                await updateUserCredits(targetUser.id, parseInt(form.amount.value), parseInt(form.days.value));
+                setIsCreditModalOpen(false);
+                loadData();
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Nombre de crédits</label>
+                    <input name="amount" type="number" defaultValue="5" className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Validité (jours)</label>
+                    <input name="days" type="number" defaultValue="45" className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold" />
+                  </div>
                 </div>
-                <form className="space-y-6" onSubmit={async (e) => {
-                  e.preventDefault();
-                  const form = e.target as any;
-                  await updateUserCredits(targetUser.id, parseInt(form.amount.value), parseInt(form.days.value));
-                  setIsCreditModalOpen(false);
-                  loadData();
-                }}>
-                   <div className="space-y-4">
-                      <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Nombre de crédits</label>
-                        <input name="amount" type="number" defaultValue="5" className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Validité (jours)</label>
-                        <input name="days" type="number" defaultValue="45" className="w-full bg-slate-50 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-emerald-500/20 font-bold" />
-                      </div>
-                   </div>
-                   <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-4 rounded-2xl font-black shadow-xl shadow-emerald-600/20 transition-all active:scale-95">Confirmer l'envoi</button>
-                </form>
-             </motion.div>
+                <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-4 rounded-2xl font-black shadow-xl shadow-emerald-600/20 transition-all active:scale-95">Confirmer l'envoi</button>
+              </form>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
@@ -547,27 +545,27 @@ export default function AdminDashboard() {
       <AnimatePresence>
         {isUserModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-             <motion.div 
-               initial={{ opacity: 0 }} exit={{ opacity: 0 }}
-               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
-               onClick={() => setIsUserModalOpen(false)} 
-             />
-             <motion.div 
-               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-               className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 space-y-8"
-             >
-                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center">
-                   <UserPlus size={32} />
-                </div>
-                <div>
-                   <h3 className="text-2xl font-black text-slate-900">Ajouter un utilisateur</h3>
-                   <p className="text-slate-500 font-medium leading-relaxed">Invitez un nouvel utilisateur ou créez un compte manuellement via Clerk.</p>
-                </div>
-                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                   <p className="text-sm font-bold text-slate-600 text-center italic">"L'ajout direct sera bientôt intégré. Pour le moment, utilisez le tableau de bord Clerk pour inviter des utilisateurs."</p>
-                </div>
-                <button onClick={() => setIsUserModalOpen(false)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black transition-all">Fermer</button>
-             </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => setIsUserModalOpen(false)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 space-y-8"
+            >
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center">
+                <UserPlus size={32} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-slate-900">Ajouter un utilisateur</h3>
+                <p className="text-slate-500 font-medium leading-relaxed">Invitez un nouvel utilisateur ou créez un compte manuellement via Clerk.</p>
+              </div>
+              <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                <p className="text-sm font-bold text-slate-600 text-center italic">"L'ajout direct sera bientôt intégré. Pour le moment, utilisez le tableau de bord Clerk pour inviter des utilisateurs."</p>
+              </div>
+              <button onClick={() => setIsUserModalOpen(false)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black transition-all">Fermer</button>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
@@ -590,13 +588,12 @@ function StatCard({ icon, label, value, subValue }: any) {
 
 function TabButton({ active, onClick, icon, label }: any) {
   return (
-    <button 
+    <button
       onClick={onClick}
-      className={`flex items-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all ${
-        active 
-          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' 
+      className={`flex items-center gap-3 px-8 py-4 rounded-2xl text-sm font-black transition-all ${active
+          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
           : 'text-slate-400 hover:bg-slate-50'
-      }`}
+        }`}
     >
       {icon} {label}
     </button>
@@ -605,7 +602,7 @@ function TabButton({ active, onClick, icon, label }: any) {
 
 function ActionButton({ onClick, icon, tooltip, className }: any) {
   return (
-    <button 
+    <button
       onClick={onClick}
       title={tooltip}
       className={`p-3 rounded-xl transition-all hover:scale-110 active:scale-95 ${className.replace('hover:bg-emerald-100', 'hover:bg-emerald-700 active:bg-emerald-800 hover:text-white')}`}
