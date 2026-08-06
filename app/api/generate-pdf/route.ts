@@ -353,16 +353,12 @@
 //   }
 // }
 
-
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { users, cvTemplates, cvGenerations, cvAnalyses, userTemplateUnlocks } from "@/lib/db/schema";
 import { eq, and, sql, inArray } from "drizzle-orm";
-import puppeteer from "puppeteer";
-import React from "react";
 import { revalidatePath } from "next/cache";
-import CVRenderer from "@/components/templates/CVRenderer";
 import { pdfHourlyUserLimit, pdfDailyUserLimit, pdfIpLimit } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
 import crypto from "crypto";
@@ -497,7 +493,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Browser Launch
+    // 2. Browser Launch & Internal Loopback Page Load
     browser = await withRenderSlot(() => getSharedBrowser());
     page = await browser.newPage();
 
@@ -525,40 +521,21 @@ export async function POST(req: Request) {
       (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
     }
 
-    // Bypassing Turbopack static analysis using eval('require')
-    const { renderToStaticMarkup } = eval('require')('react-dom/server');
-    const cvHtml = renderToStaticMarkup(
-      React.createElement(CVRenderer, {
-        template: { ...template, templateData: displayData, hideWatermark: true },
-        analysisData: analysis,
-        isPaid: true,
-        isPreview: false,
-        isInteractive: false,
-      })
-    );
+    // Internal loopback address
+    const port = process.env.PORT || 3000;
+    const printUrl = `http://127.0.0.1:${port}/fr/print/${analysisId}/${templateId}`;
 
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-          <meta charset="utf-8">
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-              @page { size: A4; margin: 0; }
-              html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: white; }
-              body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
-              #cv-ready { width: 100%; position: relative; }
-              .cv-printable { width: 100% !important; min-height: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
-          </style>
-      </head>
-      <body>
-          <div id="cv-ready">${cvHtml}</div>
-      </body>
-      </html>
-    `;
+    await page.setExtraHTTPHeaders({
+      "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
+    });
 
-    await page.setContent(htmlContent, { waitUntil: "load", timeout: 30000 });
+    if (displayData) {
+      await page.evaluateOnNewDocument((data: any) => {
+        (window as any).__PRINTER_DATA__ = data;
+      }, displayData);
+    }
+
+    await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
 
     await Promise.race([
       page.evaluateHandle('document.fonts.ready'),
