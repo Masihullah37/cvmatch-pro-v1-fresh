@@ -1020,6 +1020,8 @@ export default function TemplateGrid({
 
   const editingDataRef = useRef<any>(null);
   const previewViewportRef = useRef<HTMLDivElement>(null);
+  const previewContentRef = useRef<HTMLDivElement>(null);
+  const [previewContentHeight, setPreviewContentHeight] = useState(1123);
   const hasRestoredEdits = useRef(false);
 
   useEffect(() => {
@@ -1584,11 +1586,19 @@ export default function TemplateGrid({
       const scale = Math.min(1, availableWidth / 794);
 
       setPreviewScale(scale);
+
+      if (previewContentRef.current) {
+        const h = previewContentRef.current.offsetHeight || previewContentRef.current.scrollHeight || 1123;
+        setPreviewContentHeight(Math.max(1123, h));
+      }
     };
 
     updateMeasuredScale();
     const observer = new ResizeObserver(updateMeasuredScale);
     observer.observe(node);
+    if (previewContentRef.current) {
+      observer.observe(previewContentRef.current);
+    }
     window.visualViewport?.addEventListener("resize", updateMeasuredScale);
     window.addEventListener("orientationchange", updateMeasuredScale);
 
@@ -1597,7 +1607,7 @@ export default function TemplateGrid({
       window.visualViewport?.removeEventListener("resize", updateMeasuredScale);
       window.removeEventListener("orientationchange", updateMeasuredScale);
     };
-  }, [forceDesktopPreview, selectedTemplate, mobileView]);
+  }, [forceDesktopPreview, selectedTemplate, mobileView, editingData]);
 
   return (
     <div>
@@ -1908,22 +1918,19 @@ export default function TemplateGrid({
 
               <div
                 ref={previewViewportRef}
-                className={`cv-live-preview flex-1 overflow-auto px-2 py-3 md:p-12 justify-center flex items-start bg-slate-200/50 transition-all duration-500`}
+                className={`cv-live-preview flex-1 overflow-auto px-2 py-3 pb-36 md:p-12 justify-center flex items-start bg-slate-200/50 transition-all duration-500`}
                 style={{ "--preview-scale": previewScale } as CSSProperties}
               >
                 <div
                   className="relative bg-white shadow-2xl rounded-sm overflow-visible transform-gpu transition-all duration-300"
                   style={{
-                    // width: "calc(794px * var(--preview-scale, 1))",
-                    // height: "calc(1123px * var(--preview-scale, 1))",
-                    // minWidth: forceDesktopPreview ? "calc(794px * var(--preview-scale, 1))" : undefined,
-
                     width: "calc(794px * var(--preview-scale, 1))",
+                    height: `calc(${previewContentHeight}px * var(--preview-scale, 1))`,
                     minHeight: "calc(1123px * var(--preview-scale, 1))",
                     minWidth: forceDesktopPreview ? "calc(794px * var(--preview-scale, 1))" : undefined,
                   }}
                 >
-                  <div className="absolute left-0 top-0 w-[794px] transform-gpu flex justify-center" style={{ transform: "scale(var(--preview-scale, 1))", transformOrigin: 'top left' }}>
+                  <div ref={previewContentRef} className="absolute left-0 top-0 w-[794px] transform-gpu flex justify-center" style={{ transform: "scale(var(--preview-scale, 1))", transformOrigin: 'top left' }}>
                     <PinchZoomPreview>
                       <style>{`
                       .cv-live-preview .cv-printable { margin-left: 0 !important; margin-right: 0 !important; }
