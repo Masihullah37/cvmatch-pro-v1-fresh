@@ -353,7 +353,6 @@
 //   }
 // }
 
-
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
@@ -361,7 +360,6 @@ import { users, cvTemplates, cvGenerations, cvAnalyses, userTemplateUnlocks } fr
 import { eq, and, sql, inArray } from "drizzle-orm";
 import React from "react";
 import { revalidatePath } from "next/cache";
-import { renderToStaticMarkup } from "react-dom/server";
 import { CVPrintRenderer } from "@/components/templates/CVPrintRenderer";
 import { pdfHourlyUserLimit, pdfDailyUserLimit, pdfIpLimit } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
@@ -505,7 +503,8 @@ export async function POST(req: Request) {
       (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
     }
 
-    // Render HTML directly in Node memory (no network calls, no client boundary issues)
+    // Dynamic import inside handler bypasses Turbopack static import restrictions
+    const { renderToStaticMarkup } = eval('require')('react-dom/server');
     const cvMarkup = renderToStaticMarkup(React.createElement(CVPrintRenderer, { data: displayData }));
 
     const htmlContent = `
