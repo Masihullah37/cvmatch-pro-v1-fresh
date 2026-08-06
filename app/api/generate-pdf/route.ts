@@ -169,15 +169,29 @@ export async function POST(req: Request) {
     browser = await withRenderSlot(() => getSharedBrowser());
     page = await browser.newPage();
 
-    await page.setRequestInterception(true);
-    page.on("request", (request: any) => {
-      const url = request.url();
-      if (url.includes("google-analytics") || url.includes("clerk")) {
-        request.abort();
-      } else {
-        request.continue();
-      }
-    });
+    // await page.setRequestInterception(true);
+    // page.on("request", (request: any) => {
+    //   const url = request.url();
+    //   if (url.includes("google-analytics") || url.includes("clerk")) {
+    //     request.abort();
+    //   } else {
+    //     request.continue();
+    //   }
+    // });
+
+    // TEMP: interception disabled — it collapses real network errors
+    // (connection refused, DNS failure, etc.) into a generic net::ERR_FAILED,
+    // which is why we can't see what's actually going wrong. Re-enable once
+    // the underlying cause is confirmed.
+    // await page.setRequestInterception(true);
+    // page.on("request", (request: any) => {
+    //   const url = request.url();
+    //   if (url.includes("google-analytics") || url.includes("clerk")) {
+    //     request.abort();
+    //   } else {
+    //     request.continue();
+    //   }
+    // });
 
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
 
@@ -194,6 +208,19 @@ export async function POST(req: Request) {
     await page.setExtraHTTPHeaders({
       "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
     });
+
+    // Navigate to print page
+    // await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    // TEMP diagnostic: verify Node itself can reach the print URL over
+    // loopback, independent of Chrome/Puppeteer.
+    try {
+      const probe = await fetch(printUrl, {
+        headers: { "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass" },
+      });
+      console.log("[PDF PROBE]", probe.status, printUrl);
+    } catch (probeErr: any) {
+      console.error("[PDF PROBE FAILED]", printUrl, probeErr?.message || probeErr);
+    }
 
     // Navigate to print page
     await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
