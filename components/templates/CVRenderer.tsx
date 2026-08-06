@@ -4,7 +4,7 @@ import React, { createContext, useContext } from 'react';
 import Watermark from "@/components/templates/Watermark";
 import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";
 
-// Inline SVG icons to avoid lucide-react client-only restriction
+// Inline SVG icons to -avoid lucide-react client-only restriction
 const MapPin = ({
   size = 24,
   className = "",
