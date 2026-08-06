@@ -27,18 +27,35 @@ export default async function PrintTemplatePage({
     db.query.cvAnalyses.findFirst({ where: eq(cvAnalyses.id, analysisId) })
   ]);
 
+  //   if (!template || !analysis) {
+  //     notFound();
+  //   }
+
+  //   return (
+  //     // CRITICAL: This div MUST be present for Puppeteer
+  //     <div id="cv-ready" data-testid="cv-content" className="bg-white min-h-screen">
+  //       <CVRenderer
+  //         template={template}
+  //         analysisData={analysis}
+  //         isPaid={true}
+  //       />
+  //     </div>
+  //   );
+  // }
+
   if (!template || !analysis) {
     notFound();
   }
 
+  // Combine template and analysis data for printing
+  const templateWithData = {
+    ...template,
+    templateData: template.templateData || analysis.optimizedData || {},
+  };
+
   return (
-    // CRITICAL: This div MUST be present for Puppeteer
     <div id="cv-ready" data-testid="cv-content" className="bg-white min-h-screen">
-      <CVRenderer
-        template={template}
-        analysisData={analysis}
-        isPaid={true}
-      />
+      <CVPrintView template={templateWithData} />
     </div>
   );
 }
