@@ -1,4 +1,3 @@
-"use client";
 /* eslint-disable */
 import React, { createContext, useContext } from 'react';
 import Watermark from "@/components/templates/Watermark";
