@@ -231,18 +231,34 @@ export async function POST(req: Request) {
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
 
+    // await page.evaluate(() => {
+    //   const container = document.getElementById("cv-ready");
+    //   if (!container) return;
+
+    //   const A4_HEIGHT_PX = 1122;
+    //   const contentHeight = container.offsetHeight || container.scrollHeight;
+    //   const rawScale = (A4_HEIGHT_PX - 1) / contentHeight;
+    //   const scale = rawScale > 1 ? Math.min(rawScale, 1.15) : rawScale;
+
+    //   container.style.transform = `scale(${scale})`;
+    //   container.style.transformOrigin = "top left";
+    //   container.style.width = 100 / scale + "%";
+    // });
+
     await page.evaluate(() => {
-      const container = document.getElementById("cv-ready");
+      const container = document.getElementById("cv-ready") as HTMLElement | null;
       if (!container) return;
-
       const A4_HEIGHT_PX = 1122;
-      const contentHeight = container.offsetHeight || container.scrollHeight;
-      const rawScale = (A4_HEIGHT_PX - 1) / contentHeight;
-      const scale = rawScale > 1 ? Math.min(rawScale, 1.15) : rawScale;
-
-      container.style.transform = `scale(${scale})`;
-      container.style.transformOrigin = "top left";
-      container.style.width = 100 / scale + "%";
+      const contentHeight = container.scrollHeight;
+      const rawScale = (A4_HEIGHT_PX - 4) / contentHeight;
+      const scale = Math.min(rawScale, 1); // never upscale — avoids horizontal overflow
+      // Use CSS `zoom`, not `transform: scale`. `transform` is paint-only —
+      // Chrome's print pagination still measures the original, un-shrunk
+      // height, so long CVs overflow to page 2, which pageRanges:"1" then
+      // just cuts off instead of fitting. `zoom` forces a real layout
+      // reflow, so the measured height actually shrinks and everything
+      // genuinely fits on one A4 page.
+      container.style.zoom = String(scale);
     });
 
     const pdfBuffer = await page.pdf({

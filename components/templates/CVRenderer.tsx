@@ -3046,7 +3046,7 @@ export const CVRenderer = ({
               <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
             </p>
             <div className="flex px-14 pt-6 pb-14 gap-10">
-              <div className="w-[34%] flex flex-col gap-8">
+              <div className="w-[34%] min-w-0 overflow-hidden flex flex-col gap-8">
                 <DynamicSidebarSections
                   sidebarKeys={["education", "skills", "languages"]}
                   configs={{
@@ -3056,7 +3056,7 @@ export const CVRenderer = ({
                     },
                     skills: {
                       headerClass: "text-[10px] font-bold uppercase tracking-[0.2em] text-teal-700 border-b-2 border-teal-100 pb-2 mb-3",
-                      itemClass: "text-[10px] text-teal-800 bg-teal-50 px-2 py-1 rounded",
+                      itemClass: "text-[10px] text-teal-800 bg-teal-50 px-2 py-1 rounded break-words",
                       layout: "tags",
                     },
                     languages: {
