@@ -353,12 +353,16 @@
 //   }
 // }
 
+
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { users, cvTemplates, cvGenerations, cvAnalyses, userTemplateUnlocks } from "@/lib/db/schema";
 import { eq, and, sql, inArray } from "drizzle-orm";
+import React from "react";
 import { revalidatePath } from "next/cache";
+import { renderToStaticMarkup } from "react-dom/server";
+import { CVPrintRenderer } from "@/components/templates/CVPrintRenderer";
 import { pdfHourlyUserLimit, pdfDailyUserLimit, pdfIpLimit } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
 import crypto from "crypto";
@@ -367,9 +371,6 @@ import { getSharedBrowser, withRenderSlot } from "@/lib/pdf/browser-pool";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/**
- * PDF GENERATION ROUTE
- */
 export async function POST(req: Request) {
   let browser: any;
   let page: any;
@@ -394,7 +395,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Data not found" }, { status: 404 });
     }
 
-    // 1. Permission & Plan check
     const dbUser = userId ? await db.query.users.findFirst({ where: eq(users.clerkId, userId) }) : null;
     const plan = getUserPlan(dbUser);
 
@@ -446,7 +446,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Rate limiting
+    // Rate Limiting
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anonymous";
     const trackingSalt = process.env.TRACKING_SALT || "default_salt";
     const hashedIp = crypto.createHash('sha256').update(ip + trackingSalt).digest('hex');
@@ -493,7 +493,43 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Browser Launch & Internal Loopback Page Load
+    // Prepare Data
+    let displayData = { ...(templateData || (analysis as any).optimizedData || template.templateData || {}) };
+    if (typeof displayData === "string") {
+      try {
+        displayData = JSON.parse(displayData);
+      } catch (e) { /* fallback */ }
+    }
+    if (displayData && typeof displayData === "object") {
+      if ((displayData as any)._originalCvText) delete (displayData as any)._originalCvText;
+      (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
+    }
+
+    // Render HTML directly in Node memory (no network calls, no client boundary issues)
+    const cvMarkup = renderToStaticMarkup(React.createElement(CVPrintRenderer, { data: displayData }));
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <meta charset="utf-8">
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+              @page { size: A4; margin: 0; }
+              html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: white; }
+              body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+              #cv-ready { width: 100%; position: relative; }
+              .cv-printable { width: 100% !important; min-height: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+          </style>
+      </head>
+      <body>
+          <div id="cv-ready">${cvMarkup}</div>
+      </body>
+      </html>
+    `;
+
+    // Launch Browser and inject static HTML
     browser = await withRenderSlot(() => getSharedBrowser());
     page = await browser.newPage();
 
@@ -508,34 +544,7 @@ export async function POST(req: Request) {
     });
 
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
-
-    // Prepare display data
-    let displayData = { ...(templateData || (analysis as any).optimizedData || template.templateData || {}) };
-    if (typeof displayData === "string") {
-      try {
-        displayData = JSON.parse(displayData);
-      } catch (e) { /* fallback */ }
-    }
-    if (displayData && typeof displayData === "object") {
-      if ((displayData as any)._originalCvText) delete (displayData as any)._originalCvText;
-      (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
-    }
-
-    // Internal loopback address
-    const port = process.env.PORT || 3000;
-    const printUrl = `http://127.0.0.1:${port}/fr/print/${analysisId}/${templateId}`;
-
-    await page.setExtraHTTPHeaders({
-      "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
-    });
-
-    if (displayData) {
-      await page.evaluateOnNewDocument((data: any) => {
-        (window as any).__PRINTER_DATA__ = data;
-      }, displayData);
-    }
-
-    await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    await page.setContent(htmlContent, { waitUntil: "load", timeout: 30000 });
 
     await Promise.race([
       page.evaluateHandle('document.fonts.ready'),
@@ -564,13 +573,7 @@ export async function POST(req: Request) {
       pageRanges: "1",
     });
 
-    console.log(
-      "[PDF SIZE]",
-      pdfBuffer.length,
-      "bytes",
-      (pdfBuffer.length / 1024 / 1024).toFixed(2),
-      "MB"
-    );
+    console.log("[PDF SIZE]", pdfBuffer.length, "bytes");
 
     await page.close();
 
