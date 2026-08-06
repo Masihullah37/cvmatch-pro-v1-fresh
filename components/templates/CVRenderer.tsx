@@ -1,5 +1,5 @@
 /* eslint-disable */
-import React from 'react';
+import React, { createContext, useContext } from 'react';
 import Watermark from "@/components/templates/Watermark";
 import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";
 
@@ -98,7 +98,39 @@ const Star = ({
   </svg>
 );
 
+// ─── Shared CV Context ───────────────────────────────────────────────────────
+// All inner components read shared data from this context so they can be
+// defined at module scope (stable references → no unmount/remount on re-render)
+interface CVCtxValue {
+  data: any;
+  style: string;
+  name: string;
+  title: string;
+  summaryText: string;
+  contact: any;
+  experiences: any[];
+  education: any[];
+  skills: string[];
+  languages: any[];
+  projects: any[];
+  headers: any;
+  photoUrl: string;
+  hasPhotoSlot: boolean;
+  isInteractive: boolean;
+  onUpdate: ((path: string, value: any) => void) | undefined;
+  onDeleteSection: ((key: string) => void) | undefined;
+}
 
+const CVContext = createContext<CVCtxValue>({
+  data: {}, style: '', name: '', title: '', summaryText: '',
+  contact: {}, experiences: [], education: [], skills: [], languages: [], projects: [],
+  headers: {}, photoUrl: '', hasPhotoSlot: false,
+  isInteractive: false, onUpdate: undefined, onDeleteSection: undefined,
+});
+
+const useCVCtx = () => useContext(CVContext);
+
+// ─── Stable module-scope InlineEdit (already stable, keep as-is) ─────────────
 const InlineEdit = (props: any) => {
   if (!props.isInteractive) {
     return <span className={props.className}>{props.value || (props.multiline ? "\u00A0\n\u00A0" : "\u00A0")}</span>;
@@ -117,6 +149,438 @@ const DraggableSection = ({ id, isInteractive, onDelete, children, style: extraS
   );
 };
 
+// ─── Stable module-scope sub-components ─────────────────────────────────────
+// These are defined OUTSIDE CVRenderer so React never sees a new function
+// reference and never unmounts/remounts them between keystrokes.
+
+const SectionTitle = ({ sectionKey, className, headers: sectionHeaders, isInteractive: interactive, onUpdate: updateHandler }: any) => {
+  const ctx = useCVCtx();
+  const hdrs = sectionHeaders ?? ctx.headers;
+  const iact = interactive ?? ctx.isInteractive;
+  const upd = updateHandler ?? ctx.onUpdate;
+  return (
+    <h3 className={className}>
+      <InlineEdit
+        value={hdrs?.[sectionKey] || sectionKey}
+        path={`headers.${sectionKey}`}
+        isInteractive={iact}
+        onUpdate={upd}
+      />
+    </h3>
+  );
+};
+
+const ExperienceTitle = ({ className, headers: sectionHeaders, isInteractive: interactive, onUpdate: updateHandler }: any) => {
+  const ctx = useCVCtx();
+  const hdrs = sectionHeaders ?? ctx.headers;
+  const iact = interactive ?? ctx.isInteractive;
+  const upd = updateHandler ?? ctx.onUpdate;
+  return (
+    <h2 className={className}>
+      <InlineEdit value={hdrs?.experience} path="headers.experience" isInteractive={iact} onUpdate={upd} />
+    </h2>
+  );
+};
+
+const ContactLinks = ({ className, contact: contactData, isInteractive: interactive, onUpdate: updateHandler }: any) => {
+  const ctx = useCVCtx();
+  const cd = contactData ?? ctx.contact;
+  const iact = interactive ?? ctx.isInteractive;
+  const upd = updateHandler ?? ctx.onUpdate;
+  return (
+    <>
+      {cd?.linkedin && (
+        <p className={className}>
+          <strong>LinkedIn:</strong>{" "}
+          <InlineEdit value={cd.linkedin} path="contact.linkedin" isInteractive={iact} onUpdate={upd} />
+        </p>
+      )}
+      {cd?.github && (
+        <p className={className}>
+          <strong>GitHub:</strong>{" "}
+          <InlineEdit value={cd.github} path="contact.github" isInteractive={iact} onUpdate={upd} />
+        </p>
+      )}
+      {cd?.portfolio && (
+        <p className={className}>
+          <strong>Portfolio:</strong>{" "}
+          <InlineEdit value={cd.portfolio} path="contact.portfolio" isInteractive={iact} onUpdate={upd} />
+        </p>
+      )}
+    </>
+  );
+};
+
+const ProfilePhoto = ({ className = "", alt }: { className?: string; alt?: string }) => {
+  const ctx = useCVCtx();
+  if (!ctx.hasPhotoSlot) return null;
+  return (
+    <div className={className}>
+      <img src={ctx.photoUrl} alt={alt ?? ctx.name} className="w-full h-full object-cover" />
+    </div>
+  );
+};
+
+const levelToStars = (lvl: string) => {
+  const t = (lvl || "").toLowerCase();
+  if (t.includes("c2") || t.includes("native") || t.includes("courant") || t.includes("fluent") || t.includes("bilingue")) return 5;
+  if (t.includes("c1")) return 5;
+  if (t.includes("b2") || t.includes("avancé") || t.includes("advanced")) return 4;
+  if (t.includes("b1") || t.includes("intermediate") || t.includes("intermédiaire")) return 3;
+  if (t.includes("a2")) return 2;
+  if (t.includes("a1") || t.includes("débutant") || t.includes("beginner")) return 1;
+  return 3;
+};
+
+const LanguagesSection = ({ headerClass, itemClass, layout = "text", languages: sectionLanguages, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
+  const ctx = useCVCtx();
+  const langs = sectionLanguages ?? ctx.languages;
+  const iact = interactive ?? ctx.isInteractive;
+  const del = deleteHandler ?? ctx.onDeleteSection;
+  const upd = updateHandler ?? ctx.onUpdate;
+  const hdrs = sectionHeaders ?? ctx.headers;
+  if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("languages")) return null;
+  if (!iact && (!langs || langs.length === 0)) return null;
+  if (layout === "stars") {
+    return (
+      <DraggableSection id="languages" isInteractive={iact} onDelete={del}>
+        <SectionTitle sectionKey="languages" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+        <div className="space-y-2 mt-3">
+          {asRecordArray(langs).map((l: any, i: number) => (
+            <div key={i} className={`${itemClass} flex items-center justify-between gap-2 break-words min-w-0`}>
+              <span className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={iact} onUpdate={upd} /></span>
+              <span className="flex gap-0.5 shrink-0">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star key={n} size={10} className={n <= levelToStars(l.level) ? "fill-current text-current" : "text-current opacity-25"} />
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      </DraggableSection>
+    );
+  }
+  return (
+    <DraggableSection id="languages" isInteractive={iact} onDelete={del}>
+      <SectionTitle sectionKey="languages" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+      <div className="space-y-1 mt-3">
+        {asRecordArray(langs).map((l: any, i: number) => (
+          <p key={i} className={`${itemClass} break-words min-w-0`}>
+            <strong className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={iact} onUpdate={upd} /></strong>
+            {l.level && <span className="opacity-70 break-words min-w-0"> — <InlineEdit value={l.level} path={`languages.${i}.level`} isInteractive={iact} onUpdate={upd} /></span>}
+          </p>
+        ))}
+      </div>
+    </DraggableSection>
+  );
+};
+
+const ProjectsSection = ({ headerClass, itemClass, projects: sectionProjects, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
+  const ctx = useCVCtx();
+  const projs = sectionProjects ?? ctx.projects;
+  const iact = interactive ?? ctx.isInteractive;
+  const del = deleteHandler ?? ctx.onDeleteSection;
+  const upd = updateHandler ?? ctx.onUpdate;
+  const hdrs = sectionHeaders ?? ctx.headers;
+  if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("projects")) return null;
+  if (!iact && (!projs || projs.length === 0)) return null;
+  return (
+    <DraggableSection id="projects" isInteractive={iact} onDelete={del}>
+      <SectionTitle sectionKey="projects" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+      <div className="space-y-4 mt-3">
+        {asRecordArray(projs).map((proj: any, i: number) => (
+          <div key={i} className={itemClass}>
+            <p className="font-bold break-words"><InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={iact} onUpdate={upd} /></p>
+            {(proj.technologies || iact) && (
+              <p className="text-xs opacity-60 break-words italic">
+                <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={iact} onUpdate={(path: string, val: any) => upd && upd(path, val.split(",").map((s: string) => s.trim()))} />
+              </p>
+            )}
+            <p className="text-xs mt-1 break-words whitespace-pre-wrap"><InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={iact} onUpdate={upd} multiline /></p>
+          </div>
+        ))}
+      </div>
+    </DraggableSection>
+  );
+};
+
+const ExperienceSection = ({ headerClass, experiences: sectionExperiences, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
+  const ctx = useCVCtx();
+  const exps = sectionExperiences ?? ctx.experiences;
+  const iact = interactive ?? ctx.isInteractive;
+  const del = deleteHandler ?? ctx.onDeleteSection;
+  const upd = updateHandler ?? ctx.onUpdate;
+  const hdrs = sectionHeaders ?? ctx.headers;
+  if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("experience")) return null;
+  if (!iact && (!exps || exps.length === 0)) return null;
+  return (
+    <DraggableSection id="experience" isInteractive={iact} onDelete={del}>
+      <ExperienceTitle className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+      <div className="space-y-10">
+        {asRecordArray(exps).map((exp: any, i: number) => (
+          <div key={i} className="flex gap-6 relative">
+            <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
+            <div className="flex-1 pb-4 min-w-0">
+              <div className="flex justify-between items-start mb-2 gap-4">
+                <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={iact} onUpdate={upd} /></h4>
+                <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right"><InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={iact} onUpdate={upd} /></p>
+              </div>
+              <div className="text-[10px] text-slate-400 mb-2 break-words"><InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={iact} onUpdate={upd} /></div>
+              <p className="text-[11px] leading-relaxed text-slate-500 whitespace-pre-wrap break-words"><InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={iact} onUpdate={upd} multiline /></p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </DraggableSection>
+  );
+};
+
+const EducationSection = ({ headerClass, education: sectionEducation, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
+  const ctx = useCVCtx();
+  const edu = sectionEducation ?? ctx.education;
+  const iact = interactive ?? ctx.isInteractive;
+  const del = deleteHandler ?? ctx.onDeleteSection;
+  const upd = updateHandler ?? ctx.onUpdate;
+  const hdrs = sectionHeaders ?? ctx.headers;
+  if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("education")) return null;
+  if (!iact && (!edu || edu.length === 0)) return null;
+  return (
+    <DraggableSection id="education" isInteractive={iact} onDelete={del}>
+      <SectionTitle sectionKey="education" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+      <div className="space-y-8">
+        {asRecordArray(edu).map((e: any, i: number) => (
+          <div key={i} className="flex gap-6 relative">
+            <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
+            <div className="flex-1 pb-4 min-w-0">
+              <div className="flex justify-between items-start mb-2 gap-4">
+                <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words overflow-hidden"><InlineEdit value={e.school} path={`education.${i}.school`} isInteractive={iact} onUpdate={upd} /></h4>
+                <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right overflow-hidden"><InlineEdit value={e.degree} path={`education.${i}.degree`} isInteractive={iact} onUpdate={upd} /></p>
+              </div>
+              <p className="text-[11px] text-slate-400 break-words"><InlineEdit value={e.year} path={`education.${i}.year`} isInteractive={iact} onUpdate={upd} /></p>
+              {e.details && <p className="text-[11px] text-slate-500 mt-1 break-words whitespace-pre-wrap"><InlineEdit value={e.details} path={`education.${i}.details`} isInteractive={iact} onUpdate={upd} multiline /></p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </DraggableSection>
+  );
+};
+
+const SummarySection = ({ headerClass, itemClass, summaryText: sectionSummary, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
+  const ctx = useCVCtx();
+  const summ = sectionSummary ?? ctx.summaryText;
+  const iact = interactive ?? ctx.isInteractive;
+  const del = deleteHandler ?? ctx.onDeleteSection;
+  const upd = updateHandler ?? ctx.onUpdate;
+  const hdrs = sectionHeaders ?? ctx.headers;
+  if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("summary")) return null;
+  return (
+    <DraggableSection id="summary" isInteractive={iact} onDelete={del}>
+      <SectionTitle sectionKey="summary" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+      <p className={`${itemClass} mt-3 break-words whitespace-pre-wrap`}><InlineEdit value={summ} path="summary" isInteractive={iact} onUpdate={upd} multiline /></p>
+    </DraggableSection>
+  );
+};
+
+const SkillsSection = ({ headerClass, itemClass, layout = "tags", skills: sectionSkills, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
+  const ctx = useCVCtx();
+  const sks = sectionSkills ?? ctx.skills;
+  const iact = interactive ?? ctx.isInteractive;
+  const del = deleteHandler ?? ctx.onDeleteSection;
+  const upd = updateHandler ?? ctx.onUpdate;
+  const hdrs = sectionHeaders ?? ctx.headers;
+  if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("skills")) return null;
+  if (!iact && (!sks || sks.length === 0)) return null;
+  if (layout === "bars") {
+    const barWidths = [92, 78, 85, 70, 88, 65, 80, 74];
+    return (
+      <DraggableSection id="skills" isInteractive={iact} onDelete={del}>
+        <SectionTitle sectionKey="skills" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+        <div className="space-y-3 mt-3">
+          {asStringArray(sks).map((s: string, i: number) => (
+            <div key={i} className={`${itemClass} break-words min-w-0`}>
+              <InlineEdit value={s} path={`skills.${i}`} isInteractive={iact} onUpdate={upd} />
+              <div className="w-full h-1.5 bg-black/10 rounded-full mt-1.5 overflow-hidden">
+                <div className="h-full rounded-full bg-current" style={{ width: `${barWidths[i % barWidths.length]}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </DraggableSection>
+    );
+  }
+  return (
+    <DraggableSection id="skills" isInteractive={iact} onDelete={del}>
+      <SectionTitle sectionKey="skills" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+      <div className={layout === "tags" ? "flex flex-wrap gap-2 mt-3" : "space-y-2 mt-3"}>
+        {asStringArray(sks).map((s: string, i: number) => (
+          <span key={i} className={`${itemClass} ${layout === "tags" ? "inline-block" : "block"} break-words min-w-0 max-w-full`}>
+            <InlineEdit value={s} path={`skills.${i}`} isInteractive={iact} onUpdate={upd} />
+          </span>
+        ))}
+      </div>
+    </DraggableSection>
+  );
+};
+
+const ContactSection = ({ headerClass, itemClass = "", contact: contactData, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
+  const ctx = useCVCtx();
+  const cd = contactData ?? ctx.contact;
+  const iact = interactive ?? ctx.isInteractive;
+  const del = deleteHandler ?? ctx.onDeleteSection;
+  const upd = updateHandler ?? ctx.onUpdate;
+  const hdrs = sectionHeaders ?? ctx.headers;
+  if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("contact")) return null;
+  if (!hdrs?.contact) return null;
+  return (
+    <DraggableSection id="contact" isInteractive={iact} onDelete={del}>
+      <SectionTitle sectionKey="contact" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+      <div className={`space-y-2 ${itemClass} break-words min-w-0`}>
+        {cd?.location && <p className="break-words"><InlineEdit value={cd.location} path="contact.location" isInteractive={iact} onUpdate={upd} /></p>}
+        <p className="break-words"><InlineEdit value={cd?.email || ""} path="contact.email" isInteractive={iact} onUpdate={upd} /></p>
+        <p className="break-words"><InlineEdit value={cd?.phone || ""} path="contact.phone" isInteractive={iact} onUpdate={upd} /></p>
+        <div className="break-words"><ContactLinks className="break-words" contact={cd} isInteractive={iact} onUpdate={upd} /></div>
+      </div>
+    </DraggableSection>
+  );
+};
+
+// contactAsAbsolute=true → skip DraggableSection wrapper so absolute CSS is respected (Stellar)
+const IdentityHeader = ({ nameClass, titleClass, containerClass = "", contactContainerClass = "text-right space-y-1 text-[10px] font-bold text-slate-500", showIcons = true, showContact = true, showPhoto = true, contactAsAbsolute = false, name: displayName, title: displayTitle, contact: contactData, isInteractive: interactive, onUpdate: updateHandler }: any) => {
+  const ctx = useCVCtx();
+  const dn = displayName ?? ctx.name;
+  const dt = displayTitle ?? ctx.title;
+  const cd = contactData ?? ctx.contact;
+  const iact = interactive ?? ctx.isInteractive;
+  const upd = updateHandler ?? ctx.onUpdate;
+  return (
+    <header className={containerClass}>
+      <div className="flex items-center gap-6 flex-1 min-w-0">
+        {showPhoto && (
+          <ProfilePhoto
+            className="w-24 h-24 shrink-0 overflow-hidden rounded-2xl border-2 border-slate-200/50 shadow-md bg-white"
+            alt="Photo"
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <h1 className={`${nameClass} break-words`}><InlineEdit value={dn} path="userName" isInteractive={iact} onUpdate={upd} /></h1>
+          <p className={`${titleClass} break-words`}><InlineEdit value={dt} path="jobTitle" isInteractive={iact} onUpdate={upd} /></p>
+        </div>
+      </div>
+      {showContact && ctx.headers?.contact && (
+        contactAsAbsolute ? (
+          <div className={contactContainerClass}>
+            {cd?.location && <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd.location} path="contact.location" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <MapPin size={10} className="text-current opacity-70 shrink-0" />}</div>}
+            <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.phone || ""} path="contact.phone" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <Phone size={10} className="text-current opacity-70 shrink-0" />}</div>
+            <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.email || ""} path="contact.email" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <Mail size={10} className="text-current opacity-70 shrink-0" />}</div>
+            <div className="break-words min-w-0"><ContactLinks contact={cd} isInteractive={iact} onUpdate={upd} /></div>
+          </div>
+        ) : (
+          <DraggableSection id="contact" isInteractive={iact} onDelete={ctx.onDeleteSection}>
+            <div className={`${contactContainerClass} text-current flex-1 min-w-0 max-w-[50%]`}>
+              {cd?.location && <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd.location} path="contact.location" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <MapPin size={10} className="text-current opacity-70 shrink-0" />}</div>}
+              <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.phone || ""} path="contact.phone" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <Phone size={10} className="text-current opacity-70 shrink-0" />}</div>
+              <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.email || ""} path="contact.email" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <Mail size={10} className="text-current opacity-70 shrink-0" />}</div>
+              <div className="break-words min-w-0"><ContactLinks contact={cd} isInteractive={iact} onUpdate={upd} /></div>
+            </div>
+          </DraggableSection>
+        )
+      )}
+    </header>
+  );
+};
+
+const DynamicMainSections = ({ headerClass, itemClass, data: sectionData, style: templateStyle, experiences: sectionExperiences, education: sectionEducation, projects: sectionProjects, languages: sectionLanguages, skills: sectionSkills, summaryText: sectionSummary, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
+  const ctx = useCVCtx();
+  const sd = sectionData ?? ctx.data;
+  const ts = templateStyle ?? ctx.style;
+  const exps = sectionExperiences ?? ctx.experiences;
+  const edu = sectionEducation ?? ctx.education;
+  const projs = sectionProjects ?? ctx.projects;
+  const langs = sectionLanguages ?? ctx.languages;
+  const sks = sectionSkills ?? ctx.skills;
+  const summ = sectionSummary ?? ctx.summaryText;
+  const iact = interactive ?? ctx.isInteractive;
+  const del = deleteHandler ?? ctx.onDeleteSection;
+  const upd = updateHandler ?? ctx.onUpdate;
+  const hdrs = sectionHeaders ?? ctx.headers;
+  const order = Array.from(new Set(sd?.sectionOrder || ["summary", "experience", "projects", "education", "skills", "languages"])) as string[];
+  return (
+    <>
+      {order.map((key) => {
+        if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Patterson", "Bremen", "Sevilla", "Munich", "Willow", "Marina"].includes(ts)) return null;
+        if (key === "contact") return null;
+        if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina"].includes(ts)) return null;
+        if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina"].includes(ts)) return null;
+        if (key === "education" && ["Patterson", "Sevilla", "Munich", "Bremen", "Marina"].includes(ts)) return null;
+        if (key === "experience") return <ExperienceSection key={key} headerClass={headerClass} experiences={exps} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
+        if (key === "education") return <EducationSection key={key} headerClass={headerClass} education={edu} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
+        if (key === "projects") return <ProjectsSection key={key} headerClass={headerClass} itemClass={itemClass} projects={projs} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
+        if (key === "languages") return <LanguagesSection key={key} headerClass={headerClass} itemClass={itemClass} languages={langs} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
+        if (key === "skills") return <SkillsSection key={key} headerClass={headerClass} itemClass={itemClass} skills={sks} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
+        if (key === "summary") return <SummarySection key={key} headerClass={headerClass} itemClass={itemClass} summaryText={summ} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
+        const standardKeys = ["summary", "experience", "education", "skills", "languages", "projects", "contact", "headers", "photourl", "username", "jobtitle", "_originalcvtext", "_originalcvcontext", "sectionorder"];
+        if (!standardKeys.includes(key.toLowerCase()) && key in (sd || {})) {
+          const items = sd[key];
+          const isEmpty = !items || (Array.isArray(items) && items.length === 0) || (typeof items === 'string' && items.trim() === '');
+          if (!iact && isEmpty) return null;
+          return (
+            <DraggableSection key={key} id={key} isInteractive={iact} onDelete={del}>
+              <div className="mt-2 mb-2">
+                <SectionTitle sectionKey={key} className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
+                {Array.isArray(items) ? (
+                  <div className="space-y-1 mt-3">{items.map((it: any, i: number) => (<p key={i} className={`${itemClass} break-words min-w-0`}><InlineEdit value={it} path={`${key}.${i}`} isInteractive={iact} onUpdate={upd} /></p>))}</div>
+                ) : (
+                  <p className={`${itemClass} mt-3 whitespace-pre-wrap break-words min-w-0`}><InlineEdit value={items} path={key} isInteractive={iact} onUpdate={upd} multiline /></p>
+                )}
+              </div>
+            </DraggableSection>
+          );
+        }
+        return null;
+      })}
+    </>
+  );
+};
+
+const DynamicSidebarSections = ({ sidebarKeys, configs, data: sectionData, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders, languages: sectionLanguages, skills: sectionSkills }: {
+  sidebarKeys: string[];
+  configs: Record<string, { headerClass: string; itemClass: string; layout?: string }>;
+  data?: any;
+  isInteractive?: boolean;
+  onDeleteSection?: any;
+  onUpdate?: any;
+  headers?: any;
+  languages?: any;
+  skills?: any;
+}) => {
+  const ctx = useCVCtx();
+  const sd = sectionData ?? ctx.data;
+  const order: string[] = sd.sectionOrder || sidebarKeys;
+  const sorted = [...sidebarKeys].sort((a: string, b: string) => {
+    const ai = order.indexOf(a), bi = order.indexOf(b);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return -1;
+    if (bi === -1) return 1;
+    return ai - bi;
+  });
+  return (
+    <>
+      {sorted.map((key: string) => {
+        const cfg = configs[key];
+        if (!cfg) return null;
+        if (key === 'contact') return <ContactSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} />;
+        if (key === 'languages') return <LanguagesSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} languages={sectionLanguages} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
+        if (key === 'skills') return <SkillsSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} layout={cfg.layout || 'tags'} skills={sectionSkills} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
+        if (key === 'education') return <EducationSection key={key} headerClass={cfg.headerClass} education={undefined} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
+        if (key === 'summary') return <SummarySection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} summaryText={undefined} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
+        return null;
+      })}
+    </>
+  );
+};
+
+// ─── End of stable module-scope components ───────────────────────────────────
 
 export const CVRenderer = ({
   template,
@@ -167,402 +631,16 @@ export const CVRenderer = ({
     contact: "Contact",
   };
 
-  // --- STABLE REUSABLE SUB-COMPONENTS (Defined outside to prevent infinite unmount/remount loops) ---
-
-  const SectionTitle = ({ sectionKey, className, headers: sectionHeaders = headers, isInteractive: interactive = isInteractive, onUpdate: updateHandler = onUpdate }: any) => (
-    <h3 className={className}>
-      <InlineEdit
-        value={sectionHeaders?.[sectionKey] || sectionKey}
-        path={`headers.${sectionKey}`}
-        isInteractive={interactive}
-        onUpdate={updateHandler}
-      />
-    </h3>
-  );
-
-  const ExperienceTitle = ({ className, headers: sectionHeaders = headers, isInteractive: interactive = isInteractive, onUpdate: updateHandler = onUpdate }: any) => (
-    <h2 className={className}>
-      <InlineEdit value={sectionHeaders?.experience} path="headers.experience" isInteractive={interactive} onUpdate={updateHandler} />
-    </h2>
-  );
-
-  const ContactLinks = ({ className, contact: contactData = contact, isInteractive: interactive = isInteractive, onUpdate: updateHandler = onUpdate }: any) => (
-    <>
-      {contactData?.linkedin && (
-        <p className={className}>
-          <strong>LinkedIn:</strong>{" "}
-          <InlineEdit value={contactData.linkedin} path="contact.linkedin" isInteractive={interactive} onUpdate={updateHandler} />
-        </p>
-      )}
-      {contactData?.github && (
-        <p className={className}>
-          <strong>GitHub:</strong>{" "}
-          <InlineEdit value={contactData.github} path="contact.github" isInteractive={interactive} onUpdate={updateHandler} />
-        </p>
-      )}
-      {contactData?.portfolio && (
-        <p className={className}>
-          <strong>Portfolio:</strong>{" "}
-          <InlineEdit value={contactData.portfolio} path="contact.portfolio" isInteractive={interactive} onUpdate={updateHandler} />
-        </p>
-      )}
-    </>
-  );
-
-  // const ProfilePhoto = ({ className, alt = name }: { className: string; alt?: string }) => {
-  //   if (!hasPhotoSlot) return null;
-
-  const ProfilePhoto = ({
-    className = "",
-    alt = name,
-  }: {
-    className?: string;
-    alt?: string;
-  }) => {
-    if (!hasPhotoSlot) return null;
-
-    return (
-      <div className={className}>
-        <img src={photoUrl} alt={alt} className="w-full h-full object-cover" />
-      </div>
-    );
+  const ctxValue: CVCtxValue = {
+    data, style, name, title, summaryText, contact,
+    experiences, education, skills, languages, projects,
+    headers, photoUrl, hasPhotoSlot,
+    isInteractive, onUpdate, onDeleteSection,
   };
 
-  // const LanguagesSection = ({ headerClass, itemClass, languages: sectionLanguages = languages, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-  //   if (data.sectionOrder && !data.sectionOrder.includes("languages")) return null;
-  //   if (!interactive && (!sectionLanguages || sectionLanguages.length === 0)) return null;
-  //   return (
-  //     <DraggableSection id="languages" isInteractive={interactive} onDelete={deleteHandler}>
-  //       <SectionTitle sectionKey="languages" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-  //       <div className="space-y-1 mt-3">
-  //         {asRecordArray(sectionLanguages).map((l: any, i: number) => (
-  //           <p key={i} className={`${itemClass} break-words min-w-0`}>
-  //             <strong className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={interactive} onUpdate={updateHandler} /></strong>
-  //             {l.level && <span className="opacity-70 break-words min-w-0"> — <InlineEdit value={l.level} path={`languages.${i}.level`} isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
-  //           </p>
-  //         ))}
-  //       </div>
-  //     </DraggableSection>
-  //   );
-  // };
-
-  const levelToStars = (lvl: string) => {
-    const t = (lvl || "").toLowerCase();
-    if (t.includes("c2") || t.includes("native") || t.includes("courant") || t.includes("fluent") || t.includes("bilingue")) return 5;
-    if (t.includes("c1")) return 5;
-    if (t.includes("b2") || t.includes("avancé") || t.includes("advanced")) return 4;
-    if (t.includes("b1") || t.includes("intermediate") || t.includes("intermédiaire")) return 3;
-    if (t.includes("a2")) return 2;
-    if (t.includes("a1") || t.includes("débutant") || t.includes("beginner")) return 1;
-    return 3;
-  };
-
-  const LanguagesSection = ({ headerClass, itemClass, layout = "text", languages: sectionLanguages = languages, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-    if (data.sectionOrder && !data.sectionOrder.includes("languages")) return null;
-    if (!interactive && (!sectionLanguages || sectionLanguages.length === 0)) return null;
-    if (layout === "stars") {
-      return (
-        <DraggableSection id="languages" isInteractive={interactive} onDelete={deleteHandler}>
-          <SectionTitle sectionKey="languages" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-          <div className="space-y-2 mt-3">
-            {asRecordArray(sectionLanguages).map((l: any, i: number) => (
-              <div key={i} className={`${itemClass} flex items-center justify-between gap-2 break-words min-w-0`}>
-                <span className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={interactive} onUpdate={updateHandler} /></span>
-                <span className="flex gap-0.5 shrink-0">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Star key={n} size={10} className={n <= levelToStars(l.level) ? "fill-current text-current" : "text-current opacity-25"} />
-                  ))}
-                </span>
-              </div>
-            ))}
-          </div>
-        </DraggableSection>
-      );
-    }
-    return (
-      <DraggableSection id="languages" isInteractive={interactive} onDelete={deleteHandler}>
-        <SectionTitle sectionKey="languages" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-        <div className="space-y-1 mt-3">
-          {asRecordArray(sectionLanguages).map((l: any, i: number) => (
-            <p key={i} className={`${itemClass} break-words min-w-0`}>
-              <strong className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={interactive} onUpdate={updateHandler} /></strong>
-              {l.level && <span className="opacity-70 break-words min-w-0"> — <InlineEdit value={l.level} path={`languages.${i}.level`} isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
-            </p>
-          ))}
-        </div>
-      </DraggableSection>
-    );
-  };
-
-  const ProjectsSection = ({ headerClass, itemClass, projects: sectionProjects = projects, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-    if (data.sectionOrder && !data.sectionOrder.includes("projects")) return null;
-    if (!interactive && (!sectionProjects || sectionProjects.length === 0)) return null;
-    return (
-      <DraggableSection id="projects" isInteractive={interactive} onDelete={deleteHandler}>
-        <SectionTitle sectionKey="projects" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-        <div className="space-y-4 mt-3">
-          {asRecordArray(sectionProjects).map((proj: any, i: number) => (
-            <div key={i} className={itemClass}>
-              <p className="font-bold break-words"><InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={interactive} onUpdate={updateHandler} /></p>
-              {(proj.technologies || interactive) && (
-                <p className="text-xs opacity-60 break-words italic">
-                  <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={interactive} onUpdate={(path: string, val: any) => updateHandler(path, val.split(",").map((s: string) => s.trim()))} />
-                </p>
-              )}
-              <p className="text-xs mt-1 break-words whitespace-pre-wrap"><InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={interactive} onUpdate={updateHandler} multiline /></p>
-            </div>
-          ))}
-        </div>
-      </DraggableSection>
-    );
-  };
-
-  const ExperienceSection = ({ headerClass, experiences: sectionExperiences = experiences, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-    if (data.sectionOrder && !data.sectionOrder.includes("experience")) return null;
-    if (!interactive && (!sectionExperiences || sectionExperiences.length === 0)) return null;
-    return (
-      <DraggableSection id="experience" isInteractive={interactive} onDelete={deleteHandler}>
-        <ExperienceTitle className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-        <div className="space-y-10">
-          {asRecordArray(sectionExperiences).map((exp: any, i: number) => (
-            <div key={i} className="flex gap-6 relative">
-              <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
-              <div className="flex-1 pb-4 min-w-0">
-                <div className="flex justify-between items-start mb-2 gap-4">
-                  <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={interactive} onUpdate={updateHandler} /></h4>
-                  <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right"><InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={interactive} onUpdate={updateHandler} /></p>
-                </div>
-                <div className="text-[10px] text-slate-400 mb-2 break-words"><InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={interactive} onUpdate={updateHandler} /></div>
-                <p className="text-[11px] leading-relaxed text-slate-500 whitespace-pre-wrap break-words"><InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={interactive} onUpdate={updateHandler} multiline /></p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </DraggableSection>
-    );
-  };
-
-  const EducationSection = ({ headerClass, education: sectionEducation = education, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-    if (data.sectionOrder && !data.sectionOrder.includes("education")) return null;
-    if (!interactive && (!sectionEducation || sectionEducation.length === 0)) return null;
-    return (
-      <DraggableSection id="education" isInteractive={interactive} onDelete={deleteHandler}>
-        <SectionTitle sectionKey="education" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-        <div className="space-y-8">
-          {asRecordArray(sectionEducation).map((edu: any, i: number) => (
-            <div key={i} className="flex gap-6 relative">
-              <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
-              <div className="flex-1 pb-4 min-w-0">
-                <div className="flex justify-between items-start mb-2 gap-4">
-                  <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words overflow-hidden"><InlineEdit value={edu.school} path={`education.${i}.school`} isInteractive={interactive} onUpdate={updateHandler} /></h4>
-                  <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right overflow-hidden"><InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={interactive} onUpdate={updateHandler} /></p>
-                </div>
-                <p className="text-[11px] text-slate-400 break-words"><InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={interactive} onUpdate={updateHandler} /></p>
-                {edu.details && <p className="text-[11px] text-slate-500 mt-1 break-words whitespace-pre-wrap"><InlineEdit value={edu.details} path={`education.${i}.details`} isInteractive={interactive} onUpdate={updateHandler} multiline /></p>}
-              </div>
-            </div>
-          ))}
-        </div>
-      </DraggableSection>
-    );
-  };
-
-  const SummarySection = ({ headerClass, itemClass, summaryText: sectionSummary = summaryText, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-    if (data.sectionOrder && !data.sectionOrder.includes("summary")) return null;
-    return (
-      <DraggableSection id="summary" isInteractive={interactive} onDelete={deleteHandler}>
-        <SectionTitle sectionKey="summary" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-        <p className={`${itemClass} mt-3 break-words whitespace-pre-wrap`}><InlineEdit value={sectionSummary} path="summary" isInteractive={interactive} onUpdate={updateHandler} multiline /></p>
-      </DraggableSection>
-    );
-  };
-
-  // const SkillsSection = ({ headerClass, itemClass, layout = "tags", skills: sectionSkills = skills, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-  //   if (data.sectionOrder && !data.sectionOrder.includes("skills")) return null;
-  //   if (!interactive && (!sectionSkills || sectionSkills.length === 0)) return null;
-  //   return (
-  //     <DraggableSection id="skills" isInteractive={interactive} onDelete={deleteHandler}>
-  //       <SectionTitle sectionKey="skills" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-  //       <div className={layout === "tags" ? "flex flex-wrap gap-2 mt-3" : "space-y-2 mt-3"}>
-  //         {asStringArray(sectionSkills).map((s: string, i: number) => (
-  //           <span key={i} className={`${itemClass} ${layout === "tags" ? "inline-block" : "block"} break-words min-w-0 max-w-full`}>
-  //             <InlineEdit value={s} path={`skills.${i}`} isInteractive={interactive} onUpdate={updateHandler} />
-  //           </span>
-  //         ))}
-  //       </div>
-  //     </DraggableSection>
-  //   );
-  // };
-
-  const SkillsSection = ({ headerClass, itemClass, layout = "tags", skills: sectionSkills = skills, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-    if (data.sectionOrder && !data.sectionOrder.includes("skills")) return null;
-    if (!interactive && (!sectionSkills || sectionSkills.length === 0)) return null;
-    if (layout === "bars") {
-      const barWidths = [92, 78, 85, 70, 88, 65, 80, 74];
-      return (
-        <DraggableSection id="skills" isInteractive={interactive} onDelete={deleteHandler}>
-          <SectionTitle sectionKey="skills" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-          <div className="space-y-3 mt-3">
-            {asStringArray(sectionSkills).map((s: string, i: number) => (
-              <div key={i} className={`${itemClass} break-words min-w-0`}>
-                <InlineEdit value={s} path={`skills.${i}`} isInteractive={interactive} onUpdate={updateHandler} />
-                <div className="w-full h-1.5 bg-black/10 rounded-full mt-1.5 overflow-hidden">
-                  <div className="h-full rounded-full bg-current" style={{ width: `${barWidths[i % barWidths.length]}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </DraggableSection>
-      );
-    }
-    return (
-      <DraggableSection id="skills" isInteractive={interactive} onDelete={deleteHandler}>
-        <SectionTitle sectionKey="skills" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-        <div className={layout === "tags" ? "flex flex-wrap gap-2 mt-3" : "space-y-2 mt-3"}>
-          {asStringArray(sectionSkills).map((s: string, i: number) => (
-            <span key={i} className={`${itemClass} ${layout === "tags" ? "inline-block" : "block"} break-words min-w-0 max-w-full`}>
-              <InlineEdit value={s} path={`skills.${i}`} isInteractive={interactive} onUpdate={updateHandler} />
-            </span>
-          ))}
-        </div>
-      </DraggableSection>
-    );
-  };
-
-  const ContactSection = ({ headerClass, itemClass = "", contact: contactData = contact, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-    if (data.sectionOrder && !data.sectionOrder.includes("contact")) return null;
-    if (!sectionHeaders?.contact) return null;
-    return (
-      <DraggableSection id="contact" isInteractive={interactive} onDelete={deleteHandler}>
-        <SectionTitle sectionKey="contact" className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-        <div className={`space-y-2 ${itemClass} break-words min-w-0`}>
-          {contactData?.location && <p className="break-words"><InlineEdit value={contactData.location} path="contact.location" isInteractive={interactive} onUpdate={updateHandler} /></p>}
-          <p className="break-words"><InlineEdit value={contactData?.email || ""} path="contact.email" isInteractive={interactive} onUpdate={updateHandler} /></p>
-          <p className="break-words"><InlineEdit value={contactData?.phone || ""} path="contact.phone" isInteractive={interactive} onUpdate={updateHandler} /></p>
-          <div className="break-words"><ContactLinks className="break-words" contact={contactData} isInteractive={interactive} onUpdate={updateHandler} /></div>
-        </div>
-      </DraggableSection>
-    );
-  };
-
-  const IdentityHeader = ({ nameClass, titleClass, containerClass = "", contactContainerClass = "text-right space-y-1 text-[10px] font-bold text-slate-500", showIcons = true, showContact = true, showPhoto = true, name: displayName = name, title: displayTitle = title, contact: contactData = contact, isInteractive: interactive = isInteractive, onUpdate: updateHandler = onUpdate }: any) => (
-    <header className={containerClass}>
-      <div className="flex items-center gap-6 flex-1 min-w-0">
-        {showPhoto && (
-          <ProfilePhoto
-            className="w-24 h-24 shrink-0 overflow-hidden rounded-2xl border-2 border-slate-200/50 shadow-md bg-white"
-            alt="Photo"
-          />
-        )}
-        <div className="flex-1 min-w-0">
-          <h1 className={`${nameClass} break-words`}><InlineEdit value={displayName} path="userName" isInteractive={interactive} onUpdate={updateHandler} /></h1>
-          <p className={`${titleClass} break-words`}><InlineEdit value={displayTitle} path="jobTitle" isInteractive={interactive} onUpdate={updateHandler} /></p>
-        </div>
-      </div>
-      {showContact && headers?.contact && (
-        <DraggableSection id="contact" isInteractive={interactive} onDelete={onDeleteSection}>
-          <div className={`${contactContainerClass} text-current flex-1 min-w-0 max-w-[50%]`}>
-            {contactData?.location && <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={contactData.location} path="contact.location" isInteractive={interactive} onUpdate={updateHandler} /></span>{showIcons && <MapPin size={10} className="text-current opacity-70 shrink-0" />}</div>}
-            <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={contactData?.phone || ""} path="contact.phone" isInteractive={interactive} onUpdate={updateHandler} /></span>{showIcons && <Phone size={10} className="text-current opacity-70 shrink-0" />}</div>
-            <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={contactData?.email || ""} path="contact.email" isInteractive={interactive} onUpdate={updateHandler} /></span>{showIcons && <Mail size={10} className="text-current opacity-70 shrink-0" />}</div>
-            <div className="break-words min-w-0"><ContactLinks contact={contactData} isInteractive={interactive} onUpdate={updateHandler} /></div>
-          </div>
-        </DraggableSection>
-      )}
-    </header>
-  );
-
-  const DynamicMainSections = ({ headerClass, itemClass, data: sectionData = data, style: templateStyle = style, experiences: sectionExperiences = experiences, education: sectionEducation = education, projects: sectionProjects = projects, languages: sectionLanguages = languages, skills: sectionSkills = skills, summaryText: sectionSummary = summaryText, isInteractive: interactive = isInteractive, onDeleteSection: deleteHandler = onDeleteSection, onUpdate: updateHandler = onUpdate, headers: sectionHeaders = headers }: any) => {
-    // Deduplicate order to prevent "duplicate key" React errors
-    const order = Array.from(new Set(sectionData?.sectionOrder || ["summary", "experience", "projects", "education", "skills", "languages"])) as string[];
-    return ( // Added key for DynamicMainSections map
-      <>
-        {order.map((key) => {
-          // if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Patterson", "Bremen", "Sevilla", "Munich"].includes(templateStyle)) return null;
-          if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Patterson", "Bremen", "Sevilla", "Munich", "Willow", "Marina"].includes(templateStyle)) return null;
-          if (key === "contact") return null;
-          // if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich"].includes(templateStyle)) return null;
-          if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina"].includes(templateStyle)) return null;
-
-          // if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich"].includes(templateStyle)) return null;
-          if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina"].includes(templateStyle)) return null;
-
-          // if (key === "experience" && ["Patterson", "Sevilla", "Munich", "Bremen"].includes(templateStyle)) return null;
-          // if (key === "education" && ["Patterson", "Sevilla", "Munich", "Bremen"].includes(templateStyle)) return null;
-          if (key === "education" && ["Patterson", "Sevilla", "Munich", "Bremen", "Marina"].includes(templateStyle)) return null;
-          if (key === "experience") return <ExperienceSection key={key} headerClass={headerClass} experiences={sectionExperiences} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
-          // Rose education now renders in main column — no exclusion needed
-          if (key === "education") return <EducationSection key={key} headerClass={headerClass} education={sectionEducation} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
-          if (key === "projects") return <ProjectsSection key={key} headerClass={headerClass} itemClass={itemClass} projects={sectionProjects} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
-          if (key === "languages") return <LanguagesSection key={key} headerClass={headerClass} itemClass={itemClass} languages={sectionLanguages} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
-          if (key === "skills") return <SkillsSection key={key} headerClass={headerClass} itemClass={itemClass} skills={sectionSkills} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
-          if (key === "summary") return <SummarySection key={key} headerClass={headerClass} itemClass={itemClass} summaryText={sectionSummary} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
-
-          const standardKeys = ["summary", "experience", "education", "skills", "languages", "projects", "contact", "headers", "photourl", "username", "jobtitle", "_originalcvtext", "_originalcvcontext", "sectionorder"];
-          if (!standardKeys.includes(key.toLowerCase()) && key in (sectionData || {})) {
-            const items = sectionData[key];
-            const isEmpty = !items || (Array.isArray(items) && items.length === 0) || (typeof items === 'string' && items.trim() === '');
-
-            if (!interactive && isEmpty) return null;
-
-            return (
-              <DraggableSection key={key} id={key} isInteractive={interactive} onDelete={deleteHandler}>
-                <div className="mt-2 mb-2">
-                  <SectionTitle sectionKey={key} className={headerClass} headers={sectionHeaders} isInteractive={interactive} onUpdate={updateHandler} />
-                  {Array.isArray(items) ? (
-                    <div className="space-y-1 mt-3">{items.map((it: any, i: number) => (<p key={i} className={`${itemClass} break-words min-w-0`}><InlineEdit value={it} path={`${key}.${i}`} isInteractive={interactive} onUpdate={updateHandler} /></p>))}</div>
-                  ) : (
-                    <p className={`${itemClass} mt-3 whitespace-pre-wrap break-words min-w-0`}><InlineEdit value={items} path={key} isInteractive={interactive} onUpdate={updateHandler} multiline /></p>
-                  )}
-                </div>
-              </DraggableSection>
-            );
-          }
-          return null;
-        })}
-      </>
-    );
-  };
-
-  // Renders sidebar sections (contact/skills/languages) in sectionOrder so drag-drop reorder works
-  const DynamicSidebarSections = ({ sidebarKeys, configs }: {
-    sidebarKeys: string[];
-    configs: Record<string, { headerClass: string; itemClass: string; layout?: string }>;
-  }) => {
-    const order: string[] = data.sectionOrder || sidebarKeys;
-    const sorted = [...sidebarKeys].sort((a: string, b: string) => {
-      const ai = order.indexOf(a), bi = order.indexOf(b);
-      if (ai === -1 && bi === -1) return 0;
-      if (ai === -1) return -1;
-      if (bi === -1) return 1;
-      return ai - bi;
-    });
-    return (
-      <>
-        {sorted.map((key: string) => {
-          const cfg = configs[key];
-          if (!cfg) return null;
-          if (key === 'contact') return <ContactSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} />;
-          if (key === 'languages') return <LanguagesSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} languages={languages} isInteractive={isInteractive} onDeleteSection={onDeleteSection} onUpdate={onUpdate} headers={headers} />;
-          if (key === 'skills') return <SkillsSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} layout={cfg.layout || 'tags'} />;
-          if (key === 'education') return <EducationSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} />;
-          if (key === 'summary') return <SummarySection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} />;
-          return null;
-        })}
-      </>
-    );
-  };
-
-  //   // The ProtectionOverlay is now disabled to remove watermarks for all users.
-  //   const ProtectionOverlay = () => null;
-
-  //   return { SectionTitle, ExperienceTitle, ContactLinks, ProfilePhoto, LanguagesSection, ProjectsSection, ExperienceSection, EducationSection, SummarySection, SkillsSection, ContactSection, IdentityHeader, DynamicMainSections, DynamicSidebarSections, ProtectionOverlay };
-  // }, [data, headers, isInteractive, onUpdate, onDeleteSection, style, name, title, contact, photoUrl, hasPhotoSlot, summaryText, experiences, skills, education, projects, languages]);
-
-  // const { SectionTitle, ExperienceTitle, ContactLinks, ProfilePhoto, LanguagesSection, ProjectsSection, ExperienceSection, EducationSection, SummarySection, SkillsSection, ContactSection, IdentityHeader, DynamicMainSections, DynamicSidebarSections, ProtectionOverlay } = stableComponents;
-  // The ProtectionOverlay is now disabled to remove watermarks for all users.
   const ProtectionOverlay = () => null;
   return (
+    <CVContext.Provider value={ctxValue}>
     <div
       className={`w-[210mm] min-h-[297mm] bg-white shadow-sm overflow-hidden text-left mx-auto relative select-none cv-printable`}
       onContextMenu={(e) => !isPaid && e.preventDefault()}
@@ -1036,6 +1114,7 @@ export const CVRenderer = ({
             onUpdate={onUpdate}
             contactContainerClass="absolute -bottom-8 right-16 bg-white shadow-xl p-6 rounded-2xl flex flex-col gap-2 text-xs font-bold text-gray-500 text-current"
             showIcons={false}
+            contactAsAbsolute={true}
           />
           <div className="p-16 pt-24 grid grid-cols-12 gap-16">
             <div className="col-span-8 flex flex-col gap-8">
@@ -2880,102 +2959,6 @@ export const CVRenderer = ({
         </div>
       )}
 
-      {/* {style === "Willow" && (
-        <div className="min-h-[297mm] font-sans bg-white relative overflow-hidden p-14 text-slate-800">
-          <div className="absolute -top-16 -left-16 w-80 h-80 rounded-full bg-emerald-100/70 blur-3xl pointer-events-none" />
-          <div className="absolute top-20 left-32 w-48 h-48 rounded-full bg-emerald-200/40 blur-2xl pointer-events-none" />
-          <div className="relative z-10">
-            <div className="flex justify-end mb-6">
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
-                <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
-              </p>
-            </div>
-            <h1 className="text-4xl font-black tracking-tight text-slate-900 mb-4 break-words">
-              <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
-            </h1>
-            <p className="text-[11px] text-slate-500 leading-relaxed max-w-2xl mb-8 whitespace-pre-wrap break-words">
-              <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
-            </p>
-            <div className="grid grid-cols-3 gap-6 mb-10 pb-8 border-b border-slate-200">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Email</p>
-                <p className="text-[11px] text-slate-700 break-words"><InlineEdit value={contact?.email || ""} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
-              </div>
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Phone</p>
-                <p className="text-[11px] text-slate-700 break-words"><InlineEdit value={contact?.phone || ""} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
-              </div>
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Location</p>
-                <p className="text-[11px] text-slate-700 break-words"><InlineEdit value={contact?.location || ""} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
-              </div>
-            </div>
-            <DynamicMainSections
-              headerClass="text-[11px] font-black uppercase tracking-[0.2em] text-slate-800 mb-4 mt-8 pb-2 border-b border-slate-200"
-              itemClass="text-[11px] text-slate-600 leading-relaxed"
-            />
-            <SkillsSection
-              headerClass="text-[11px] font-black uppercase tracking-[0.2em] text-slate-800 mb-4 mt-8 pb-2 border-b border-slate-200"
-              itemClass="text-[11px] text-slate-600 flex items-center gap-2 before:content-['▪'] before:text-emerald-500"
-              layout="list"
-            />
-            <LanguagesSection
-              headerClass="text-[11px] font-black uppercase tracking-[0.2em] text-slate-800 mb-4 mt-8 pb-2 border-b border-slate-200"
-              itemClass="text-[11px] text-slate-700 font-semibold"
-              layout="stars"
-            />
-          </div>
-        </div>
-      )}
-
-      {style === "Marina" && (
-        <div className="min-h-[297mm] font-sans bg-white text-slate-800">
-          <div className="flex justify-center gap-10 py-6 border-b border-slate-100">
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-500"><Phone size={11} className="text-teal-600" /><InlineEdit value={contact?.phone || ""} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-500"><MapPin size={11} className="text-teal-600" /><InlineEdit value={contact?.location || ""} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
-            <span className="flex items-center gap-1.5 text-[10px] text-slate-500"><Mail size={11} className="text-teal-600" /><InlineEdit value={contact?.email || ""} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
-          </div>
-          <div className="px-14 pt-10 pb-6">
-            <h1 className="text-3xl font-black text-slate-800 break-words">
-              <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
-            </h1>
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-teal-600 mt-1">
-              <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
-            </p>
-            <p className="text-[11px] text-slate-500 leading-relaxed mt-4 max-w-3xl whitespace-pre-wrap break-words">
-              <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
-            </p>
-          </div>
-          <div className="flex px-14 pb-14 gap-10">
-            <div className="w-[36%] flex flex-col gap-8">
-              <DynamicSidebarSections
-                sidebarKeys={["education", "skills", "languages"]}
-                configs={{
-                  education: {
-                    headerClass: "bg-teal-600 text-white text-[10px] font-black uppercase tracking-[0.15em] px-3 py-2 mb-3",
-                    itemClass: "text-[11px] text-slate-600 leading-relaxed",
-                  },
-                  skills: {
-                    headerClass: "bg-teal-600 text-white text-[10px] font-black uppercase tracking-[0.15em] px-3 py-2 mb-3",
-                    itemClass: "text-[11px] text-slate-700",
-                    layout: "bars",
-                  },
-                  languages: {
-                    headerClass: "bg-teal-600 text-white text-[10px] font-black uppercase tracking-[0.15em] px-3 py-2 mb-3",
-                    itemClass: "text-[11px] text-slate-700",
-                  },
-                }}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <ExperienceSection
-                headerClass="bg-teal-600 text-white text-[10px] font-black uppercase tracking-[0.15em] px-3 py-2 mb-4"
-              />
-            </div>
-          </div>
-        </div>
-      )} */}
-
       {style === "Willow" && (
         <div className="min-h-[297mm] font-sans bg-white relative overflow-hidden p-14 text-slate-800">
           <div className="absolute -top-16 -left-16 w-72 h-72 rounded-full bg-emerald-50 pointer-events-none" />
@@ -3070,6 +3053,7 @@ export const CVRenderer = ({
       {/* <ProtectionOverlay /> */}
       <ProtectionOverlay />
     </div>
+    </CVContext.Provider>
   );
 };
 
