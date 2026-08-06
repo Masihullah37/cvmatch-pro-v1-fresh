@@ -7,7 +7,8 @@ import puppeteer from "puppeteer";
 import React from "react";
 import { revalidatePath } from "next/cache";
 // import { CVRenderer } from "@/components/templates/CVRenderer";
-// import CVRenderer from "@/components/templates/CVRenderer";
+import { renderToStaticMarkup } from "react-dom/server";
+import CVRenderer from "@/components/templates/CVRenderer";
 import { pdfHourlyUserLimit, pdfDailyUserLimit, pdfIpLimit } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
 import crypto from "crypto";
@@ -275,31 +276,78 @@ export async function POST(req: Request) {
     // await page.setContent(htmlContent, { waitUntil: "load", timeout: 30000 });
 
     // Prepare display data
+    // let displayData = { ...(templateData || (analysis as any).optimizedData || template.templateData || {}) };
+    // if (typeof displayData === "string") {
+    //   try {
+    //     displayData = JSON.parse(displayData);
+    //   } catch (e) { /* fallback */ }
+    // }
+
+    // // Build print page URL
+    // const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // const printUrl = `${baseUrl}/fr/print/${analysisId}/${templateId}`;
+
+    // // Pass custom authentication secret header for print page access
+    // await page.setExtraHTTPHeaders({
+    //   "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
+    // });
+
+    // // Inject updated template data into browser window before page loads
+    // if (displayData) {
+    //   await page.evaluateOnNewDocument((data: any) => {
+    //     (window as any).__PRINTER_DATA__ = data;
+    //   }, displayData);
+    // }
+
+    // // Navigate to print view URL
+    // await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
+
+    // Prepare display data
     let displayData = { ...(templateData || (analysis as any).optimizedData || template.templateData || {}) };
     if (typeof displayData === "string") {
       try {
         displayData = JSON.parse(displayData);
       } catch (e) { /* fallback */ }
     }
-
-    // Build print page URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const printUrl = `${baseUrl}/fr/print/${analysisId}/${templateId}`;
-
-    // Pass custom authentication secret header for print page access
-    await page.setExtraHTTPHeaders({
-      "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
-    });
-
-    // Inject updated template data into browser window before page loads
-    if (displayData) {
-      await page.evaluateOnNewDocument((data: any) => {
-        (window as any).__PRINTER_DATA__ = data;
-      }, displayData);
+    if (displayData && typeof displayData === "object") {
+      if ((displayData as any)._originalCvText) delete (displayData as any)._originalCvText;
+      (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
     }
 
-    // Navigate to print view URL
-    await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    // Render CV directly to static HTML markup without network calls
+    const cvHtml = renderToStaticMarkup(
+      React.createElement(CVRenderer, {
+        template: { ...template, templateData: displayData, hideWatermark: true },
+        analysisData: analysis,
+        isPaid: true,
+        isPreview: false,
+        isInteractive: false,
+      })
+    );
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <meta charset="utf-8">
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+              @page { size: A4; margin: 0; }
+              html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: white; }
+              body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+              #cv-ready { width: 100%; position: relative; }
+              .cv-printable { width: 100% !important; min-height: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+          </style>
+      </head>
+      <body>
+          <div id="cv-ready">${cvHtml}</div>
+      </body>
+      </html>
+    `;
+
+    // Inject directly into Puppeteer page memory
+    await page.setContent(htmlContent, { waitUntil: "load", timeout: 30000 });
     // ✅ Wait for fonts to be fully loaded, with a safety timeout
     // to prevent slow CDN responses from stalling PDF generation
     await Promise.race([
