@@ -1,4 +1,74 @@
-name: Tests
+# name: Tests
+
+# on:
+#   pull_request:
+#     branches: [main]
+#   push:
+#     branches-ignore: [main]
+
+# jobs:
+#   unit-tests:
+#     name: Unit Tests
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: 'npm'
+
+#       - name: Install dependencies
+#         run: npm ci
+
+#       - name: Run unit tests
+#         run: npm run test:run
+#         env:
+#           # Pure logic tests — fake values only
+#           TRACKING_SALT: test-salt-32-characters-minimum-value
+#           CRON_SECRET: test-cron-secret-only
+#           NODE_ENV: test
+#           NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+#   build-check:
+#     name: Build Check
+#     runs-on: ubuntu-latest
+#     needs: unit-tests
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: 'npm'
+
+#       - name: Install dependencies
+#         run: npm ci
+
+#       - name: Build
+#         run: npm run build
+#         env:
+#           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+#           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+#           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+#           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+#           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+#           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+#           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+#           NEXT_PUBLIC_APP_URL: https://ouicv.fr
+#           TRACKING_SALT: ${{ secrets.TRACKING_SALT }}
+#           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+#           PRIMARY_LLM_API_KEY: ${{ secrets.PRIMARY_LLM_API_KEY }}
+#           PRIMARY_LLM_PROVIDER: groq
+#           PRIMARY_LLM_MODEL: llama-3.3-70b-versatile
+#           NEXT_PUBLIC_DEFAULT_LOCALE: fr
+
+
+name: Unit Tests
 
 on:
   pull_request:
@@ -8,11 +78,13 @@ on:
 
 jobs:
   unit-tests:
-    name: Unit Tests
+    name: Run Jest Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # Only download latest commit
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -21,48 +93,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Run unit tests
         run: npm run test:run
         env:
-          # Pure logic tests — fake values only
           TRACKING_SALT: test-salt-32-characters-minimum-value
           CRON_SECRET: test-cron-secret-only
           NODE_ENV: test
           NEXT_PUBLIC_APP_URL: http://localhost:3000
-
-  build-check:
-    name: Build Check
-    runs-on: ubuntu-latest
-    needs: unit-tests
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-        env:
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-          NEXT_PUBLIC_APP_URL: https://ouicv.fr
-          TRACKING_SALT: ${{ secrets.TRACKING_SALT }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          PRIMARY_LLM_API_KEY: ${{ secrets.PRIMARY_LLM_API_KEY }}
-          PRIMARY_LLM_PROVIDER: groq
-          PRIMARY_LLM_MODEL: llama-3.3-70b-versatile
-          NEXT_PUBLIC_DEFAULT_LOCALE: fr

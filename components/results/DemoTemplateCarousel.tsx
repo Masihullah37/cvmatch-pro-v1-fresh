@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import { CVRenderer } from '@/components/templates/CVRenderer';
+// import { CVRenderer } from '@/components/templates/CVRenderer';
+import CVRenderer from '@/components/templates/CVRenderer';
 import { ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 
@@ -87,11 +88,10 @@ function TemplateCard({
           )}
 
           {/* Hover / Active Overlay */}
-          <div className={`absolute inset-0 transition-colors flex items-center justify-center ${
-            isLoading 
-              ? 'bg-slate-900/60 backdrop-blur-xs' 
-              : 'bg-emerald-600/0 group-hover:bg-emerald-600/10 group-active:bg-emerald-600/10'
-          }`}>
+          <div className={`absolute inset-0 transition-colors flex items-center justify-center ${isLoading
+            ? 'bg-slate-900/60 backdrop-blur-xs'
+            : 'bg-emerald-600/0 group-hover:bg-emerald-600/10 group-active:bg-emerald-600/10'
+            }`}>
             {isLoading ? (
               <div className="bg-white text-slate-900 px-4 py-2.5 rounded-xl font-black text-xs shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
                 <Loader2 size={16} className="animate-spin text-pink-500" />
@@ -146,7 +146,7 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4">
             <Sparkles size={12} />
-            28 Modèles Professionnels
+            30 Modèles Professionnels
           </div>
           <h2 className="text-3xl md:text-4xl font-black text-slate-950 leading-tight mb-4">
             Modèles CV Recommandés
@@ -171,4 +171,4 @@ export default function DemoTemplateCarousel({ analysisId }: { analysisId: strin
       </div>
     </div>
   );
-}
+}

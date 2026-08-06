@@ -3,8 +3,10 @@
 import React, { createContext, useContext } from 'react';
 import Watermark from "@/components/templates/Watermark";
 import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";
+import InlineEditInteractive from './InlineEditInteractive';
+import DraggableSectionInteractive from './DraggableSectionInteractive';
 
-// Inline SVG icons to avoid lucide-react client-only restriction
+// Inline SVG icons to -avoid lucide-react client-only restriction
 const MapPin = ({
   size = 24,
   className = "",
@@ -132,24 +134,39 @@ const CVContext = createContext<CVCtxValue>({
 const useCVCtx = () => useContext(CVContext);
 
 // ─── Stable module-scope InlineEdit (already stable, keep as-is) ─────────────
+// const InlineEdit = (props: any) => {
+//   if (!props.isInteractive) {
+//     return <span className={props.className}>{props.value || (props.multiline ? "\u00A0\n\u00A0" : "\u00A0")}</span>;
+//   }
+//   const Interactive = require('./InlineEditInteractive').default;
+//   return <Interactive {...props} />;
+// };
+
 const InlineEdit = (props: any) => {
   if (!props.isInteractive) {
     return <span className={props.className}>{props.value || (props.multiline ? "\u00A0\n\u00A0" : "\u00A0")}</span>;
   }
-  const Interactive = require('./InlineEditInteractive').default;
-  return <Interactive {...props} />;
+  return <InlineEditInteractive {...props} />;
 };
+
+// const DraggableSection = ({ id, isInteractive, onDelete, children, style: extraStyle = {}, className = '' }: any) => {
+//   if (!isInteractive) return <div style={extraStyle} className={className}>{children}</div>;
+//   const Interactive = require('./DraggableSectionInteractive').default;
+//   return (
+//     <Interactive id={id} onDelete={onDelete} style={extraStyle} className={className}>
+//       {children}
+//     </Interactive>
+//   );
+// };
 
 const DraggableSection = ({ id, isInteractive, onDelete, children, style: extraStyle = {}, className = '' }: any) => {
   if (!isInteractive) return <div style={extraStyle} className={className}>{children}</div>;
-  const Interactive = require('./DraggableSectionInteractive').default;
   return (
-    <Interactive id={id} onDelete={onDelete} style={extraStyle} className={className}>
+    <DraggableSectionInteractive id={id} onDelete={onDelete} style={extraStyle} className={className}>
       {children}
-    </Interactive>
+    </DraggableSectionInteractive>
   );
 };
-
 // ─── Stable module-scope sub-components ─────────────────────────────────────
 // These are defined OUTSIDE CVRenderer so React never sees a new function
 // reference and never unmounts/remounts them between keystrokes.
