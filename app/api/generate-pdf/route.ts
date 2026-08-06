@@ -360,7 +360,7 @@ import { users, cvTemplates, cvGenerations, cvAnalyses, userTemplateUnlocks } fr
 import { eq, and, sql, inArray } from "drizzle-orm";
 import React from "react";
 import { revalidatePath } from "next/cache";
-import { CVPrintRenderer } from "@/components/templates/CVPrintRenderer";
+import CVRenderer from "@/components/templates/CVRenderer";
 import { pdfHourlyUserLimit, pdfDailyUserLimit, pdfIpLimit } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
 import crypto from "crypto";
@@ -491,7 +491,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Prepare Data
+    // Prepare display data
     let displayData = { ...(templateData || (analysis as any).optimizedData || template.templateData || {}) };
     if (typeof displayData === "string") {
       try {
@@ -503,9 +503,17 @@ export async function POST(req: Request) {
       (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
     }
 
-    // Dynamic import inside handler bypasses Turbopack static import restrictions
+    // Render static HTML from CVRenderer component dynamically without crashing Node/Turbopack
     const { renderToStaticMarkup } = eval('require')('react-dom/server');
-    const cvMarkup = renderToStaticMarkup(React.createElement(CVPrintRenderer, { data: displayData }));
+    const cvHtml = renderToStaticMarkup(
+      React.createElement(CVRenderer as any, {
+        template: { ...template, templateData: displayData, hideWatermark: true },
+        analysisData: analysis,
+        isPaid: true,
+        isPreview: false,
+        isInteractive: false,
+      })
+    );
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -523,12 +531,12 @@ export async function POST(req: Request) {
           </style>
       </head>
       <body>
-          <div id="cv-ready">${cvMarkup}</div>
+          <div id="cv-ready">${cvHtml}</div>
       </body>
       </html>
     `;
 
-    // Launch Browser and inject static HTML
+    // Launch Shared Browser and render static markup in page memory
     browser = await withRenderSlot(() => getSharedBrowser());
     page = await browser.newPage();
 
