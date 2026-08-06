@@ -3,10 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { users, cvTemplates, cvGenerations, cvAnalyses, userTemplateUnlocks } from "@/lib/db/schema";
 import { eq, and, sql, inArray } from "drizzle-orm";
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { revalidatePath } from "next/cache";
-import CVRenderer from "@/components/templates/CVRenderer";
 import { pdfHourlyUserLimit, pdfDailyUserLimit, pdfIpLimit } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
 import crypto from "crypto";
@@ -139,65 +136,96 @@ export async function POST(req: Request) {
 
     // Prepare display data
     let displayData = { ...(templateData || (analysis as any).optimizedData || template.templateData || {}) };
-    if (typeof displayData === "string") {
-      try {
-        displayData = JSON.parse(displayData);
-      } catch (e) { /* fallback */ }
-    }
+    // if (typeof displayData === "string") {
+    //   try {
+    //     displayData = JSON.parse(displayData);
+    //   } catch (e) { /* fallback */ }
+    // }
+    // if (displayData && typeof displayData === "object") {
+    //   if ((displayData as any)._originalCvText) delete (displayData as any)._originalCvText;
+    //   (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
+    // }
+
+    // // Render static HTML from CVRenderer component dynamically without crashing Node/Turbopack
+
+    // const cvHtml = renderToStaticMarkup(
+    //   React.createElement(CVRenderer as any, {
+    //     template: { ...template, templateData: displayData, hideWatermark: true },
+    //     analysisData: analysis,
+    //     isPaid: true,
+    //     isPreview: false,
+    //     isInteractive: false,
+    //   })
+    // );
+
+    // const htmlContent = `
+    //   <!DOCTYPE html>
+    //   <html>
+    //   <head>
+    //       <meta charset="utf-8">
+    //       <script src="https://cdn.tailwindcss.com"></script>
+    //       <style>
+    //           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    //           @page { size: A4; margin: 0; }
+    //           html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: white; }
+    //           body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+    //           #cv-ready { width: 100%; position: relative; }
+    //           .cv-printable { width: 100% !important; min-height: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+    //       </style>
+    //   </head>
+    //   <body>
+    //       <div id="cv-ready">${cvHtml}</div>
+    //   </body>
+    //   </html>
+    // `;
+
+    // // Launch Shared Browser and render static markup in page memory
+    // browser = await withRenderSlot(() => getSharedBrowser());
+    // page = await browser.newPage();
+
+    // await page.setRequestInterception(true);
+    // page.on("request", (request: any) => {
+    //   const url = request.url();
+    //   if (url.includes("google-analytics") || url.includes("clerk")) {
+    //     request.abort();
+    //   } else {
+    //     request.continue();
+    //   }
+    // });
+
+    // await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
+    // await page.setContent(htmlContent, { waitUntil: "load", timeout: 30000 });
+
+    // Sanitize data to match Page logic and prevent CVRenderer crashes
     if (displayData && typeof displayData === "object") {
       if ((displayData as any)._originalCvText) delete (displayData as any)._originalCvText;
       (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
     }
 
-    // Render static HTML from CVRenderer component dynamically without crashing Node/Turbopack
+    // Persist the current editor state (which may be ahead of what's saved)
+    // so the print page — which reads straight from the database — reflects
+    // exactly what the user sees, including unsaved live edits.
+    try {
+      await db.update(cvTemplates)
+        .set({ templateData: displayData })
+        .where(eq(cvTemplates.id, templateId));
+    } catch (err) {
+      console.error("Failed to sync live edits before PDF render:", err);
+    }
 
-    const cvHtml = renderToStaticMarkup(
-      React.createElement(CVRenderer as any, {
-        template: { ...template, templateData: displayData, hideWatermark: true },
-        analysisData: analysis,
-        isPaid: true,
-        isPreview: false,
-        isInteractive: false,
-      })
-    );
+    const proto = req.headers.get("x-forwarded-proto") || "https";
+    const host = req.headers.get("host");
+    const origin = `${proto}://${host}`;
+    const locale = body.locale || "fr";
+    const printUrl = `${origin}/${locale}/print/${analysisId}/${templateId}`;
 
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-          <meta charset="utf-8">
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-              @page { size: A4; margin: 0; }
-              html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: white; }
-              body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
-              #cv-ready { width: 100%; position: relative; }
-              .cv-printable { width: 100% !important; min-height: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
-          </style>
-      </head>
-      <body>
-          <div id="cv-ready">${cvHtml}</div>
-      </body>
-      </html>
-    `;
-
-    // Launch Shared Browser and render static markup in page memory
-    browser = await withRenderSlot(() => getSharedBrowser());
-    page = await browser.newPage();
-
-    await page.setRequestInterception(true);
-    page.on("request", (request: any) => {
-      const url = request.url();
-      if (url.includes("google-analytics") || url.includes("clerk")) {
-        request.abort();
-      } else {
-        request.continue();
-      }
+    await page.setExtraHTTPHeaders({
+      "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
     });
 
-    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
-    await page.setContent(htmlContent, { waitUntil: "load", timeout: 30000 });
+    // ✅ Navigate to the real print page and wait for it to render
+    await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    await page.waitForSelector("#cv-ready", { timeout: 10000 });
 
     await Promise.race([
       page.evaluateHandle('document.fonts.ready'),
