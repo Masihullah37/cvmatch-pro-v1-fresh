@@ -19,24 +19,55 @@ setInterval(async () => {
     }
 }, 60 * 1000); // check every minute
 
+// async function launchBrowser() {
+//     if (process.env.NODE_ENV === "production") {
+//         const chromium = (await import("@sparticuz/chromium")).default as any;
+//         const puppeteerCore = (await import("puppeteer-core")) as any;
+//         return puppeteerCore.launch({
+//             args: chromium.args,
+//             defaultViewport: chromium.defaultViewport,
+//             executablePath: await chromium.executablePath(),
+//             headless: chromium.headless,
+//         });
+//     } else {
+//         const puppeteer = (await import("puppeteer")).default as any;
+//         return puppeteer.launch({
+//             headless: true,
+//             args: ["--no-sandbox", "--disable-setuid-sandbox"],
+//             timeout: 60000,
+//         });
+//     }
+// }
+
 async function launchBrowser() {
-    if (process.env.NODE_ENV === "production") {
-        const chromium = (await import("@sparticuz/chromium")).default as any;
-        const puppeteerCore = (await import("puppeteer-core")) as any;
-        return puppeteerCore.launch({
-            args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath(),
-            headless: chromium.headless,
-        });
-    } else {
-        const puppeteer = (await import("puppeteer")).default as any;
-        return puppeteer.launch({
-            headless: true,
-            args: ["--no-sandbox", "--disable-setuid-sandbox"],
-            timeout: 60000,
-        });
-    }
+    // Railway runs a persistent Docker container, not AWS Lambda, so
+    // @sparticuz/chromium (a Lambda-only Amazon Linux binary) never
+    // renders correctly here — it causes every page.goto() to fail
+    // with net::ERR_FAILED. Always use full puppeteer's bundled Chromium.
+    // const puppeteer = (await import("puppeteer")).default as any;
+    // return puppeteer.launch({
+    //     headless: true,
+    //     args: [
+    //         "--no-sandbox",
+    //         "--disable-setuid-sandbox",
+    //         "--disable-dev-shm-usage",
+    //         "--disable-gpu",
+    //     ],
+    //     timeout: 60000,
+    // });
+
+    const puppeteer = (await import("puppeteer")).default as any;
+    return puppeteer.launch({
+        headless: true,
+        dumpio: true, // TEMP: pipes Chrome's own stderr/stdout into Railway logs so we can see the real crash reason
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+        ],
+        timeout: 60000,
+    });
 }
 
 // One shared browser instance for the entire server process, launched

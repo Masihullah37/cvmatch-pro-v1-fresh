@@ -38,6 +38,7 @@ aptPkgs = [
   "wget",
   "xdg-utils",
   "xvfb",
+  "libxkbcommon0",
 ]
 
 [phases.install]
