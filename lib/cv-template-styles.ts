@@ -3,10 +3,10 @@
 
 export const CV_TEMPLATE_STYLES = [
   "Prism",
-  "Hartmann",// 2ème
+  "Hartmann",
   "Rose",
   "Galaxy",
-  "Eclipse", "Aether", "Hyperion", "Lunar", "Stellar",
+  "Eclipse", "Willow", "Marina", "Aether", "Hyperion", "Lunar", "Stellar",
   "Solar", "Nebula", "Cosmos", "Astra",
   "Meridian", "Classic", "Navy", "Vertex", "Verde",
   "Azure", "Europass", "Pamela", "Liverpool", "Lumiere",

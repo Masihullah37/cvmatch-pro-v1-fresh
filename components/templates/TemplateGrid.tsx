@@ -1914,8 +1914,12 @@ export default function TemplateGrid({
                 <div
                   className="relative bg-white shadow-2xl rounded-sm overflow-visible transform-gpu transition-all duration-300"
                   style={{
+                    // width: "calc(794px * var(--preview-scale, 1))",
+                    // height: "calc(1123px * var(--preview-scale, 1))",
+                    // minWidth: forceDesktopPreview ? "calc(794px * var(--preview-scale, 1))" : undefined,
+
                     width: "calc(794px * var(--preview-scale, 1))",
-                    height: "calc(1123px * var(--preview-scale, 1))",
+                    minHeight: "calc(1123px * var(--preview-scale, 1))",
                     minWidth: forceDesktopPreview ? "calc(794px * var(--preview-scale, 1))" : undefined,
                   }}
                 >
@@ -1931,8 +1935,11 @@ export default function TemplateGrid({
                             isPaid={hasPaid}
                             analysisData={analysisData}
                             isInteractive={true}
-                            onUpdate={(path: string, val: any) => update(path, val)}
-                            onDeleteSection={(key: string) => deleteSection(key)}
+                            // onUpdate={(path: string, val: any) => update(path, val)}
+                            // onDeleteSection={(key: string) => deleteSection(key)}
+
+                            onUpdate={update}
+                            onDeleteSection={deleteSection}
                           />
                         </SortableContext>
                       </DndContext>
