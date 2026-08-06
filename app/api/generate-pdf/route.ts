@@ -182,18 +182,39 @@ export async function POST(req: Request) {
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
 
     // Internal loopback to avoid external network/domain blocks in container environments
-    const port = process.env.PORT || 3000;
-    const hostHeader = req.headers.get("host") || `127.0.0.1:${port}`;
-    const locale = body.locale || "fr";
-    const printUrl = `http://127.0.0.1:${port}/${locale}/print/${analysisId}/${templateId}`;
+    // const port = process.env.PORT || 3000;
+    // const hostHeader = req.headers.get("host") || `127.0.0.1:${port}`;
+    // const locale = body.locale || "fr";
+    // const printUrl = `http://127.0.0.1:${port}/${locale}/print/${analysisId}/${templateId}`;
 
-    // Pass secret and public Host header so Next.js routes internal requests properly
+    // // Pass secret and public Host header so Next.js routes internal requests properly
+    // await page.setExtraHTTPHeaders({
+    //   "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
+    //   "host": hostHeader,
+    // });
+
+    // // Navigate to local print page
+    // await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    // await page.waitForSelector("#cv-ready", { timeout: 10000 });
+
+    // Resolve clean origin for internal container routing
+    const proto = req.headers.get("x-forwarded-proto") || "https";
+    const hostHeader = req.headers.get("host") || `127.0.0.1:${process.env.PORT || 3000}`;
+    const locale = body.locale || "fr";
+
+    // Use proper domain or local loopback depending on environment
+    const targetBase = hostHeader.includes("localhost") || hostHeader.includes("127.0.0.1")
+      ? `http://${hostHeader}`
+      : `${proto}://${hostHeader}`;
+
+    const printUrl = `${targetBase}/${locale}/print/${analysisId}/${templateId}`;
+
+    // Pass only the authorization secret (Removed invalid 'host' header to fix net::ERR_INVALID_ARGUMENT)
     await page.setExtraHTTPHeaders({
       "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
-      "host": hostHeader,
     });
 
-    // Navigate to local print page
+    // Navigate to print page
     await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
     await page.waitForSelector("#cv-ready", { timeout: 10000 });
 
