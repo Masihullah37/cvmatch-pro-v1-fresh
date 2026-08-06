@@ -15,6 +15,7 @@ const font = Quicksand({ subsets: ['latin'], weight: ['300', '400', '500', '600'
 
 import PromotionModal from '@/components/common/PromotionModal';
 import { getSiteSettings } from '@/lib/actions/admin';
+import { headers } from 'next/headers';
 
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -30,6 +31,22 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
+// export default async function LocaleLayout({
+//   children,
+//   params,
+// }: {
+//   children: React.ReactNode;
+//   params: Promise<{ locale: string }>;
+// }) {
+//   const { locale } = await params;
+//   if (!routing.locales.includes(locale as any)) notFound();
+//   const messages = await getMessages();
+
+//   const settings = await getSiteSettings() as any;
+//   const activeOffer = settings?.activeOffer?.isActive ? settings.activeOffer : null;
+
+//   return (
+
 export default async function LocaleLayout({
   children,
   params,
@@ -41,8 +58,29 @@ export default async function LocaleLayout({
   if (!routing.locales.includes(locale as any)) notFound();
   const messages = await getMessages();
 
+  // Puppeteer's PDF render carries this header on its navigation request.
+  // When present, skip Sidebar/Header/Footer/CookieConsent/PromotionModal/
+  // Toaster entirely — the print page should render only the CV, nothing
+  // else. This also removes the leftover "sidebar-offset" spacing that was
+  // showing as a blank gap in the exported PDF even with Sidebar hidden.
+  const headersList = await headers();
+  const isPdfRender =
+    headersList.get("x-pdf-gen-secret") ===
+    (process.env.PDF_GEN_SECRET || "internal-bypass");
+
+  if (isPdfRender) {
+    return (
+      <NextIntlClientProvider messages={messages} locale={locale}>
+        <div className={`${font.className} min-h-screen bg-white`}>
+          {children}
+        </div>
+      </NextIntlClientProvider>
+    );
+  }
+
   const settings = await getSiteSettings() as any;
-  const activeOffer = settings?.activeOffer?.isActive ? settings.activeOffer : null;
+  const activeOffer = settings?.activeOffer?.isActive ?
+    settings.activeOffer : null;
 
   return (
     <NextIntlClientProvider messages={messages} locale={locale}>
