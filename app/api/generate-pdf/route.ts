@@ -15,6 +15,7 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   let browser: any;
   let page: any;
+
   try {
     const { userId } = await auth();
     const body = await req.json();
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing IDs" }, { status: 400 });
     }
 
+    // ─── Database queries ──────────────────────────────────────────
     const template = await db.query.cvTemplates.findFirst({
       where: eq(cvTemplates.id, templateId),
     });
@@ -36,6 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Data not found" }, { status: 404 });
     }
 
+    // ─── User verification and access control ────────────────────
     const dbUser = userId ? await db.query.users.findFirst({ where: eq(users.clerkId, userId) }) : null;
     const plan = getUserPlan(dbUser);
 
@@ -74,6 +77,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // ─── Consume credits if needed ──────────────────────────────
     if (dbUser && dbUser.id && plan !== "pro" && !template.isPaid && !existingUnlock) {
       if ((dbUser.credits ?? 0) > 0) {
         await db.transaction(async (tx) => {
@@ -86,6 +90,7 @@ export async function POST(req: Request) {
             .select()
             .from(cvTemplates)
             .where(eq(cvTemplates.analysisId, analysisId));
+
           if (allTemplates.length > 0) {
             await tx
               .insert(userTemplateUnlocks)
@@ -100,7 +105,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Rate Limiting
+    // ─── Rate Limiting ────────────────────────────────────────────
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anonymous";
     const trackingSalt = process.env.TRACKING_SALT || "default_salt";
     const hashedIp = crypto.createHash("sha256").update(ip + trackingSalt).digest("hex");
@@ -139,7 +144,6 @@ export async function POST(req: Request) {
           minute: "2-digit",
           timeZone: "Europe/Paris",
         });
-
         return NextResponse.json(
           { error: `Limite de téléchargement atteinte pour cette IP. Réessayez à ${formattedTime}.` },
           { status: 429 }
@@ -147,7 +151,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Prepare display data
+    // ─── Prepare display data ────────────────────────────────────
     let displayData = { ...(templateData || (analysis as any).optimizedData || template.templateData || {}) };
 
     if (displayData && typeof displayData === "object") {
@@ -155,7 +159,7 @@ export async function POST(req: Request) {
       (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
     }
 
-    // Persist live edits to database so print page reads latest state
+    // ─── Persist live edits ──────────────────────────────────────
     try {
       await db
         .update(cvTemplates)
@@ -165,44 +169,48 @@ export async function POST(req: Request) {
       console.error("Failed to sync live edits before PDF render:", err);
     }
 
-    // Launch Browser & Page
+    // ─── Launch Browser ──────────────────────────────────────────
     browser = await withRenderSlot(() => getSharedBrowser());
     page = await browser.newPage();
 
-    await page.setViewport({ width: 794, height: 2000, deviceScaleFactor: 1 });
+    // Set viewport to A4 proportions with enough height
+    await page.setViewport({
+      width: 794,   // A4 width in pixels at 96dpi
+      height: 2000, // Enough height to render long content
+      deviceScaleFactor: 1
+    });
 
-    // Always use internal loopback so Puppeteer never has to leave the
-    // container to hit its own public Railway domain. Railway's edge does
-    // not route a container back to itself via the public hostname, which
-    // is what caused net::ERR_FAILED. Locale routing is path-based, so
-    // loopback works fine — no host branching needed.
+    // ─── Build the URL ───────────────────────────────────────────
     const port = process.env.PORT || 3000;
     const locale = body.locale || "fr";
+    const printUrl = `http://127.0.0.1:${port}/${locale}/print/${analysisId}/${templateId}`;
 
-    // Pass only the authorization secret (Removed invalid 'host' header to fix net::ERR_INVALID_ARGUMENT)
+    // Pass authorization secret
     await page.setExtraHTTPHeaders({
       "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
     });
 
-    // Build the printUrl WITHOUT scale initially
-    const initialPrintUrl = `http://127.0.0.1:${port}/${locale}/print/${analysisId}/${templateId}`;
+    // ─── Navigate to print page ──────────────────────────────────
+    try {
+      const probe = await fetch(printUrl, {
+        headers: { "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass" },
+      });
+      console.log("[PDF PROBE]", probe.status, printUrl);
+    } catch (probeErr: any) {
+      console.error("[PDF PROBE FAILED]", printUrl, probeErr?.message || probeErr);
+    }
 
-    // Navigate to print page
-    await page.goto(initialPrintUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
     await page.waitForSelector("#cv-ready", { timeout: 10000 });
 
+    // ─── Wait for fonts ──────────────────────────────────────────
     await Promise.race([
       page.evaluateHandle("document.fonts.ready"),
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
 
-    // Scroll-triggered reveal animations (Framer Motion whileInView, AOS,
-    // or any IntersectionObserver-based "fade in on scroll" effect) only
-    // fire once their section actually enters the viewport. A headless
-    // page that goes straight to page.goto() and never scrolls will never
-    // trigger them — those sections (like Projets) stay hidden/collapsed
-    // forever, which is why they were missing from the PDF with no error
-    // and no overflow: they simply never rendered into the DOM.
+    // ─── Scroll to reveal all content ────────────────────────────
+    // This triggers any intersection observers or scroll animations
     await page.evaluate(async () => {
       const distance = 300;
       const delay = 120;
@@ -214,36 +222,80 @@ export async function POST(req: Request) {
       window.scrollTo(0, 0);
     });
 
-    // Give any triggered animations a moment to finish settling before
-    // we measure height and capture the PDF.
+    // Wait for animations to settle
     await new Promise((r) => setTimeout(r, 500));
 
-    // Measure the CV's true, unmodified height once.
+    // ─── Measure content height ──────────────────────────────────
     const contentHeight = await page.evaluate(() => {
       const container = document.getElementById("cv-ready");
       return container ? container.scrollHeight : 1122;
     });
 
+    // ─── Calculate scale to fit ONE page ─────────────────────────
     const A4_HEIGHT_PX = 1123;
-    const scale = Math.min(1, A4_HEIGHT_PX / contentHeight);
+    const MIN_SCALE = 0.65; // Minimum scale to keep text readable
 
-    // NOW reload with scale parameter
-    const printUrlWithScale = `http://127.0.0.1:${port}/${locale}/print/${analysisId}/${templateId}?scale=${scale}`;
-    await page.goto(printUrlWithScale, { waitUntil: "networkidle0", timeout: 30000 });
-    await page.waitForSelector("#cv-ready", { timeout: 10000 });
+    // Calculate the scale needed to fit content in one page
+    let scale = Math.min(1, A4_HEIGHT_PX / contentHeight);
 
-    // Generate PDF - use preferCSSPageSize: true with NO scale parameter
+    // Ensure we don't shrink below minimum readability
+    scale = Math.max(MIN_SCALE, scale);
+
+    console.log(`[PDF SCALE] contentHeight: ${contentHeight}px, scale: ${scale}`);
+
+    // ─── Method 1: Apply scale via CSS on the page ──────────────
+    // Inject CSS to scale the CV container
+    await page.evaluate((scale) => {
+      const container = document.getElementById("cv-ready");
+      if (container) {
+        // Reset any existing transforms
+        container.style.transform = `scale(${scale})`;
+        container.style.transformOrigin = "top left";
+
+        // Expand the container so after scaling it fills the page
+        const rect = container.getBoundingClientRect();
+        container.style.width = `${rect.width / scale}px`;
+        container.style.height = `${rect.height / scale}px`;
+
+        // The outer wrapper must be exactly A4 size
+        const wrapper = container.parentElement;
+        if (wrapper) {
+          wrapper.style.width = "794px";
+          wrapper.style.height = "1123px";
+          wrapper.style.overflow = "hidden";
+        }
+      }
+    }, scale);
+
+    // Wait for the CSS changes to apply
+    await new Promise((r) => setTimeout(r, 200));
+
+    // ─── Alternative Method 2: Use Puppeteer's scale parameter ──
+    // If you prefer using Puppeteer's built-in scaling instead of CSS,
+    // comment out the CSS injection above and uncomment this:
+    //
+    // const pdfBuffer = await page.pdf({
+    //   format: "A4",
+    //   printBackground: true,
+    //   preferCSSPageSize: false,
+    //   margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
+    //   scale: scale,
+    // });
+
+    // ─── Generate PDF with CSS scaling ──────────────────────────
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      preferCSSPageSize: true,
+      preferCSSPageSize: true,  // Use CSS page size
       margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
+      // scale is NOT used here - CSS handles the scaling
     });
 
     console.log("[PDF SIZE]", pdfBuffer.length, "bytes");
 
     await page.close();
 
+    // ─── Log generation ──────────────────────────────────────────
     try {
       if (dbUser?.id) {
         await db.insert(cvGenerations).values({
@@ -258,6 +310,7 @@ export async function POST(req: Request) {
       console.error("Failed to log generation in cv_generations:", err);
     }
 
+    // ─── Update monthly usage ────────────────────────────────────
     try {
       if (dbUser?.id && userId) {
         await db
@@ -271,12 +324,19 @@ export async function POST(req: Request) {
       console.error("Failed to increment monthly template usage:", err);
     }
 
+    // ─── Return PDF ──────────────────────────────────────────────
     return NextResponse.json({
       pdfBase64: Buffer.from(pdfBuffer).toString("base64"),
       fileName: `CV_${template.templateStyle}.pdf`,
     });
+
   } catch (error: any) {
-    if (typeof page !== "undefined" && page) await page.close();
+    if (typeof page !== "undefined" && page) {
+      try { await page.close(); } catch (e) { }
+    }
+    if (typeof browser !== "undefined" && browser) {
+      try { /* browser pool handles cleanup */ } catch (e) { }
+    }
     console.error("PDF Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
