@@ -245,20 +245,46 @@ export async function POST(req: Request) {
     //   container.style.width = 100 / scale + "%";
     // });
 
-    await page.evaluate(() => {
+    // await page.evaluate(() => {
+    //   const container = document.getElementById("cv-ready") as HTMLElement | null;
+    //   if (!container) return;
+    //   const A4_HEIGHT_PX = 1122;
+    //   const contentHeight = container.scrollHeight;
+    //   const rawScale = (A4_HEIGHT_PX - 4) / contentHeight;
+    //   const scale = Math.min(rawScale, 1); // never upscale — avoids horizontal overflow
+    //   // Use CSS `zoom`, not `transform: scale`. `transform` is paint-only —
+    //   // Chrome's print pagination still measures the original, un-shrunk
+    //   // height, so long CVs overflow to page 2, which pageRanges:"1" then
+    //   // just cuts off instead of fitting. `zoom` forces a real layout
+    //   // reflow, so the measured height actually shrinks and everything
+    //   // genuinely fits on one A4 page.
+    //   container.style.zoom = String(scale);
+    // });
+
+    await page.evaluate(async () => {
       const container = document.getElementById("cv-ready") as HTMLElement | null;
       if (!container) return;
       const A4_HEIGHT_PX = 1122;
-      const contentHeight = container.scrollHeight;
-      const rawScale = (A4_HEIGHT_PX - 4) / contentHeight;
-      const scale = Math.min(rawScale, 1); // never upscale — avoids horizontal overflow
-      // Use CSS `zoom`, not `transform: scale`. `transform` is paint-only —
-      // Chrome's print pagination still measures the original, un-shrunk
-      // height, so long CVs overflow to page 2, which pageRanges:"1" then
-      // just cuts off instead of fitting. `zoom` forces a real layout
-      // reflow, so the measured height actually shrinks and everything
-      // genuinely fits on one A4 page.
-      container.style.zoom = String(scale);
+
+      const settle = () =>
+        new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
+      container.style.zoom = "1";
+      await settle();
+
+      // Shrink step by step and re-measure after each attempt, instead of
+      // calculating one scale factor up front. Text reflow doesn't scale
+      // linearly with zoom (line-wrap counts change unevenly), so a single
+      // calculated guess routinely undershoots and still overflows onto a
+      // hidden second page, which pageRanges:"1" then silently drops.
+      let zoom = 1;
+      let attempts = 0;
+      while (container.scrollHeight > A4_HEIGHT_PX - 4 && zoom > 0.5 && attempts < 25) {
+        zoom -= 0.02;
+        container.style.zoom = String(zoom);
+        await settle();
+        attempts++;
+      }
     });
 
     const pdfBuffer = await page.pdf({
