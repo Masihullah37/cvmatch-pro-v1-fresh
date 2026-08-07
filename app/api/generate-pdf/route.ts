@@ -175,8 +175,8 @@ export async function POST(req: Request) {
 
     // Set viewport to A4 proportions with enough height
     await page.setViewport({
-      width: 794,   // A4 width in pixels at 96dpi
-      height: 2000, // Enough height to render long content
+      width: 794,
+      height: 2000,
       deviceScaleFactor: 1
     });
 
@@ -210,7 +210,6 @@ export async function POST(req: Request) {
     ]);
 
     // ─── Scroll to reveal all content ────────────────────────────
-    // This triggers any intersection observers or scroll animations
     await page.evaluate(async () => {
       const distance = 300;
       const delay = 120;
@@ -233,29 +232,26 @@ export async function POST(req: Request) {
 
     // ─── Calculate scale to fit ONE page ─────────────────────────
     const A4_HEIGHT_PX = 1123;
-    const MIN_SCALE = 0.65; // Minimum scale to keep text readable
+    const MIN_SCALE = 0.65;
 
-    // Calculate the scale needed to fit content in one page
     let scale = Math.min(1, A4_HEIGHT_PX / contentHeight);
-
-    // Ensure we don't shrink below minimum readability
     scale = Math.max(MIN_SCALE, scale);
 
     console.log(`[PDF SCALE] contentHeight: ${contentHeight}px, scale: ${scale}`);
 
-    // ─── Method 1: Apply scale via CSS on the page ──────────────
-    // Inject CSS to scale the CV container
-    await page.evaluate((scale) => {
+    // ─── Apply scale via CSS on the page ─────────────────────────
+    // Fixed: Added type annotation for the scale parameter
+    await page.evaluate((scaleValue: number) => {
       const container = document.getElementById("cv-ready");
       if (container) {
         // Reset any existing transforms
-        container.style.transform = `scale(${scale})`;
+        container.style.transform = `scale(${scaleValue})`;
         container.style.transformOrigin = "top left";
 
         // Expand the container so after scaling it fills the page
         const rect = container.getBoundingClientRect();
-        container.style.width = `${rect.width / scale}px`;
-        container.style.height = `${rect.height / scale}px`;
+        container.style.width = `${rect.width / scaleValue}px`;
+        container.style.height = `${rect.height / scaleValue}px`;
 
         // The outer wrapper must be exactly A4 size
         const wrapper = container.parentElement;
@@ -265,30 +261,17 @@ export async function POST(req: Request) {
           wrapper.style.overflow = "hidden";
         }
       }
-    }, scale);
+    }, scale); // ← Pass scale as the second argument
 
     // Wait for the CSS changes to apply
     await new Promise((r) => setTimeout(r, 200));
 
-    // ─── Alternative Method 2: Use Puppeteer's scale parameter ──
-    // If you prefer using Puppeteer's built-in scaling instead of CSS,
-    // comment out the CSS injection above and uncomment this:
-    //
-    // const pdfBuffer = await page.pdf({
-    //   format: "A4",
-    //   printBackground: true,
-    //   preferCSSPageSize: false,
-    //   margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
-    //   scale: scale,
-    // });
-
-    // ─── Generate PDF with CSS scaling ──────────────────────────
+    // ─── Generate PDF ────────────────────────────────────────────
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      preferCSSPageSize: true,  // Use CSS page size
+      preferCSSPageSize: true,
       margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
-      // scale is NOT used here - CSS handles the scaling
     });
 
     console.log("[PDF SIZE]", pdfBuffer.length, "bytes");
