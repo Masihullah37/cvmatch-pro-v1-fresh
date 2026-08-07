@@ -634,12 +634,19 @@ export async function POST(req: Request) {
     await new Promise((r) => setTimeout(r, 300));
 
     // ─── Generate PDF ────────────────────────────────────────────
+    // const pdfBuffer = await page.pdf({
+    //   format: "A4",
+    //   printBackground: true,
+    //   preferCSSPageSize: true,
+    //   margin: { top: "0", right: "0", bottom: "0", left: "0" },
+    //   pageRanges: "1",
+    // });
+
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      preferCSSPageSize: true,
-      margin: { top: "0", right: "0", bottom: "0", left: "0" },
-      pageRanges: "1",
+      margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
+      // scale,
     });
 
     console.log("[PDF SIZE]", pdfBuffer.length, "bytes");
