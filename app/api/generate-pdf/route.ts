@@ -193,7 +193,7 @@ export async function POST(req: Request) {
     //   }
     // });
 
-    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1.2 });
+    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
 
     // Always use internal loopback so Puppeteer never has to leave the
     // container to hit its own public Railway domain. Railway's edge does
@@ -286,7 +286,7 @@ export async function POST(req: Request) {
       preferCSSPageSize: true,
 
       margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
-      // scale,
+      scale,
     });
 
     console.log("[PDF SIZE]", pdfBuffer.length, "bytes");
