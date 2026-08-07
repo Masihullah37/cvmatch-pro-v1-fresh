@@ -60,27 +60,34 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
     };
   }, [template]);
 
-  // Measure natural size and compute uniform scale
+  // Measure the FULL content size (scroll dimensions) and compute scale
   useLayoutEffect(() => {
     if (!contentRef.current) return;
 
+    // We need the FULL scroll dimensions of the content, not just the viewport
     const el = contentRef.current;
-    // Remove transform to get natural size
+
+    // Temporarily remove transform to get natural size
     const origTransform = el.style.transform;
     el.style.transform = "none";
-    const rect = el.getBoundingClientRect();
-    const naturalWidth = rect.width;
-    const naturalHeight = rect.height;
+
+    // Use scroll dimensions to get the FULL content size
+    const naturalWidth = el.scrollWidth;
+    const naturalHeight = el.scrollHeight;
+
+    // Restore transform
     el.style.transform = origTransform;
 
     // Viewport dimensions (A4 at 96dpi)
     const viewportWidth = 794;
     const viewportHeight = 1123;
 
-    // Uniform scale: fit both dimensions without overflow
+    // Calculate uniform scale to fit BOTH dimensions without overflow
     const scaleX = viewportWidth / naturalWidth;
     const scaleY = viewportHeight / naturalHeight;
-    const uniformScale = Math.min(scaleX, scaleY); // always ≤ 1
+    const uniformScale = Math.min(scaleX, scaleY, 1); // Never scale up
+
+    console.log(`[CVPrintView] natural: ${naturalWidth}x${naturalHeight}, scale: ${uniformScale}`);
 
     setScale(uniformScale);
   }, [printableTemplate]);
@@ -111,6 +118,12 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
           box-sizing: border-box;
+        }
+        /* Ensure no extra space in the CV container */
+        .cv-printable {
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white;
         }
       `}</style>
 
