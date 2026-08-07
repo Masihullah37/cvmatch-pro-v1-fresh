@@ -169,31 +169,7 @@ export async function POST(req: Request) {
     browser = await withRenderSlot(() => getSharedBrowser());
     page = await browser.newPage();
 
-    // await page.setRequestInterception(true);
-    // page.on("request", (request: any) => {
-    //   const url = request.url();
-    //   if (url.includes("google-analytics") || url.includes("clerk")) {
-    //     request.abort();
-    //   } else {
-    //     request.continue();
-    //   }
-    // });
-
-    // TEMP: interception disabled — it collapses real network errors
-    // (connection refused, DNS failure, etc.) into a generic net::ERR_FAILED,
-    // which is why we can't see what's actually going wrong. Re-enable once
-    // the underlying cause is confirmed.
-    // await page.setRequestInterception(true);
-    // page.on("request", (request: any) => {
-    //   const url = request.url();
-    //   if (url.includes("google-analytics") || url.includes("clerk")) {
-    //     request.abort();
-    //   } else {
-    //     request.continue();
-    //   }
-    // });
-
-    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
+    await page.setViewport({ width: 794, height: 2000, deviceScaleFactor: 1 });
 
     // Always use internal loopback so Puppeteer never has to leave the
     // container to hit its own public Railway domain. Railway's edge does
@@ -202,28 +178,17 @@ export async function POST(req: Request) {
     // loopback works fine — no host branching needed.
     const port = process.env.PORT || 3000;
     const locale = body.locale || "fr";
-    const printUrl = `http://127.0.0.1:${port}/${locale}/print/${analysisId}/${templateId}`;
 
     // Pass only the authorization secret (Removed invalid 'host' header to fix net::ERR_INVALID_ARGUMENT)
     await page.setExtraHTTPHeaders({
       "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
     });
 
-    // Navigate to print page
-    // await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
-    // TEMP diagnostic: verify Node itself can reach the print URL over
-    // loopback, independent of Chrome/Puppeteer.
-    try {
-      const probe = await fetch(printUrl, {
-        headers: { "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass" },
-      });
-      console.log("[PDF PROBE]", probe.status, printUrl);
-    } catch (probeErr: any) {
-      console.error("[PDF PROBE FAILED]", printUrl, probeErr?.message || probeErr);
-    }
+    // Build the printUrl WITHOUT scale initially
+    const initialPrintUrl = `http://127.0.0.1:${port}/${locale}/print/${analysisId}/${templateId}`;
 
     // Navigate to print page
-    await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    await page.goto(initialPrintUrl, { waitUntil: "networkidle0", timeout: 30000 });
     await page.waitForSelector("#cv-ready", { timeout: 10000 });
 
     await Promise.race([
@@ -253,40 +218,26 @@ export async function POST(req: Request) {
     // we measure height and capture the PDF.
     await new Promise((r) => setTimeout(r, 500));
 
-    // Measure the CV's true, unmodified height once. No CSS transform or
-    // zoom is applied on the page itself — those relied on the DOM
-    // reflowing and being re-measured in real time, which isn't reliable
-    // in a headless print context and caused content to over-shrink or
-    // reflow unpredictably (tiny content in a corner, missing sections).
+    // Measure the CV's true, unmodified height once.
     const contentHeight = await page.evaluate(() => {
       const container = document.getElementById("cv-ready");
       return container ? container.scrollHeight : 1122;
     });
 
     const A4_HEIGHT_PX = 1123;
-    // const MIN_SCALE = 0.75; // below this, printed text becomes hard to read
-    // const rawScale = A4_HEIGHT_PX / contentHeight;
-    // const scale = Math.max(MIN_SCALE, Math.min(1, rawScale));
-    const scale = Math.min(
-      1,
-      A4_HEIGHT_PX / contentHeight
-    );
+    const scale = Math.min(1, A4_HEIGHT_PX / contentHeight);
 
-    // Let Chrome's own print engine do the scaling natively via
-    // page.pdf({ scale }), instead of mutating page CSS. This is computed
-    // once as part of PDF generation itself, so there's no reflow-timing
-    // race. Also dropped preferCSSPageSize/pageRanges: "1" — those existed
-    // to force single-page output around the old unreliable scaling, and
-    // pageRanges: "1" was silently discarding overflow content. If a CV is
-    // genuinely too long to fit one page even at 75% scale, it will now
-    // spill onto a real second page instead of losing content.
+    // NOW reload with scale parameter
+    const printUrlWithScale = `http://127.0.0.1:${port}/${locale}/print/${analysisId}/${templateId}?scale=${scale}`;
+    await page.goto(printUrlWithScale, { waitUntil: "networkidle0", timeout: 30000 });
+    await page.waitForSelector("#cv-ready", { timeout: 10000 });
+
+    // Generate PDF - use preferCSSPageSize: true with NO scale parameter
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
       preferCSSPageSize: true,
-
       margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
-      scale,
     });
 
     console.log("[PDF SIZE]", pdfBuffer.length, "bytes");
