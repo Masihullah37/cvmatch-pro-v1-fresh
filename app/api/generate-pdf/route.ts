@@ -646,7 +646,7 @@ export async function POST(req: Request) {
       format: "A4",
       printBackground: true,
       margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
-      // scale,
+      scale,
     });
 
     console.log("[PDF SIZE]", pdfBuffer.length, "bytes");
