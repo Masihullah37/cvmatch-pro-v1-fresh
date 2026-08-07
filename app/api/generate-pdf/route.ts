@@ -231,6 +231,28 @@ export async function POST(req: Request) {
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
 
+    // Scroll-triggered reveal animations (Framer Motion whileInView, AOS,
+    // or any IntersectionObserver-based "fade in on scroll" effect) only
+    // fire once their section actually enters the viewport. A headless
+    // page that goes straight to page.goto() and never scrolls will never
+    // trigger them — those sections (like Projets) stay hidden/collapsed
+    // forever, which is why they were missing from the PDF with no error
+    // and no overflow: they simply never rendered into the DOM.
+    await page.evaluate(async () => {
+      const distance = 300;
+      const delay = 120;
+      const scrollHeight = document.body.scrollHeight;
+      for (let y = 0; y < scrollHeight; y += distance) {
+        window.scrollTo(0, y);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+      window.scrollTo(0, 0);
+    });
+
+    // Give any triggered animations a moment to finish settling before
+    // we measure height and capture the PDF.
+    await new Promise((r) => setTimeout(r, 500));
+
     // Measure the CV's true, unmodified height once. No CSS transform or
     // zoom is applied on the page itself — those relied on the DOM
     // reflowing and being re-measured in real time, which isn't reliable
