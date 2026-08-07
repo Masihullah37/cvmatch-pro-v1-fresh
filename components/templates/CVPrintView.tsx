@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useLayoutEffect } from "react";
+import React, { useRef, useState, useLayoutEffect, useEffect } from "react";
 import CVRenderer from "./CVRenderer";
 
 interface CVPrintViewProps {
@@ -11,45 +11,53 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [isReady, setIsReady] = useState(false);
 
-  // 🛠️ FIX: Measure content, but scale UP if it's naturally smaller than A4
+  // 1. Wait for data, then allow rendering at natural size
+  useEffect(() => {
+    if (template && template.templateData) {
+      // Slight delay to let React paint the content at 100% width first
+      const timer = setTimeout(() => {
+        setIsReady(true);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [template]);
+
+  // 2. Measure and scale ONLY AFTER natural render is complete
   useLayoutEffect(() => {
-    if (!contentRef.current || !template) return;
+    if (!isReady || !contentRef.current) return;
 
     const el = contentRef.current;
-    const origTransform = el.style.transform;
-    el.style.transform = "none";
 
-    let naturalWidth = el.scrollWidth;
-    let naturalHeight = el.scrollHeight;
+    // We no longer need to remove transform, because we haven't applied one yet!
+    // We measure the FULL natural scroll size
+    const naturalWidth = el.scrollWidth;
+    const naturalHeight = el.scrollHeight;
 
-    el.style.transform = origTransform;
-
-    // Safety fallback
     if (naturalWidth === 0 || naturalHeight === 0) {
       setScale(1);
       return;
     }
 
+    // Target A4 size in pixels
     const viewportWidth = 794;
     const viewportHeight = 1123;
 
-    // Calculate uniform scale to FIT the A4 page perfectly
+    // Compute scale to fill the page exactly
     const scaleX = viewportWidth / naturalWidth;
     const scaleY = viewportHeight / naturalHeight;
 
-    // 🛠️ CRITICAL FIX: We use Math.min to shrink large content, 
-    // but we do NOT cap it at 1. We scale UP if the content is smaller than A4.
+    // Allow scaling up!
     let uniformScale = Math.min(scaleX, scaleY);
 
-    // Clamp scale so it's never invisible
-    if (uniformScale < 0.1) uniformScale = 0.5;
+    if (uniformScale < 0.1) uniformScale = 0.5; // Safety fallback
 
-    console.log(`[CVPrintView] natural: ${naturalWidth}x${naturalHeight}, scale: ${uniformScale}`);
+    console.log(`[CVPrintView] Measured natural: ${naturalWidth}x${naturalHeight}, Applying scale: ${uniformScale}`);
     setScale(uniformScale);
-  }, [template]);
+  }, [isReady]);
 
-  // If no template exists yet, show the loading message
+  // 3. Render the Loading State
   if (!template || !template.templateData) {
     return (
       <div style={{
@@ -66,6 +74,7 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
     );
   }
 
+  // 4. Render the A4 container
   return (
     <div
       ref={containerRef}
@@ -100,21 +109,22 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         }
       `}</style>
 
+      {/* 
+        5. 🛠️ KEY FIXES HERE:
+           - Width/Height are set to 'auto' so the inner CVRenderer dictates the size.
+           - Transform is ONLY applied after we render the content at 100%.
+           - Centering is done via the wrapper div (flexbox), not transform hackery.
+      */}
       <div
         data-testid="cv-content"
         ref={contentRef}
         className="cv-printable"
         style={{
-          // 🛠️ FIX: Render exactly at the calculated size
-          transform: `scale(${scale}) translate(-50%, -50%)`,
+          transform: isReady ? `scale(${scale})` : "none",
           transformOrigin: "top left",
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          // 🛠️ FIX: Force the DOM element to be A4 size. 
-          // If the content is smaller than A4, it will scale UP to fill the page.
-          width: "794px",
-          height: "1123px",
+          // If not ready yet, render at 100% natural width to be measured.
+          width: isReady ? "794px" : "auto",
+          height: isReady ? "1123px" : "auto",
           background: "white",
           margin: 0,
           padding: 0,
