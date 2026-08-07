@@ -231,68 +231,34 @@ export async function POST(req: Request) {
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
 
-    // await page.evaluate(() => {
-    //   const container = document.getElementById("cv-ready");
-    //   if (!container) return;
-
-    //   const A4_HEIGHT_PX = 1122;
-    //   const contentHeight = container.offsetHeight || container.scrollHeight;
-    //   const rawScale = (A4_HEIGHT_PX - 1) / contentHeight;
-    //   const scale = rawScale > 1 ? Math.min(rawScale, 1.15) : rawScale;
-
-    //   container.style.transform = `scale(${scale})`;
-    //   container.style.transformOrigin = "top left";
-    //   container.style.width = 100 / scale + "%";
-    // });
-
-    // await page.evaluate(() => {
-    //   const container = document.getElementById("cv-ready") as HTMLElement | null;
-    //   if (!container) return;
-    //   const A4_HEIGHT_PX = 1122;
-    //   const contentHeight = container.scrollHeight;
-    //   const rawScale = (A4_HEIGHT_PX - 4) / contentHeight;
-    //   const scale = Math.min(rawScale, 1); // never upscale — avoids horizontal overflow
-    //   // Use CSS `zoom`, not `transform: scale`. `transform` is paint-only —
-    //   // Chrome's print pagination still measures the original, un-shrunk
-    //   // height, so long CVs overflow to page 2, which pageRanges:"1" then
-    //   // just cuts off instead of fitting. `zoom` forces a real layout
-    //   // reflow, so the measured height actually shrinks and everything
-    //   // genuinely fits on one A4 page.
-    //   container.style.zoom = String(scale);
-    // });
-
-    await page.evaluate(async () => {
-      const container = document.getElementById("cv-ready") as HTMLElement | null;
-      if (!container) return;
-      const A4_HEIGHT_PX = 1122;
-
-      const settle = () =>
-        new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
-
-      container.style.zoom = "1";
-      await settle();
-
-      // Shrink step by step and re-measure after each attempt, instead of
-      // calculating one scale factor up front. Text reflow doesn't scale
-      // linearly with zoom (line-wrap counts change unevenly), so a single
-      // calculated guess routinely undershoots and still overflows onto a
-      // hidden second page, which pageRanges:"1" then silently drops.
-      let zoom = 1;
-      let attempts = 0;
-      while (container.scrollHeight > A4_HEIGHT_PX - 4 && zoom > 0.5 && attempts < 25) {
-        zoom -= 0.02;
-        container.style.zoom = String(zoom);
-        await settle();
-        attempts++;
-      }
+    // Measure the CV's true, unmodified height once. No CSS transform or
+    // zoom is applied on the page itself — those relied on the DOM
+    // reflowing and being re-measured in real time, which isn't reliable
+    // in a headless print context and caused content to over-shrink or
+    // reflow unpredictably (tiny content in a corner, missing sections).
+    const contentHeight = await page.evaluate(() => {
+      const container = document.getElementById("cv-ready");
+      return container ? container.scrollHeight : 1122;
     });
 
+    const A4_HEIGHT_PX = 1122;
+    const MIN_SCALE = 0.75; // below this, printed text becomes hard to read
+    const rawScale = A4_HEIGHT_PX / contentHeight;
+    const scale = Math.max(MIN_SCALE, Math.min(1, rawScale));
+
+    // Let Chrome's own print engine do the scaling natively via
+    // page.pdf({ scale }), instead of mutating page CSS. This is computed
+    // once as part of PDF generation itself, so there's no reflow-timing
+    // race. Also dropped preferCSSPageSize/pageRanges: "1" — those existed
+    // to force single-page output around the old unreliable scaling, and
+    // pageRanges: "1" was silently discarding overflow content. If a CV is
+    // genuinely too long to fit one page even at 75% scale, it will now
+    // spill onto a real second page instead of losing content.
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
-      preferCSSPageSize: true,
-      pageRanges: "1",
+      scale,
     });
 
     console.log("[PDF SIZE]", pdfBuffer.length, "bytes");
