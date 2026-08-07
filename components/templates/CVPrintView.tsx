@@ -9,7 +9,7 @@ interface CVPrintViewProps {
 
 const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  // const [scale, setScale] = useState(1);
   const [printableTemplate, setPrintableTemplate] = useState(template);
 
   useEffect(() => {
@@ -60,36 +60,36 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
       });
     }
 
-    // Dynamic Scaling Logic
-    const adjustScale = () => {
-      if (!containerRef.current) return;
+    // // Dynamic Scaling Logic
+    // const adjustScale = () => {
+    //   if (!containerRef.current) return;
 
-      const content = containerRef.current.querySelector(
-        '[data-testid="cv-content"]',
-      ) as HTMLElement;
-      if (!content) return;
+    //   const content = containerRef.current.querySelector(
+    //     '[data-testid="cv-content"]',
+    //   ) as HTMLElement;
+    //   if (!content) return;
 
-      const targetHeight = 1123; // A4 height in px at 96dpi (approx)
-      const actualHeight = content.scrollHeight;
+    //   const targetHeight = 1123; // A4 height in px at 96dpi (approx)
+    //   const actualHeight = content.scrollHeight;
 
-      if (actualHeight > targetHeight) {
-        const ratio = targetHeight / actualHeight;
-        // We allow scaling down to 75% to keep readability
-        const newScale = Math.max(0.75, ratio);
-        setScale(newScale);
-        console.log(
-          `Scaling CV: ${actualHeight}px -> ${targetHeight}px (Ratio: ${newScale})`,
-        );
-      }
-    };
+    //   if (actualHeight > targetHeight) {
+    //     const ratio = targetHeight / actualHeight;
+    //     // We allow scaling down to 75% to keep readability
+    //     const newScale = Math.max(0.75, ratio);
+    //     setScale(newScale);
+    //     console.log(
+    //       `Scaling CV: ${actualHeight}px -> ${targetHeight}px (Ratio: ${newScale})`,
+    //     );
+    //   }
+    // };
 
-    // Run scaling check after a short delay for fonts to load
-    const timer = setTimeout(adjustScale, 1000);
+    // // Run scaling check after a short delay for fonts to load
+    // const timer = setTimeout(adjustScale, 1000);
 
     return () => {
       window.removeEventListener("data-ready", handleDataReady);
       observer.disconnect();
-      clearTimeout(timer);
+      // clearTimeout(timer);
     };
   }, [template]);
 
@@ -115,8 +115,9 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
           
           .cv-printable {
             width: 210mm !important;
-            height: 297mm !important;
-            overflow: hidden !important;
+            min-height:297mm !important;
+            height:auto !important;
+            overflow: visible !important;
             position: relative;
             transform-origin: top center;
           }
@@ -134,7 +135,7 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
       `}</style>
 
-      <div
+      {/* <div
         data-testid="cv-content"
         className="cv-printable"
         style={{
@@ -145,6 +146,20 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
           overflow: "hidden",
           transform: `scale(${scale})`,
           transformOrigin: "top center",
+        }}
+      > */}
+
+      <div
+        data-testid="cv-content"
+        className="cv-printable"
+        style={{
+          width: "210mm",
+          minHeight: "297mm",
+          background: "white",
+          position: "relative",
+          overflow: "visible",
+          // transform: `scale(${scale})`,
+          transformOrigin: "top left",
         }}
       >
         <CVRenderer
