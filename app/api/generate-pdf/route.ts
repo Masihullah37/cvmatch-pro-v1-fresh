@@ -174,9 +174,7 @@ export async function POST(req: Request) {
       "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
     });
 
-    // 🛠️ FIX 1: Increase timeout to 45 seconds
-    // 🛠️ FIX 2: Removed __PRINTER_RENDER_READY__ wait.
-    // Puppeteer will wait for the React app to fully load and hydrate using `networkidle0`.
+    // Wait for the React page to fully load
     await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 45000 });
 
     // Wait for fonts to load
@@ -185,9 +183,10 @@ export async function POST(req: Request) {
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
 
-    // 🛠️ FIX 3: Ensure Puppeteer waits for the A4 div to physically exist on screen
+    // Wait for the CV content DOM element to exist
     await page.waitForSelector('[data-testid="cv-content"]', { timeout: 10000 });
 
+    // Generate the PDF
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,

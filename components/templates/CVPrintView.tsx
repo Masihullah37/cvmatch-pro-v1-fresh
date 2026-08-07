@@ -11,42 +11,13 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const [printableTemplate, setPrintableTemplate] = useState(template);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Inject data and immediately mark as ready when DOM updates
-  useEffect(() => {
-    const handleDataReady = (e: any) => {
-      const injectedData = (window as any).__PRINTER_DATA__;
-      if (injectedData) {
-        console.log("Injected printer data received:", injectedData);
-        setPrintableTemplate({
-          ...template,
-          templateData: injectedData,
-        });
-        setIsLoading(false);
-      }
-    };
-    window.addEventListener("data-ready", handleDataReady);
-
-    // Check if data is already available
-    const injectedData = (window as any).__PRINTER_DATA__;
-    if (injectedData) {
-      setPrintableTemplate({
-        ...template,
-        templateData: injectedData,
-      });
-      setIsLoading(false);
-    }
-
-    return () => {
-      window.removeEventListener("data-ready", handleDataReady);
-    };
-  }, [template]);
+  // 🛠️ FIX: Remove the isLoading and window event listeners.
+  // If the template prop exists, it's ready to render.
 
   // Measure the FULL content size and compute scale
   useLayoutEffect(() => {
-    if (!contentRef.current || isLoading) return;
+    if (!contentRef.current || !template) return;
 
     const el = contentRef.current;
     const origTransform = el.style.transform;
@@ -74,7 +45,24 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
 
     console.log(`[CVPrintView] natural: ${naturalWidth}x${naturalHeight}, scale: ${uniformScale}`);
     setScale(uniformScale);
-  }, [printableTemplate, isLoading]);
+  }, [template]);
+
+  // If no template exists yet, show the loading message
+  if (!template || !template.templateData) {
+    return (
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100vw",
+        height: "100vh",
+        color: "#666",
+        fontFamily: "sans-serif"
+      }}>
+        Génération du CV en cours...
+      </div>
+    );
+  }
 
   return (
     <div
@@ -110,12 +98,6 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         }
       `}</style>
 
-      {isLoading && (
-        <div style={{ position: "absolute", color: "#666", fontFamily: "sans-serif" }}>
-          Génération du CV en cours...
-        </div>
-      )}
-
       <div
         data-testid="cv-content"
         ref={contentRef}
@@ -126,16 +108,16 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
           position: "absolute",
           top: "50%",
           left: "50%",
-          width: "794px",
-          height: "1123px",
+          width: "794px", // Force exact A4 width
+          height: "1123px", // Force exact A4 height
           background: "white",
           margin: 0,
           padding: 0,
-          visibility: isLoading ? "hidden" : "visible",
         }}
       >
+        {/* 🛠️ Now this is always rendered safely because 'template' exists */}
         <CVRenderer
-          template={printableTemplate}
+          template={template}
           isPreview={true}
           isPaid={true}
           analysisData={null}
