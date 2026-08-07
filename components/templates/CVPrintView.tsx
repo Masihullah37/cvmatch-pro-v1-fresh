@@ -14,29 +14,8 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
   const [printableTemplate, setPrintableTemplate] = useState(template);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Listen for injected data
+  // Inject data and immediately mark as ready when DOM updates
   useEffect(() => {
-    (window as any).__PRINTER_RENDER_READY__ = false;
-
-    const updateRenderReady = () => {
-      const content = containerRef.current?.querySelector(
-        '[data-testid="cv-content"]'
-      ) as HTMLElement | null;
-      if (content && content.textContent?.trim().length > 20) {
-        (window as any).__PRINTER_RENDER_READY__ = true;
-        setIsLoading(false);
-      }
-    };
-
-    const observer = new MutationObserver(updateRenderReady);
-    if (containerRef.current) {
-      observer.observe(containerRef.current, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
-    }
-
     const handleDataReady = (e: any) => {
       const injectedData = (window as any).__PRINTER_DATA__;
       if (injectedData) {
@@ -62,7 +41,6 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
 
     return () => {
       window.removeEventListener("data-ready", handleDataReady);
-      observer.disconnect();
     };
   }, [template]);
 
@@ -71,40 +49,30 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
     if (!contentRef.current || isLoading) return;
 
     const el = contentRef.current;
-
-    // Temporarily remove transform to get natural size
     const origTransform = el.style.transform;
     el.style.transform = "none";
 
-    // Use scroll dimensions to get the FULL content size
     let naturalWidth = el.scrollWidth;
     let naturalHeight = el.scrollHeight;
 
-    // Restore transform
     el.style.transform = origTransform;
 
-    // 🛡️ SAFEGUARD: If content is 0px, force a default size so it doesn't vanish
     if (naturalWidth === 0 || naturalHeight === 0) {
       console.warn("[CVPrintView] Content measured 0px. Forcing temporary scale 1.");
       setScale(1);
       return;
     }
 
-    // Viewport dimensions (A4 at 96dpi)
     const viewportWidth = 794;
     const viewportHeight = 1123;
 
-    // Calculate uniform scale to fit BOTH dimensions without overflow
     const scaleX = viewportWidth / naturalWidth;
     const scaleY = viewportHeight / naturalHeight;
-    let uniformScale = Math.min(scaleX, scaleY, 1); // Never scale up
+    let uniformScale = Math.min(scaleX, scaleY, 1);
 
-    // Fix the "Upper portion invisible" bug: 
-    // Do not allow the scale to be so small that it becomes invisible
     if (uniformScale < 0.1) uniformScale = 0.5;
 
     console.log(`[CVPrintView] natural: ${naturalWidth}x${naturalHeight}, scale: ${uniformScale}`);
-
     setScale(uniformScale);
   }, [printableTemplate, isLoading]);
 
@@ -142,7 +110,6 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         }
       `}</style>
 
-      {/* Show a loading message while waiting for data so it's not a blank screen */}
       {isLoading && (
         <div style={{ position: "absolute", color: "#666", fontFamily: "sans-serif" }}>
           Génération du CV en cours...
@@ -154,15 +121,13 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         ref={contentRef}
         className="cv-printable"
         style={{
-          // 🛠️ FIX: Use center-center transform origin and translate to center it
-          // This prevents the top and left edges from being cut off
           transform: `scale(${scale}) translate(-50%, -50%)`,
           transformOrigin: "top left",
           position: "absolute",
           top: "50%",
           left: "50%",
-          width: "794px", // Force exact A4 width (simplifies math)
-          height: "1123px", // Force exact A4 height
+          width: "794px",
+          height: "1123px",
           background: "white",
           margin: 0,
           padding: 0,

@@ -25,7 +25,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing IDs" }, { status: 400 });
     }
 
-    // ─── Database queries ──────────────────────────────────────────
     const template = await db.query.cvTemplates.findFirst({
       where: eq(cvTemplates.id, templateId),
     });
@@ -38,7 +37,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Data not found" }, { status: 404 });
     }
 
-    // ─── User verification and access control ────────────────────
     const dbUser = userId ? await db.query.users.findFirst({ where: eq(users.clerkId, userId) }) : null;
     const plan = getUserPlan(dbUser);
 
@@ -77,7 +75,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // ─── Consume credits if needed ──────────────────────────────
     if (dbUser && dbUser.id && plan !== "pro" && !template.isPaid && !existingUnlock) {
       if ((dbUser.credits ?? 0) > 0) {
         await db.transaction(async (tx) => {
@@ -105,7 +102,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // ─── Rate Limiting ────────────────────────────────────────────
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anonymous";
     const trackingSalt = process.env.TRACKING_SALT || "default_salt";
     const hashedIp = crypto.createHash("sha256").update(ip + trackingSalt).digest("hex");
@@ -151,7 +147,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // ─── Prepare display data ────────────────────────────────────
     let displayData = { ...(templateData || (analysis as any).optimizedData || template.templateData || {}) };
 
     if (displayData && typeof displayData === "object") {
@@ -159,7 +154,6 @@ export async function POST(req: Request) {
       (displayData as any).contact = (displayData as any).contact || { email: "", phone: "", location: "" };
     }
 
-    // ─── Persist live edits ──────────────────────────────────────
     try {
       await db
         .update(cvTemplates)
@@ -169,47 +163,35 @@ export async function POST(req: Request) {
       console.error("Failed to sync live edits before PDF render:", err);
     }
 
-    // ─── Launch Browser ──────────────────────────────────────────
     browser = await withRenderSlot(() => getSharedBrowser());
     page = await browser.newPage();
 
-    // ─── Build the URL ───────────────────────────────────────────
     const port = process.env.PORT || 3000;
     const locale = body.locale || "fr";
     const printUrl = `http://127.0.0.1:${port}/${locale}/print/${analysisId}/${templateId}`;
 
-    // Pass authorization secret
     await page.setExtraHTTPHeaders({
       "x-pdf-gen-secret": process.env.PDF_GEN_SECRET || "internal-bypass",
     });
 
-    // ─── Navigate to print page ──────────────────────────────────
-    await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    // 🛠️ FIX 1: Increase timeout to 45 seconds
+    // 🛠️ FIX 2: Removed __PRINTER_RENDER_READY__ wait.
+    // Puppeteer will wait for the React app to fully load and hydrate using `networkidle0`.
+    await page.goto(printUrl, { waitUntil: "networkidle0", timeout: 45000 });
 
-    // 🛡️ Wait for the React component to finish rendering and inject data
-    // The component sets this flag when the UI is fully ready
-    await page.waitForFunction(
-      () => (window as any).__PRINTER_RENDER_READY__ === true,
-      { timeout: 15000 }
-    );
-
-    // ─── Wait for fonts ──────────────────────────────────────────
+    // Wait for fonts to load
     await Promise.race([
       page.evaluateHandle("document.fonts.ready"),
       new Promise((resolve) => setTimeout(resolve, 3000)),
     ]);
 
-    // Wait an extra moment for layout recalculation
-    await new Promise((r) => setTimeout(r, 500));
+    // 🛠️ FIX 3: Ensure Puppeteer waits for the A4 div to physically exist on screen
+    await page.waitForSelector('[data-testid="cv-content"]', { timeout: 10000 });
 
-    // ─── Generate PDF ────────────────────────────────────────────
-    // ✅ SOLUTION: We removed ALL custom scrolling and measuring code.
-    // We rely on `preferCSSPageSize: true`. 
-    // The React component defined exact 794x1123px dimensions and positioned it perfectly.
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      preferCSSPageSize: true, // Puppeteer uses the CSS defined in CVPrintView
+      preferCSSPageSize: true,
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
       pageRanges: "1",
     });
@@ -218,7 +200,6 @@ export async function POST(req: Request) {
 
     await page.close();
 
-    // ─── Log generation ──────────────────────────────────────────
     try {
       if (dbUser?.id) {
         await db.insert(cvGenerations).values({
@@ -233,7 +214,6 @@ export async function POST(req: Request) {
       console.error("Failed to log generation in cv_generations:", err);
     }
 
-    // ─── Update monthly usage ────────────────────────────────────
     try {
       if (dbUser?.id && userId) {
         await db
@@ -247,7 +227,6 @@ export async function POST(req: Request) {
       console.error("Failed to increment monthly template usage:", err);
     }
 
-    // ─── Return PDF ──────────────────────────────────────────────
     return NextResponse.json({
       pdfBase64: Buffer.from(pdfBuffer).toString("base64"),
       fileName: `CV_${template.templateStyle}.pdf`,
