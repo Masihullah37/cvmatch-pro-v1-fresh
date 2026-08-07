@@ -661,7 +661,7 @@ export const CVRenderer = ({
   return (
     <CVContext.Provider value={ctxValue}>
       <div
-        className={`w-[210mm] min-h-[297mm] bg-white shadow-sm overflow-hidden text-left mx-auto relative select-none cv-printable`}
+        className={`w-[210mm] min-h-[297mm] bg-white shadow-sm overflow-visible text-left mx-auto relative select-none cv-printable`}
         onContextMenu={(e) => !isPaid && e.preventDefault()}
       >
         <style>{`
