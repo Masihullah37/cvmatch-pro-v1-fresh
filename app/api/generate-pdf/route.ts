@@ -193,7 +193,7 @@ export async function POST(req: Request) {
     //   }
     // });
 
-    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
+    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1.2 });
 
     // Always use internal loopback so Puppeteer never has to leave the
     // container to hit its own public Railway domain. Railway's edge does
@@ -263,10 +263,14 @@ export async function POST(req: Request) {
       return container ? container.scrollHeight : 1122;
     });
 
-    const A4_HEIGHT_PX = 1122;
-    const MIN_SCALE = 0.75; // below this, printed text becomes hard to read
-    const rawScale = A4_HEIGHT_PX / contentHeight;
-    const scale = Math.max(MIN_SCALE, Math.min(1, rawScale));
+    const A4_HEIGHT_PX = 1123;
+    // const MIN_SCALE = 0.75; // below this, printed text becomes hard to read
+    // const rawScale = A4_HEIGHT_PX / contentHeight;
+    // const scale = Math.max(MIN_SCALE, Math.min(1, rawScale));
+    const scale = Math.min(
+      1,
+      A4_HEIGHT_PX / contentHeight
+    );
 
     // Let Chrome's own print engine do the scaling natively via
     // page.pdf({ scale }), instead of mutating page CSS. This is computed
@@ -279,8 +283,10 @@ export async function POST(req: Request) {
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
+      preferCSSPageSize: true,
+
       margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
-      scale,
+      // scale,
     });
 
     console.log("[PDF SIZE]", pdfBuffer.length, "bytes");
