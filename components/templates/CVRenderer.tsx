@@ -3046,7 +3046,7 @@ export const CVRenderer = ({
               <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
             </p>
             <div className="flex px-14 pt-6 pb-14 gap-10">
-              <div className="w-[34%] min-w-0 overflow-hidden flex flex-col gap-8">
+              <div className="w-[34%] min-w-0 flex flex-col gap-8">
                 <DynamicSidebarSections
                   sidebarKeys={["education", "skills", "languages"]}
                   configs={{

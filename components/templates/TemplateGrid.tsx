@@ -1839,10 +1839,23 @@ export default function TemplateGrid({
               >
                 <div
                   className="relative bg-white shadow-2xl rounded-sm overflow-visible transform-gpu transition-all duration-300"
+                  // style={{
+                  //   width: "calc(794px * var(--preview-scale, 1))",
+                  //   height: `calc(${previewContentHeight}px * var(--preview-scale, 1))`,
+                  //   minHeight: "calc(1123px * var(--preview-scale, 1))",
+                  //   minWidth: forceDesktopPreview ? "calc(794px * var(--preview-scale, 1))" : undefined,
+                  // }}
+
                   style={{
                     width: "calc(794px * var(--preview-scale, 1))",
-                    height: `calc(${previewContentHeight}px * var(--preview-scale, 1))`,
-                    minHeight: "calc(1123px * var(--preview-scale, 1))",
+                    // Was a hard `height` capped to a one-time measurement of the content
+                    // (via ResizeObserver on first paint). If that measurement landed even
+                    // one render before Marina's sidebar sections finished mounting, the
+                    // card was locked at a too-short height and the sidebar visually ran
+                    // past its bottom edge. Using minHeight instead lets the card grow to
+                    // fit the real content no matter when it settles, while still sizing
+                    // nicely up front from the measured value.
+                    minHeight: `calc(${previewContentHeight}px * var(--preview-scale, 1))`,
                     minWidth: forceDesktopPreview ? "calc(794px * var(--preview-scale, 1))" : undefined,
                   }}
                 >
