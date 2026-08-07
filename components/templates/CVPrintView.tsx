@@ -96,13 +96,10 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
   return (
     <div
       ref={containerRef}
-      className="no-print-bg bg-white min-h-screen flex items-start justify-center overflow-hidden"
+      // className="no-print-bg bg-white min-h-screen flex items-start justify-center overflow-hidden"
+      className="no-print-bg bg-white min-h-screen"
     >
       <style>{`
-        @page { 
-          margin: 0; 
-          size: A4; 
-        }
         @media print {
           body { 
             margin: 0; 
