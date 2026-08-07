@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useLayoutEffect } from "react";
+import React, { useRef, useState, useLayoutEffect } from "react";
 import CVRenderer from "./CVRenderer";
 
 interface CVPrintViewProps {
@@ -12,10 +12,7 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
-  // 🛠️ FIX: Remove the isLoading and window event listeners.
-  // If the template prop exists, it's ready to render.
-
-  // Measure the FULL content size and compute scale
+  // 🛠️ FIX: Measure content, but scale UP if it's naturally smaller than A4
   useLayoutEffect(() => {
     if (!contentRef.current || !template) return;
 
@@ -28,8 +25,8 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
 
     el.style.transform = origTransform;
 
+    // Safety fallback
     if (naturalWidth === 0 || naturalHeight === 0) {
-      console.warn("[CVPrintView] Content measured 0px. Forcing temporary scale 1.");
       setScale(1);
       return;
     }
@@ -37,10 +34,15 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
     const viewportWidth = 794;
     const viewportHeight = 1123;
 
+    // Calculate uniform scale to FIT the A4 page perfectly
     const scaleX = viewportWidth / naturalWidth;
     const scaleY = viewportHeight / naturalHeight;
-    let uniformScale = Math.min(scaleX, scaleY, 1);
 
+    // 🛠️ CRITICAL FIX: We use Math.min to shrink large content, 
+    // but we do NOT cap it at 1. We scale UP if the content is smaller than A4.
+    let uniformScale = Math.min(scaleX, scaleY);
+
+    // Clamp scale so it's never invisible
     if (uniformScale < 0.1) uniformScale = 0.5;
 
     console.log(`[CVPrintView] natural: ${naturalWidth}x${naturalHeight}, scale: ${uniformScale}`);
@@ -103,19 +105,21 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         ref={contentRef}
         className="cv-printable"
         style={{
+          // 🛠️ FIX: Render exactly at the calculated size
           transform: `scale(${scale}) translate(-50%, -50%)`,
           transformOrigin: "top left",
           position: "absolute",
           top: "50%",
           left: "50%",
-          width: "794px", // Force exact A4 width
-          height: "1123px", // Force exact A4 height
+          // 🛠️ FIX: Force the DOM element to be A4 size. 
+          // If the content is smaller than A4, it will scale UP to fill the page.
+          width: "794px",
+          height: "1123px",
           background: "white",
           margin: 0,
           padding: 0,
         }}
       >
-        {/* 🛠️ Now this is always rendered safely because 'template' exists */}
         <CVRenderer
           template={template}
           isPreview={true}
