@@ -12,16 +12,19 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [printableTemplate, setPrintableTemplate] = useState(template);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Listen for injected data
   useEffect(() => {
     (window as any).__PRINTER_RENDER_READY__ = false;
+
     const updateRenderReady = () => {
       const content = containerRef.current?.querySelector(
         '[data-testid="cv-content"]'
       ) as HTMLElement | null;
       if (content && content.textContent?.trim().length > 20) {
         (window as any).__PRINTER_RENDER_READY__ = true;
+        setIsLoading(false);
       }
     };
 
@@ -42,16 +45,19 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
           ...template,
           templateData: injectedData,
         });
+        setIsLoading(false);
       }
     };
     window.addEventListener("data-ready", handleDataReady);
 
+    // Check if data is already available
     const injectedData = (window as any).__PRINTER_DATA__;
     if (injectedData) {
       setPrintableTemplate({
         ...template,
         templateData: injectedData,
       });
+      setIsLoading(false);
     }
 
     return () => {
@@ -60,11 +66,10 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
     };
   }, [template]);
 
-  // Measure the FULL content size (scroll dimensions) and compute scale
+  // Measure the FULL content size and compute scale
   useLayoutEffect(() => {
-    if (!contentRef.current) return;
+    if (!contentRef.current || isLoading) return;
 
-    // We need the FULL scroll dimensions of the content, not just the viewport
     const el = contentRef.current;
 
     // Temporarily remove transform to get natural size
@@ -72,11 +77,18 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
     el.style.transform = "none";
 
     // Use scroll dimensions to get the FULL content size
-    const naturalWidth = el.scrollWidth;
-    const naturalHeight = el.scrollHeight;
+    let naturalWidth = el.scrollWidth;
+    let naturalHeight = el.scrollHeight;
 
     // Restore transform
     el.style.transform = origTransform;
+
+    // 🛡️ SAFEGUARD: If content is 0px, force a default size so it doesn't vanish
+    if (naturalWidth === 0 || naturalHeight === 0) {
+      console.warn("[CVPrintView] Content measured 0px. Forcing temporary scale 1.");
+      setScale(1);
+      return;
+    }
 
     // Viewport dimensions (A4 at 96dpi)
     const viewportWidth = 794;
@@ -85,12 +97,16 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
     // Calculate uniform scale to fit BOTH dimensions without overflow
     const scaleX = viewportWidth / naturalWidth;
     const scaleY = viewportHeight / naturalHeight;
-    const uniformScale = Math.min(scaleX, scaleY, 1); // Never scale up
+    let uniformScale = Math.min(scaleX, scaleY, 1); // Never scale up
+
+    // Fix the "Upper portion invisible" bug: 
+    // Do not allow the scale to be so small that it becomes invisible
+    if (uniformScale < 0.1) uniformScale = 0.5;
 
     console.log(`[CVPrintView] natural: ${naturalWidth}x${naturalHeight}, scale: ${uniformScale}`);
 
     setScale(uniformScale);
-  }, [printableTemplate]);
+  }, [printableTemplate, isLoading]);
 
   return (
     <div
@@ -119,7 +135,6 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
           print-color-adjust: exact !important;
           box-sizing: border-box;
         }
-        /* Ensure no extra space in the CV container */
         .cv-printable {
           margin: 0 !important;
           padding: 0 !important;
@@ -127,19 +142,31 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         }
       `}</style>
 
+      {/* Show a loading message while waiting for data so it's not a blank screen */}
+      {isLoading && (
+        <div style={{ position: "absolute", color: "#666", fontFamily: "sans-serif" }}>
+          Génération du CV en cours...
+        </div>
+      )}
+
       <div
         data-testid="cv-content"
         ref={contentRef}
         className="cv-printable"
         style={{
-          transform: `scale(${scale})`,
+          // 🛠️ FIX: Use center-center transform origin and translate to center it
+          // This prevents the top and left edges from being cut off
+          transform: `scale(${scale}) translate(-50%, -50%)`,
           transformOrigin: "top left",
-          width: `calc(100% / ${scale})`,
-          height: `calc(100% / ${scale})`,
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: "794px", // Force exact A4 width (simplifies math)
+          height: "1123px", // Force exact A4 height
           background: "white",
-          position: "relative",
           margin: 0,
           padding: 0,
+          visibility: isLoading ? "hidden" : "visible",
         }}
       >
         <CVRenderer
