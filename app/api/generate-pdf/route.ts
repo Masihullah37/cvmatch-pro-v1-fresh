@@ -642,6 +642,22 @@ export async function POST(req: Request) {
     //   pageRanges: "1",
     // });
 
+    // TEMP DEBUG: append ?debug=screenshot to the generate-pdf request to see
+    // exactly what Puppeteer's DOM looks like right before printing, instead
+    // of the PDF itself. This tells us whether the header/sidebar are missing
+    // from the page at capture time (a render/data bug) or only go missing
+    // during Chrome's separate print-layout pass (a CSS/print bug) — those
+    // need completely different fixes and we can't tell which one this is
+    // from the PDF output alone.
+    const url = new URL(req.url);
+    if (url.searchParams.get("debug") === "screenshot") {
+      const screenshotBuffer = await page.screenshot({ fullPage: true });
+      await page.close();
+      return new NextResponse(screenshotBuffer, {
+        headers: { "Content-Type": "image/png" },
+      });
+    }
+
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
