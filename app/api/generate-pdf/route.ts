@@ -163,8 +163,12 @@ export async function POST(req: Request) {
       console.error("Failed to sync live edits before PDF render:", err);
     }
 
+    // browser = await withRenderSlot(() => getSharedBrowser());
+    // page = await browser.newPage();
+
     browser = await withRenderSlot(() => getSharedBrowser());
     page = await browser.newPage();
+    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
 
     const port = process.env.PORT || 3000;
     const locale = body.locale || "fr";

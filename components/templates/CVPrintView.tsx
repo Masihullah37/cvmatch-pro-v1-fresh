@@ -227,6 +227,21 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
 
   // 4. Render the A4 container
   return (
+    // <div
+    //   ref={containerRef}
+    //   style={{
+    //     width: "100vw",
+    //     height: "100vh",
+    //     overflow: "hidden",
+    //     margin: 0,
+    //     padding: 0,
+    //     background: "white",
+    //     display: "flex",
+    //     alignItems: "center",
+    //     justifyContent: "center",
+    //   }}
+    // >
+
     <div
       ref={containerRef}
       style={{
@@ -236,9 +251,7 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         margin: 0,
         padding: 0,
         background: "white",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        position: "relative",
       }}
     >
       <style>{`
@@ -265,7 +278,7 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
            - We now force the width to EXACTLY 794px and height to auto on the first render.
            - This prevents the browser from using a standard 960px width.
       */}
-      <div
+      {/* <div
         data-testid="cv-content"
         ref={contentRef}
         className="cv-printable"
@@ -273,6 +286,24 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
           transform: isReady ? `scale(${scale})` : "none",
           transformOrigin: "top left",
           // 🛠️ Force width to A4. Let height be auto so it measures the whole document.
+          width: "794px",
+          height: isReady ? "1123px" : "auto",
+          background: "white",
+          margin: 0,
+          padding: 0,
+        }}
+      > */}
+
+      <div
+        data-testid="cv-content"
+        ref={contentRef}
+        className="cv-printable"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: isReady ? `scale(${scale})` : "none",
+          transformOrigin: "top left",
           width: "794px",
           height: isReady ? "1123px" : "auto",
           background: "white",
