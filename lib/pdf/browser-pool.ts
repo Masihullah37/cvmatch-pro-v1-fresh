@@ -44,9 +44,11 @@ async function launchBrowser() {
     // @sparticuz/chromium (a Lambda-only Amazon Linux binary) never
     // renders correctly here — it causes every page.goto() to fail
     // with net::ERR_FAILED. Always use full puppeteer's bundled Chromium.
+
     // const puppeteer = (await import("puppeteer")).default as any;
     // return puppeteer.launch({
     //     headless: true,
+    //     dumpio: true, // TEMP: pipes Chrome's own stderr/stdout into Railway logs so we can see the real crash reason
     //     args: [
     //         "--no-sandbox",
     //         "--disable-setuid-sandbox",
@@ -59,7 +61,8 @@ async function launchBrowser() {
     const puppeteer = (await import("puppeteer")).default as any;
     return puppeteer.launch({
         headless: true,
-        dumpio: true, // TEMP: pipes Chrome's own stderr/stdout into Railway logs so we can see the real crash reason
+        dumpio: true,
+        defaultViewport: { width: 794, height: 1123, deviceScaleFactor: 2 },
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
