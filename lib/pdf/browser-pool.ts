@@ -62,7 +62,7 @@ async function launchBrowser() {
     return puppeteer.launch({
         headless: true,
         dumpio: true,
-        defaultViewport: { width: 794, height: 1123, deviceScaleFactor: 2 },
+        defaultViewport: { width: 794, height: 1123 },
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",

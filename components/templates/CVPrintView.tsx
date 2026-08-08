@@ -298,10 +298,23 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         data-testid="cv-content"
         ref={contentRef}
         className="cv-printable"
+        // style={{
+        //   position: "absolute",
+        //   top: 0,
+        //   left: 0,
+        //   transform: isReady ? `scale(${scale})` : "none",
+        //   transformOrigin: "top left",
+        //   width: "794px",
+        //   height: isReady ? "1123px" : "auto",
+        //   background: "white",
+        //   margin: 0,
+        //   padding: 0,
+        // }}
+
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
+          top: isReady ? `${(1123 * (1 - scale)) / 2}px` : 0,
+          left: isReady ? `${(794 * (1 - scale)) / 2}px` : 0,
           transform: isReady ? `scale(${scale})` : "none",
           transformOrigin: "top left",
           width: "794px",

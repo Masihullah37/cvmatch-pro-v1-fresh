@@ -168,7 +168,7 @@ export async function POST(req: Request) {
 
     browser = await withRenderSlot(() => getSharedBrowser());
     page = await browser.newPage();
-    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 });
+    await page.setViewport({ width: 794, height: 1123 });
 
     const port = process.env.PORT || 3000;
     const locale = body.locale || "fr";
