@@ -188,7 +188,13 @@ export async function POST(req: Request) {
     ]);
 
     // Wait for the CV content DOM element to exist
+    // await page.waitForSelector('[data-testid="cv-content"]', { timeout: 10000 });
+
     await page.waitForSelector('[data-testid="cv-content"]', { timeout: 10000 });
+    await page.waitForFunction(
+      () => document.body.getAttribute("data-pdf-ready") === "true",
+      { timeout: 15000 }
+    );
 
     // Generate the PDF
     const pdfBuffer = await page.pdf({

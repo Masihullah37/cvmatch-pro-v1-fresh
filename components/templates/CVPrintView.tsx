@@ -162,6 +162,7 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [isReady, setIsReady] = useState(false);
+  const [isMeasured, setIsMeasured] = useState(false);
 
   // 1. Wait for data, then force a render at A4 width so we can measure accurately
   useEffect(() => {
@@ -174,39 +175,75 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
   }, [template]);
 
   // 2. Measure and scale ONLY AFTER natural render is complete
+  // useLayoutEffect(() => {
+  //   if (!isReady || !contentRef.current) return;
+
+  //   const el = contentRef.current;
+
+  //   // We measure the FULL natural scroll size
+  //   // By now, isReady forced the width to 794px in the CSS below
+  //   const naturalWidth = el.scrollWidth;
+  //   const naturalHeight = el.scrollHeight;
+
+  //   if (naturalWidth === 0 || naturalHeight === 0) {
+  //     setScale(1);
+  //     return;
+  //   }
+
+  //   // Target A4 size in pixels
+  //   const viewportWidth = 794;
+  //   const viewportHeight = 1123;
+
+  //   // 🛠️ CRITICAL FIX: Because we forced the HTML width to 794px, 
+  //   // scaleX will be exactly 1.0 (or very close to it).
+  //   // We just need to scale HEIGHT to perfectly fill the vertical space.
+  //   const scaleX = viewportWidth / naturalWidth;
+  //   const scaleY = viewportHeight / naturalHeight;
+
+  //   // Use Math.min to ensure we never overflow the page
+  //   let uniformScale = Math.min(scaleX, scaleY);
+
+  //   if (uniformScale < 0.1) uniformScale = 1.0; // Safety fallback
+
+  //   console.log(`[CVPrintView] Measured natural: ${naturalWidth}x${naturalHeight}, Applying scale: ${uniformScale}`);
+  //   setScale(uniformScale);
+  // }, [isReady]);
+
   useLayoutEffect(() => {
-    if (!isReady || !contentRef.current) return;
+    if (!isReady || !contentRef.current || isMeasured) return;
 
     const el = contentRef.current;
-
-    // We measure the FULL natural scroll size
-    // By now, isReady forced the width to 794px in the CSS below
     const naturalWidth = el.scrollWidth;
     const naturalHeight = el.scrollHeight;
 
     if (naturalWidth === 0 || naturalHeight === 0) {
       setScale(1);
+      setIsMeasured(true);
       return;
     }
 
-    // Target A4 size in pixels
     const viewportWidth = 794;
     const viewportHeight = 1123;
 
-    // 🛠️ CRITICAL FIX: Because we forced the HTML width to 794px, 
-    // scaleX will be exactly 1.0 (or very close to it).
-    // We just need to scale HEIGHT to perfectly fill the vertical space.
     const scaleX = viewportWidth / naturalWidth;
     const scaleY = viewportHeight / naturalHeight;
 
-    // Use Math.min to ensure we never overflow the page
-    let uniformScale = Math.min(scaleX, scaleY);
+    // Cap at 1 so short CVs never get upscaled/blurry
+    let uniformScale = Math.min(scaleX, scaleY, 1);
 
-    if (uniformScale < 0.1) uniformScale = 1.0; // Safety fallback
+    if (uniformScale < 0.1) uniformScale = 1.0;
 
     console.log(`[CVPrintView] Measured natural: ${naturalWidth}x${naturalHeight}, Applying scale: ${uniformScale}`);
     setScale(uniformScale);
-  }, [isReady]);
+    setIsMeasured(true);
+  }, [isReady, isMeasured]);
+
+  // 2.5. Signal to Puppeteer that the corrected scale has been painted
+  useEffect(() => {
+    if (isMeasured) {
+      document.body.setAttribute("data-pdf-ready", "true");
+    }
+  }, [isMeasured]);
 
   // 3. Render the Loading State
   if (!template || !template.templateData) {
@@ -311,14 +348,27 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         //   padding: 0,
         // }}
 
+        // style={{
+        //   position: "absolute",
+        //   top: isReady ? `${(1123 * (1 - scale)) / 2}px` : 0,
+        //   left: isReady ? `${(794 * (1 - scale)) / 2}px` : 0,
+        //   transform: isReady ? `scale(${scale})` : "none",
+        //   transformOrigin: "top left",
+        //   width: "794px",
+        //   height: isReady ? "1123px" : "auto",
+        //   background: "white",
+        //   margin: 0,
+        //   padding: 0,
+        // }}
+
         style={{
           position: "absolute",
-          top: isReady ? `${(1123 * (1 - scale)) / 2}px` : 0,
-          left: isReady ? `${(794 * (1 - scale)) / 2}px` : 0,
-          transform: isReady ? `scale(${scale})` : "none",
+          top: isMeasured ? `${(1123 * (1 - scale)) / 2}px` : 0,
+          left: isMeasured ? `${(794 * (1 - scale)) / 2}px` : 0,
+          transform: isMeasured ? `scale(${scale})` : "none",
           transformOrigin: "top left",
           width: "794px",
-          height: isReady ? "1123px" : "auto",
+          height: isMeasured ? "1123px" : "auto",
           background: "white",
           margin: 0,
           padding: 0,
