@@ -174,67 +174,65 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
     }
   }, [template]);
 
-  // 2. Measure and scale ONLY AFTER natural render is complete
+
   // useLayoutEffect(() => {
-  //   if (!isReady || !contentRef.current) return;
+  //   if (!isReady || !contentRef.current || isMeasured) return;
 
   //   const el = contentRef.current;
-
-  //   // We measure the FULL natural scroll size
-  //   // By now, isReady forced the width to 794px in the CSS below
   //   const naturalWidth = el.scrollWidth;
   //   const naturalHeight = el.scrollHeight;
 
   //   if (naturalWidth === 0 || naturalHeight === 0) {
   //     setScale(1);
+  //     setIsMeasured(true);
   //     return;
   //   }
 
-  //   // Target A4 size in pixels
   //   const viewportWidth = 794;
   //   const viewportHeight = 1123;
 
-  //   // 🛠️ CRITICAL FIX: Because we forced the HTML width to 794px, 
-  //   // scaleX will be exactly 1.0 (or very close to it).
-  //   // We just need to scale HEIGHT to perfectly fill the vertical space.
   //   const scaleX = viewportWidth / naturalWidth;
   //   const scaleY = viewportHeight / naturalHeight;
 
-  //   // Use Math.min to ensure we never overflow the page
-  //   let uniformScale = Math.min(scaleX, scaleY);
+  //   // Cap at 1 so short CVs never get upscaled/blurry
+  //   let uniformScale = Math.min(scaleX, scaleY, 1);
 
-  //   if (uniformScale < 0.1) uniformScale = 1.0; // Safety fallback
+  //   if (uniformScale < 0.1) uniformScale = 1.0;
 
   //   console.log(`[CVPrintView] Measured natural: ${naturalWidth}x${naturalHeight}, Applying scale: ${uniformScale}`);
   //   setScale(uniformScale);
-  // }, [isReady]);
+  //   setIsMeasured(true);
+  // }, [isReady, isMeasured]);
+
+  const MIN_DENSITY = 0.72;   // legibility floor (~11.5px root font) — never go smaller
+  const MAX_DENSITY = 1.0;
+  const TARGET_HEIGHT = 1123; // one A4 page in px
 
   useLayoutEffect(() => {
     if (!isReady || !contentRef.current || isMeasured) return;
 
     const el = contentRef.current;
-    const naturalWidth = el.scrollWidth;
-    const naturalHeight = el.scrollHeight;
+    let low = MIN_DENSITY;
+    let high = MAX_DENSITY;
+    let best = MIN_DENSITY;
 
-    if (naturalWidth === 0 || naturalHeight === 0) {
-      setScale(1);
-      setIsMeasured(true);
-      return;
+    // Binary search for the LARGEST density that still fits one page
+    for (let i = 0; i < 8; i++) {
+      const mid = (low + high) / 2;
+      document.documentElement.style.fontSize = `${16 * mid}px`;
+      void el.offsetHeight; // force reflow so scrollHeight is accurate
+
+      if (el.scrollHeight <= TARGET_HEIGHT) {
+        best = mid;
+        low = mid;   // fits — try to go bigger/more readable
+      } else {
+        high = mid;  // still overflowing — shrink more
+      }
     }
 
-    const viewportWidth = 794;
-    const viewportHeight = 1123;
-
-    const scaleX = viewportWidth / naturalWidth;
-    const scaleY = viewportHeight / naturalHeight;
-
-    // Cap at 1 so short CVs never get upscaled/blurry
-    let uniformScale = Math.min(scaleX, scaleY, 1);
-
-    if (uniformScale < 0.1) uniformScale = 1.0;
-
-    console.log(`[CVPrintView] Measured natural: ${naturalWidth}x${naturalHeight}, Applying scale: ${uniformScale}`);
-    setScale(uniformScale);
+    document.documentElement.style.fontSize = `${16 * best}px`;
+    void el.offsetHeight;
+    console.log(`[CVPrintView] density=${best.toFixed(3)} finalHeight=${el.scrollHeight}`);
     setIsMeasured(true);
   }, [isReady, isMeasured]);
 
@@ -362,17 +360,13 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
         // }}
 
         style={{
-          position: "absolute",
-          top: isMeasured ? `${(1123 * (1 - scale)) / 2}px` : 0,
-          left: isMeasured ? `${(794 * (1 - scale)) / 2}px` : 0,
-          transform: isMeasured ? `scale(${scale})` : "none",
-          transformOrigin: "top left",
           width: "794px",
-          height: isMeasured ? "1123px" : "auto",
           background: "white",
           margin: 0,
           padding: 0,
+          visibility: isMeasured ? "visible" : "hidden", // hide until fitted, avoids flash of oversized text
         }}
+
       >
         <CVRenderer
           template={template}
@@ -381,7 +375,7 @@ const CVPrintView: React.FC<CVPrintViewProps> = ({ template }) => {
           analysisData={null}
         />
       </div>
-    </div>
+    </div >
   );
 };
 
