@@ -178,7 +178,8 @@ const SectionTitle = ({ sectionKey, className, headers: sectionHeaders, isIntera
   const iact = interactive ?? ctx.isInteractive;
   const upd = updateHandler ?? ctx.onUpdate;
   return (
-    <h3 className={className}>
+    // <h3 className={className}>
+    <h3 className={`${className} break-after-avoid-page`}>
       <InlineEdit
         value={hdrs?.[sectionKey] || sectionKey}
         path={`headers.${sectionKey}`}
@@ -195,7 +196,8 @@ const ExperienceTitle = ({ className, headers: sectionHeaders, isInteractive: in
   const iact = interactive ?? ctx.isInteractive;
   const upd = updateHandler ?? ctx.onUpdate;
   return (
-    <h2 className={className}>
+    // <h2 className={className}>
+    <h2 className={`${className} break-after-avoid-page`}>
       <InlineEdit value={hdrs?.experience} path="headers.experience" isInteractive={iact} onUpdate={upd} />
     </h2>
   );
@@ -308,7 +310,8 @@ const ProjectsSection = ({ headerClass, itemClass, projects: sectionProjects, is
       <SectionTitle sectionKey="projects" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
       <div className="space-y-4 mt-3">
         {asRecordArray(projs).map((proj: any, i: number) => (
-          <div key={i} className={itemClass}>
+          // <div key={i} className={itemClass}>
+          <div key={i} className={`${itemClass} break-inside-avoid-page`}>
             <p className="font-bold break-words"><InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={iact} onUpdate={upd} /></p>
             {(proj.technologies || iact) && (
               <p className="text-xs opacity-60 break-words italic">
@@ -337,7 +340,8 @@ const ExperienceSection = ({ headerClass, experiences: sectionExperiences, isInt
       <ExperienceTitle className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
       <div className="space-y-10">
         {asRecordArray(exps).map((exp: any, i: number) => (
-          <div key={i} className="flex gap-6 relative">
+          // <div key={i} className="flex gap-6 relative">
+          <div key={i} className="flex gap-6 relative break-inside-avoid-page">
             <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
             <div className="flex-1 pb-4 min-w-0">
               <div className="flex justify-between items-start mb-2 gap-4">
@@ -368,7 +372,8 @@ const EducationSection = ({ headerClass, education: sectionEducation, isInteract
       <SectionTitle sectionKey="education" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
       <div className="space-y-8">
         {asRecordArray(edu).map((e: any, i: number) => (
-          <div key={i} className="flex gap-6 relative">
+          // <div key={i} className="flex gap-6 relative">
+          <div key={i} className="flex gap-6 relative break-inside-avoid-page">
             <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
             <div className="flex-1 pb-4 min-w-0">
               <div className="flex justify-between items-start mb-2 gap-4">
@@ -657,13 +662,36 @@ export const CVRenderer = ({
     isInteractive, onUpdate, onDeleteSection,
   };
 
+  // const ProtectionOverlay = () => null;
+  // return (
+  //   <CVContext.Provider value={ctxValue}>
+  //     <div
+  //       className={`w-[210mm] min-h-[297mm] bg-white shadow-sm overflow-visible text-left mx-auto relative select-none cv-printable`}
+  //       onContextMenu={(e) => !isPaid && e.preventDefault()}
+  //     >
+
   const ProtectionOverlay = () => null;
+  const fontScale = data.displaySettings?.fontScale ?? 1;
+  const lineScale = data.displaySettings?.lineScale ?? 1;
   return (
     <CVContext.Provider value={ctxValue}>
       <div
         className={`w-[210mm] min-h-[297mm] bg-white shadow-sm overflow-visible text-left mx-auto relative select-none cv-printable`}
         onContextMenu={(e) => !isPaid && e.preventDefault()}
+        style={{ zoom: fontScale, ["--cv-line-scale" as any]: lineScale }}
       >
+        {/* <style>{`
+        .cv-readable-sidebar,
+        .cv-readable-sidebar *:not(input):not(textarea):not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(rect):not(.cv-section-controls):not(.cv-section-controls *) { color: #ffffff !important; }
+        .cv-readable-sidebar .muted-readable { color: rgba(255,255,255,.78) !important; }
+        .cv-readable-sidebar [class*="border-"] { border-color: rgba(255,255,255,.24) !important; }
+        .cv-readable-sidebar input,
+        .cv-readable-sidebar textarea { color: #0f172a !important; }
+        .cv-section-controls { color: #475569 !important; }
+        .cv-section-controls--delete { color: #dc2626 !important; background: #ffffff !important; border-color: #f87171 !important; }
+        .cv-section-controls--delete svg { color: #dc2626 !important; stroke: #dc2626 !important; }
+      `}</style> */}
+
         <style>{`
         .cv-readable-sidebar,
         .cv-readable-sidebar *:not(input):not(textarea):not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(rect):not(.cv-section-controls):not(.cv-section-controls *) { color: #ffffff !important; }
@@ -674,6 +702,9 @@ export const CVRenderer = ({
         .cv-section-controls { color: #475569 !important; }
         .cv-section-controls--delete { color: #dc2626 !important; background: #ffffff !important; border-color: #f87171 !important; }
         .cv-section-controls--delete svg { color: #dc2626 !important; stroke: #dc2626 !important; }
+        .cv-printable p, .cv-printable li, .cv-printable div {
+          line-height: calc(1.15em * var(--cv-line-scale, 1)) !important;
+        }
       `}</style>
 
         {/* --- STYLE: HORIZON --- */}

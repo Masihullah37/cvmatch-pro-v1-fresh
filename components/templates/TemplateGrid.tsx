@@ -44,7 +44,10 @@ import {
   Monitor,
   Target,
   CreditCard,
+  Settings2,
 } from "lucide-react";
+import CVDensityControls from "@/components/editor/CVDensityControls";
+import PageOverflowWarning from "@/components/editor/PageOverflowWarning";
 import CVRenderer from "./CVRenderer";
 import { toast } from "sonner";
 import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";
@@ -931,8 +934,11 @@ export default function TemplateGrid({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [forceDesktopPreview, setForceDesktopPreview] = useState(false);
+  // const [previewScale, setPreviewScale] = useState(1);
+  // const [showATS, setShowATS] = useState(false);
   const [previewScale, setPreviewScale] = useState(1);
   const [showATS, setShowATS] = useState(false);
+  const [showDensityPanel, setShowDensityPanel] = useState(false);
 
   const editingDataRef = useRef<any>(null);
   const previewViewportRef = useRef<HTMLDivElement>(null);
@@ -1824,13 +1830,48 @@ export default function TemplateGrid({
                 </div>
               )}
 
-              <div className="md:hidden sticky top-0 z-20 px-4 py-2 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between">
+              {/* <div className="md:hidden sticky top-0 z-20 px-4 py-2 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Aperçu en direct</span>
                 <div className="flex items-center gap-2">
                   <button onClick={() => setShowModelPicker(true)} className="text-[10px] font-black text-primary flex items-center gap-1"><Layers size={12} /> Modèle</button>
                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                 </div>
+              </div> */}
+
+              <div className="sticky top-0 z-20 px-4 py-2 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between">
+                <span className="hidden md:inline text-[10px] font-black uppercase tracking-widest text-slate-500">Aperçu en direct</span>
+                <button
+                  onClick={() => setShowModelPicker(true)}
+                  className="md:hidden text-[10px] font-black text-primary flex items-center gap-1"
+                >
+                  <Layers size={12} /> Modèle
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowDensityPanel((v) => !v)}
+                    className={`text-[10px] font-black flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${showDensityPanel ? "bg-primary/10 text-primary" : "text-slate-500 hover:bg-slate-100"}`}
+                  >
+                    <Settings2 size={12} /> Mise en page
+                  </button>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                </div>
               </div>
+
+              {showDensityPanel && (
+                <div className="px-4 py-3 md:px-6 border-b border-slate-200 bg-white">
+                  <CVDensityControls
+                    fontScale={editingData?.displaySettings?.fontScale ?? 1}
+                    lineScale={editingData?.displaySettings?.lineScale ?? 1}
+                    onFontScaleChange={(v) => update("displaySettings.fontScale", v)}
+                    onLineScaleChange={(v) => update("displaySettings.lineScale", v)}
+                  />
+                </div>
+              )}
+
+              <PageOverflowWarning
+                pageCount={Math.ceil(previewContentHeight / 1123)}
+                onReduceFontSize={() => update("displaySettings.fontScale", Math.max(0.85, (editingData?.displaySettings?.fontScale ?? 1) - 0.05))}
+              />
 
               <div
                 ref={previewViewportRef}
