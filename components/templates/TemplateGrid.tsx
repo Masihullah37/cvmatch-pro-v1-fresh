@@ -1868,9 +1868,15 @@ export default function TemplateGrid({
                 </div>
               )}
 
+              {/* <PageOverflowWarning
+                pageCount={Math.ceil(previewContentHeight / 1123)}
+                onReduceFontSize={() => update("displaySettings.fontScale", Math.max(0.85, (editingData?.displaySettings?.fontScale ?? 1) - 0.05))}
+              /> */}
+
               <PageOverflowWarning
                 pageCount={Math.ceil(previewContentHeight / 1123)}
                 onReduceFontSize={() => update("displaySettings.fontScale", Math.max(0.85, (editingData?.displaySettings?.fontScale ?? 1) - 0.05))}
+                onIncreaseFontSize={() => update("displaySettings.fontScale", Math.min(1.15, (editingData?.displaySettings?.fontScale ?? 1) + 0.05))}
               />
 
               <div

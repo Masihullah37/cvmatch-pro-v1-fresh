@@ -97,7 +97,7 @@ export default async function PrintTemplatePage({
   return (
     <>
       {/* ─── Critical: Remove all margins for perfect PDF scaling ─── */}
-      <style>{`
+      {/* <style>{`
         html, body {
           margin: 0 !important;
           padding: 0 !important;
@@ -116,7 +116,6 @@ export default async function PrintTemplatePage({
           justify-content: stretch;
           background: white;
         }
-        /* Prevent any scrollbars during print */
         @media print {
           html, body {
             overflow: hidden !important;
@@ -126,9 +125,27 @@ export default async function PrintTemplatePage({
           }
         }
       `}</style>
+      <div id="cv-ready" data-testid="cv-content">
+        <CVPrintView template={templateWithData} />
+      </div> */}
+
+      <style>{`
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100%;
+          background: white;
+        }
+        #cv-ready {
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          background: white;
+        }
+      `}</style>
 
       {/* ─── CRITICAL: This div MUST be present for Puppeteer ────── */}
-      <div id="cv-ready" data-testid="cv-content">
+      <div id="cv-ready">
         <CVPrintView template={templateWithData} />
       </div>
     </>

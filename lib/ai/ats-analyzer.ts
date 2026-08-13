@@ -549,89 +549,6 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
         ...(parsed?.contact ?? {}),
       },
 
-      // experience:
-      //   Array.isArray(parsed?.experience) &&
-      //     parsed.experience.length > 0 &&
-      //     parsed.experience.some(
-      //       (e: any) =>
-      //         e &&
-      //         (
-      //           (typeof e.title === "string" && e.title.trim()) ||
-      //           (typeof e.company === "string" && e.company.trim()) ||
-      //           (typeof e.description === "string" && e.description.trim())
-      //         )
-      //     )
-      //     ? parsed.experience
-      //     : existingCV?.experience ?? [],
-
-      // education:
-      //   Array.isArray(parsed?.education) &&
-      //     parsed.education.length > 0 &&
-      //     parsed.education.some(
-      //       (e: any) =>
-      //         e &&
-      //         (
-      //           (typeof e.degree === "string" && e.degree.trim()) ||
-      //           (typeof e.school === "string" && e.school.trim()) ||
-      //           (typeof e.details === "string" && e.details.trim())
-      //         )
-      //     )
-      //     ? parsed.education
-      //     : existingCV?.education ?? [],
-
-      // projects:
-      //   Array.isArray(parsed?.projects) &&
-      //     parsed.projects.length > 0 &&
-      //     parsed.projects.some(
-      //       (p: any) =>
-      //         p &&
-      //         (
-      //           (typeof p.name === "string" && p.name.trim()) ||
-      //           (typeof p.description === "string" && p.description.trim())
-      //         )
-      //     )
-      //     ? parsed.projects
-      //     : existingCV?.projects ?? [],
-
-      // languages:
-      //   Array.isArray(parsed?.languages) &&
-      //     parsed.languages.length > 0 &&
-      //     parsed.languages.some(
-      //       (l: any) =>
-      //         l &&
-      //         (
-      //           (typeof l.language === "string" && l.language.trim()) ||
-      //           (typeof l.level === "string" && l.level.trim())
-      //         )
-      //     )
-      //     ? parsed.languages
-      //     : existingCV?.languages ?? [],
-
-      // interests:
-      //   Array.isArray(parsed?.interests) &&
-      //     parsed.interests.length > 0 &&
-      //     parsed.interests.some(
-      //       (i: any) =>
-      //         (typeof i === "string" && i.trim().length > 0) ||
-      //         (i && typeof i.name === "string" && i.name.trim().length > 0)
-      //     )
-      //     ? parsed.interests
-      //     : existingCV?.interests ?? [],
-
-      // skills: (() => {
-      //   const aiSkills = Array.isArray(parsed?.skills) ? parsed.skills : [];
-      //   const baseSkills = aiSkills.length > 0 ? aiSkills : (existingCV?.skills ?? []);
-      //   const combined = [...baseSkills, ...domainFilteredMissing];
-      //   const seen = new Set<string>();
-      //   return combined.filter((s: any) => {
-      //     if (typeof s !== "string") return false;
-      //     const key = s.trim().toLowerCase();
-      //     if (!key || seen.has(key)) return false;
-      //     seen.add(key);
-      //     return true;
-      //   });
-      // })(),
-
       experience: (() => {
         const valid = Array.isArray(parsed?.experience)
           ? parsed.experience.filter(
@@ -748,26 +665,6 @@ ${isGeneral ? "" : `JOB DESCRIPTION:\n${safeJobDescription}`}`;
     throw error;
   }
 }
-
-// export function matchKeywordSafely(text: string, keyword: string): boolean {
-//   const normalizedText = text.toLowerCase();
-//   const normalizedKw = keyword.toLowerCase().trim();
-
-//   if (!normalizedKw) return false;
-
-//   // Escape special regex characters except technical ones (+, #, ., -)
-//   const escaped = normalizedKw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-
-//   // Construct boundary rules:
-//   // Must be preceded by start of string, or a character that is NOT a word char, nor #, +, ., -
-//   const prefix = "(?<=^|[^a-zA-Z0-9_#+.-])";
-//   // Must be followed by end of string, or a character that is NOT a word char, nor #, +, ., -
-//   const suffix = "(?=$|[^a-zA-Z0-9_#+.-])";
-
-//   const regex = new RegExp(prefix + escaped + suffix, "i");
-//   return regex.test(normalizedText);
-// }
-
 
 export function matchKeywordSafely(text: string, keyword: string): boolean {
   const normalizedText = text.toLowerCase();
