@@ -948,13 +948,18 @@ export default function TemplateGrid({
 
   useEffect(() => {
     if (!previewContentRef.current) return;
-    const fontScale = editingData?.displaySettings?.fontScale ?? 1;
     const updateHeight = () => {
       if (previewContentRef.current) {
-        const rect = previewContentRef.current.getBoundingClientRect();
-        // Scale back by previewScale so we measure the unzoomed A4 height
-        const scaledHeight = rect.height / (previewScale || 1);
-        setPreviewContentHeight(scaledHeight);
+        const innerEl = previewContentRef.current.querySelector('.cv-printable') as HTMLElement;
+        const fontScale = editingData?.displaySettings?.fontScale ?? 1;
+        if (innerEl) {
+          const child = (innerEl.firstElementChild || innerEl) as HTMLElement;
+          const rawScrollHeight = child.scrollHeight || innerEl.scrollHeight;
+          setPreviewContentHeight(rawScrollHeight * fontScale);
+        } else {
+          const rect = previewContentRef.current.getBoundingClientRect();
+          setPreviewContentHeight((rect.height / (previewScale || 1)) * fontScale);
+        }
       }
     };
 
@@ -1905,12 +1910,7 @@ export default function TemplateGrid({
               >
                 <div
                   className="relative bg-white shadow-2xl rounded-sm overflow-visible transform-gpu transition-all duration-300"
-                  // style={{
-                  //   width: "calc(794px * var(--preview-scale, 1))",
-                  //   height: `calc(${previewContentHeight}px * var(--preview-scale, 1))`,
-                  //   minHeight: "calc(1123px * var(--preview-scale, 1))",
-                  //   minWidth: forceDesktopPreview ? "calc(794px * var(--preview-scale, 1))" : undefined,
-                  // }}
+
 
                   style={{
                     width: "calc(794px * var(--preview-scale, 1))",

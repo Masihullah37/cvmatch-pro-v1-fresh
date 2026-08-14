@@ -672,17 +672,6 @@ export const CVRenderer = ({
     isInteractive, onUpdate, onDeleteSection,
   };
 
-  // const ProtectionOverlay = () => null;
-  // const fontScale = data.displaySettings?.fontScale ?? 1;
-  // const lineScale = data.displaySettings?.lineScale ?? 1;
-  // return (
-  //   <CVContext.Provider value={ctxValue}>
-  //     <div
-  //       className={`w-[210mm] min-h-[297mm] bg-white shadow-sm overflow-visible text-left mx-auto relative select-none cv-printable`}
-  //       onContextMenu={(e) => !isPaid && e.preventDefault()}
-  //       style={{ zoom: fontScale, ["--cv-line-scale" as any]: lineScale }}
-  //     >
-
   const ProtectionOverlay = () => null;
   // When nested inside CVPrintView (applyDisplayZoom=false), CVRenderer must
   // fill 100% of whatever box its parent already sized — that parent has
@@ -3075,7 +3064,7 @@ export const CVRenderer = ({
 
         {style === "Marina" && (
           <div className="min-h-[297mm] font-sans bg-white text-slate-800">
-            <div className="bg-teal-700 px-14 py-10 flex items-center gap-6">
+            <div className="bg-teal-700 px-14 py-6 flex items-center gap-6">
               <ProfilePhoto className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-teal-200/50 shadow-md shrink-0" />
               <div className="min-w-0">
                 <h1 className="text-3xl font-bold text-white break-words">
@@ -3092,10 +3081,10 @@ export const CVRenderer = ({
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed px-14 pt-6 pb-2 whitespace-pre-wrap break-words">
+            <p className="text-[11px] text-slate-500 leading-relaxed px-14 pt-4 pb-2 whitespace-pre-wrap break-words">
               <InlineEdit value={summaryText} path="summary" isInteractive={isInteractive} onUpdate={onUpdate} multiline />
             </p>
-            <div className="flex px-14 pt-6 pb-14 gap-10">
+            <div className="flex px-14 pt-4 pb-6 gap-10">
               <div className="w-[34%] min-w-0 flex flex-col gap-8">
                 <DynamicSidebarSections
                   sidebarKeys={["education", "skills", "languages"]}
