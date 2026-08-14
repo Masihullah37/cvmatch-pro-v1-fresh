@@ -943,7 +943,7 @@ export default function TemplateGrid({
   const editingDataRef = useRef<any>(null);
   const previewViewportRef = useRef<HTMLDivElement>(null);
   const previewContentRef = useRef<HTMLDivElement>(null);
-  const [previewContentHeight, setPreviewContentHeight] = useState(1123);
+  const [previewContentHeight, setPreviewContentHeight] = useState(0);
   const hasRestoredEdits = useRef(false);
 
   useEffect(() => {

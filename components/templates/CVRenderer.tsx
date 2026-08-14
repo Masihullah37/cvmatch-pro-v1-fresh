@@ -376,9 +376,9 @@ const EducationSection = ({ headerClass, education: sectionEducation, isInteract
           <div key={i} className="flex gap-6 relative break-inside-avoid-page">
             <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
             <div className="flex-1 pb-4 min-w-0">
-              <div className="flex justify-between items-start mb-2 gap-4">
-                <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words overflow-hidden"><InlineEdit value={e.school} path={`education.${i}.school`} isInteractive={iact} onUpdate={upd} /></h4>
-                <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right overflow-hidden"><InlineEdit value={e.degree} path={`education.${i}.degree`} isInteractive={iact} onUpdate={upd} /></p>
+              <div className="flex flex-col sm:flex-row justify-between items-start mb-2 gap-1 sm:gap-4 min-w-0">
+                <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={e.school} path={`education.${i}.school`} isInteractive={iact} onUpdate={upd} /></h4>
+                <p className="flex-1 min-w-0 text-[12px] font-black text-slate-700 break-words sm:text-right"><InlineEdit value={e.degree} path={`education.${i}.degree`} isInteractive={iact} onUpdate={upd} /></p>
               </div>
               <p className="text-[11px] text-slate-400 break-words"><InlineEdit value={e.year} path={`education.${i}.year`} isInteractive={iact} onUpdate={upd} /></p>
               {e.details && <p className="text-[11px] text-slate-500 mt-1 break-words whitespace-pre-wrap"><InlineEdit value={e.details} path={`education.${i}.details`} isInteractive={iact} onUpdate={upd} multiline /></p>}
@@ -534,8 +534,8 @@ const DynamicMainSections = ({ headerClass, itemClass, data: sectionData, style:
       {order.map((key) => {
         if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Patterson", "Bremen", "Sevilla", "Munich", "Willow", "Marina"].includes(ts)) return null;
         if (key === "contact") return null;
-        if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina", "Astra"].includes(ts)) return null;
-        if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina", "Astra"].includes(ts)) return null;
+        if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina", "Astra", "Cosmos"].includes(ts)) return null;
+        if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina", "Astra", "Cosmos"].includes(ts)) return null;
         if (key === "education" && ["Patterson", "Sevilla", "Munich", "Bremen", "Marina"].includes(ts)) return null;
         if (key === "experience") return <ExperienceSection key={key} headerClass={headerClass} experiences={exps} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
         if (key === "education") return <EducationSection key={key} headerClass={headerClass} education={edu} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
