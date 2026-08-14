@@ -606,6 +606,15 @@ const DynamicSidebarSections = ({ sidebarKeys, configs, data: sectionData, isInt
 
 // ─── End of stable module-scope components ───────────────────────────────────
 
+// export const CVRenderer = ({
+//   template,
+//   isPaid = true,
+//   analysisData = null,
+//   isInteractive = false,
+//   onUpdate,
+//   onDeleteSection,
+// }: any) => {
+
 export const CVRenderer = ({
   template,
   isPaid = true,
@@ -613,6 +622,7 @@ export const CVRenderer = ({
   isInteractive = false,
   onUpdate,
   onDeleteSection,
+  applyDisplayZoom = true,
 }: any) => {
   const data = (template.templateData as any) || {};
   const style = template.templateStyle;
@@ -663,34 +673,41 @@ export const CVRenderer = ({
   };
 
   // const ProtectionOverlay = () => null;
+  // const fontScale = data.displaySettings?.fontScale ?? 1;
+  // const lineScale = data.displaySettings?.lineScale ?? 1;
   // return (
   //   <CVContext.Provider value={ctxValue}>
   //     <div
   //       className={`w-[210mm] min-h-[297mm] bg-white shadow-sm overflow-visible text-left mx-auto relative select-none cv-printable`}
   //       onContextMenu={(e) => !isPaid && e.preventDefault()}
+  //       style={{ zoom: fontScale, ["--cv-line-scale" as any]: lineScale }}
   //     >
 
   const ProtectionOverlay = () => null;
-  const fontScale = data.displaySettings?.fontScale ?? 1;
+  // When nested inside CVPrintView (applyDisplayZoom=false), CVRenderer must
+  // fill 100% of whatever box its parent already sized — that parent has
+  // already done its own zoom+width compensation. Applying fontScale again
+  // here would double-shrink the text.
+  const fontScale = applyDisplayZoom ? (data.displaySettings?.fontScale ?? 1) : 1;
   const lineScale = data.displaySettings?.lineScale ?? 1;
+  // zoom shrinks this box's own rendered footprint, not just what's drawn
+  // inside it. Pre-enlarging width AND height by the inverse of the zoom
+  // cancels that out, so the box's visible on-screen size stays constant —
+  // only the density of what's inside it changes as the slider moves.
+  const boxWidth = applyDisplayZoom ? `${794 / fontScale}px` : "100%";
+  const boxMinHeight = applyDisplayZoom ? `${1123 / fontScale}px` : "100%";
   return (
     <CVContext.Provider value={ctxValue}>
       <div
-        className={`w-[210mm] min-h-[297mm] bg-white shadow-sm overflow-visible text-left mx-auto relative select-none cv-printable`}
+        className={`bg-white shadow-sm overflow-visible text-left mx-auto relative select-none cv-printable`}
         onContextMenu={(e) => !isPaid && e.preventDefault()}
-        style={{ zoom: fontScale, ["--cv-line-scale" as any]: lineScale }}
+        style={{
+          width: boxWidth,
+          minHeight: boxMinHeight,
+          zoom: fontScale,
+          ["--cv-line-scale" as any]: lineScale,
+        }}
       >
-        {/* <style>{`
-        .cv-readable-sidebar,
-        .cv-readable-sidebar *:not(input):not(textarea):not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(rect):not(.cv-section-controls):not(.cv-section-controls *) { color: #ffffff !important; }
-        .cv-readable-sidebar .muted-readable { color: rgba(255,255,255,.78) !important; }
-        .cv-readable-sidebar [class*="border-"] { border-color: rgba(255,255,255,.24) !important; }
-        .cv-readable-sidebar input,
-        .cv-readable-sidebar textarea { color: #0f172a !important; }
-        .cv-section-controls { color: #475569 !important; }
-        .cv-section-controls--delete { color: #dc2626 !important; background: #ffffff !important; border-color: #f87171 !important; }
-        .cv-section-controls--delete svg { color: #dc2626 !important; stroke: #dc2626 !important; }
-      `}</style> */}
 
         <style>{`
         .cv-readable-sidebar,
@@ -846,7 +863,8 @@ export const CVRenderer = ({
 
         {/* --- STYLE: ECLIPSE --- */}
         {style === "Eclipse" && (
-          <div className="flex min-h-[297mm] w-[210mm] font-sans text-[#333]">
+          // <div className="flex min-h-[297mm] w-[210mm] font-sans text-[#333]">
+          <div className="flex min-h-[297mm] w-full font-sans text-[#333]">
             <div className="cv-readable-sidebar w-[35%] bg-[#1a1a1a] text-white p-10 flex flex-col gap-10">
               {hasPhotoSlot && (
                 <div className="w-40 h-40 rounded-3xl border-4 border-white/10 mx-auto overflow-hidden">
