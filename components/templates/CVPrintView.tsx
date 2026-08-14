@@ -332,6 +332,11 @@ const CVPrintView = ({ template }: { template: any }) => {
             background: white;
           }
 
+          .cv-printable .flex {
+            break-inside: auto !important;
+            page-break-inside: auto !important;
+          }
+
           /* Keep section titles together with the first line of content */
           .cv-printable h1,
           .cv-printable h2,
@@ -361,6 +366,11 @@ const CVPrintView = ({ template }: { template: any }) => {
             .cv-printable {
               break-inside: auto;
               page-break-inside: auto;
+            }
+
+            .cv-printable .flex {
+              break-inside: auto !important;
+              page-break-inside: auto !important;
             }
 
             .cv-printable h1,
