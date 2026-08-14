@@ -534,8 +534,8 @@ const DynamicMainSections = ({ headerClass, itemClass, data: sectionData, style:
       {order.map((key) => {
         if (key === "summary" && ["Horizon", "Lunar", "Stellar", "Solar", "Nebula", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Classic", "Liverpool", "Lumiere", "Patterson", "Bremen", "Sevilla", "Munich", "Willow", "Marina"].includes(ts)) return null;
         if (key === "contact") return null;
-        if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina"].includes(ts)) return null;
-        if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina"].includes(ts)) return null;
+        if (key === "skills" && ["Horizon", "Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Galaxy", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina", "Astra"].includes(ts)) return null;
+        if (key === "languages" && ["Eclipse", "Hyperion", "Lunar", "Stellar", "Solar", "Nebula", "Europass", "Prism", "Navy", "Vertex", "Verde", "Rose", "Azure", "Pamela", "Liverpool", "Lumiere", "Hartmann", "Patterson", "Bremen", "Sevilla", "Munich", "Marina", "Astra"].includes(ts)) return null;
         if (key === "education" && ["Patterson", "Sevilla", "Munich", "Bremen", "Marina"].includes(ts)) return null;
         if (key === "experience") return <ExperienceSection key={key} headerClass={headerClass} experiences={exps} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
         if (key === "education") return <EducationSection key={key} headerClass={headerClass} education={edu} isInteractive={iact} onDeleteSection={del} onUpdate={upd} headers={hdrs} />;
@@ -3102,7 +3102,7 @@ export const CVRenderer = ({
                   configs={{
                     education: {
                       headerClass: "text-[10px] font-bold uppercase tracking-[0.2em] text-teal-700 border-b-2 border-teal-100 pb-2 mb-3",
-                      itemClass: "text-[11px] text-slate-600 leading-relaxed",
+                      itemClass: "text-[11px] text-slate-600 leading-relaxed break-words min-w-0",
                     },
                     skills: {
                       headerClass: "text-[10px] font-bold uppercase tracking-[0.2em] text-teal-700 border-b-2 border-teal-100 pb-2 mb-3",
@@ -3111,14 +3111,15 @@ export const CVRenderer = ({
                     },
                     languages: {
                       headerClass: "text-[10px] font-bold uppercase tracking-[0.2em] text-teal-700 border-b-2 border-teal-100 pb-2 mb-3",
-                      itemClass: "text-[11px] text-slate-700",
+                      itemClass: "text-[11px] text-slate-700 break-words min-w-0",
                     },
                   }}
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <ExperienceSection
+                <DynamicMainSections
                   headerClass="text-[10px] font-bold uppercase tracking-[0.2em] text-teal-700 border-b-2 border-teal-100 pb-2 mb-4"
+                  itemClass="text-[11px] text-slate-600 leading-relaxed break-words"
                 />
               </div>
             </div>

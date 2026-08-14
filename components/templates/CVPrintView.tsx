@@ -308,6 +308,11 @@ const CVPrintView = ({ template }: { template: any }) => {
     >
       <style>
         {`
+          @page {
+            size: A4;
+            margin: 12mm 0 12mm 0;
+          }
+
           html,
           body {
             margin: 0 !important;
@@ -327,10 +332,7 @@ const CVPrintView = ({ template }: { template: any }) => {
             background: white;
           }
 
-          /*
-           * Keep section titles together with their content whenever
-           * Chromium's print engine allows it.
-           */
+          /* Keep section titles together with the first line of content */
           .cv-printable h1,
           .cv-printable h2,
           .cv-printable h3,
@@ -339,12 +341,8 @@ const CVPrintView = ({ template }: { template: any }) => {
             page-break-after: avoid;
           }
 
-          /*
-           * Keep individual CV items together to prevent a title/header
-           * from being separated from its corresponding text.
-           */
-          .cv-printable section,
-          .cv-printable article,
+          /* Keep individual items together, while allowing sections to split cleanly */
+          .cv-printable .break-inside-avoid-page,
           .cv-printable [data-cv-item] {
             break-inside: avoid-page;
             page-break-inside: avoid;
@@ -373,8 +371,7 @@ const CVPrintView = ({ template }: { template: any }) => {
               page-break-after: avoid;
             }
 
-            .cv-printable section,
-            .cv-printable article,
+            .cv-printable .break-inside-avoid-page,
             .cv-printable [data-cv-item] {
               break-inside: avoid-page;
               page-break-inside: avoid;
