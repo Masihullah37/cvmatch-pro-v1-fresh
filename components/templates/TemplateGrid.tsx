@@ -947,6 +947,24 @@ export default function TemplateGrid({
   const hasRestoredEdits = useRef(false);
 
   useEffect(() => {
+    if (!previewContentRef.current) return;
+    const fontScale = editingData?.displaySettings?.fontScale ?? 1;
+    const updateHeight = () => {
+      if (previewContentRef.current) {
+        const rect = previewContentRef.current.getBoundingClientRect();
+        // Scale back by previewScale so we measure the unzoomed A4 height
+        const scaledHeight = rect.height / (previewScale || 1);
+        setPreviewContentHeight(scaledHeight);
+      }
+    };
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(previewContentRef.current);
+    updateHeight();
+    return () => observer.disconnect();
+  }, [editingData?.displaySettings?.fontScale, previewScale, selectedTemplate, editingData]);
+
+  useEffect(() => {
     editingDataRef.current = editingData;
   }, [editingData]);
 
