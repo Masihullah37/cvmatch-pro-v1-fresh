@@ -704,6 +704,7 @@ export const CVRenderer = ({
         style={{
           width: boxWidth,
           minHeight: boxMinHeight,
+          maxHeight: applyDisplayZoom ? undefined : "100%",
           zoom: fontScale,
           ["--cv-line-scale" as any]: lineScale,
         }}
