@@ -332,6 +332,10 @@ const CVPrintView = ({ template }: { template: any }) => {
             background: white;
           }
 
+          [data-testid="cv-content"] > .cv-printable > div {
+            min-height: 297mm;
+          }
+
           .cv-printable .flex {
             break-inside: auto !important;
             page-break-inside: auto !important;
