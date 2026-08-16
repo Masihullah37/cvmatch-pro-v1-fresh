@@ -310,7 +310,7 @@ const CVPrintView = ({ template }: { template: any }) => {
         {`
           @page {
             size: A4;
-            margin: 12mm 0 12mm 0;
+            margin: 0;
           }
 
           html,
