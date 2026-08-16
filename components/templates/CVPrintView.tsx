@@ -396,7 +396,7 @@ const CVPrintView = ({ template }: { template: any }) => {
         className="cv-printable"
         style={{
           width: "794px",
-          minHeight: 0,
+          minHeight: "1123px",
           maxHeight: "none",
           height: "auto",
           background: "white",
