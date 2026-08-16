@@ -709,7 +709,12 @@ export const CVRenderer = ({
         .cv-section-controls { color: #475569 !important; }
         .cv-section-controls--delete { color: #dc2626 !important; background: #ffffff !important; border-color: #f87171 !important; }
         .cv-section-controls--delete svg { color: #dc2626 !important; stroke: #dc2626 !important; }
-        .cv-printable p, .cv-printable li, .cv-printable div {
+        .cv-printable p, .cv-printable li {
+          line-height: calc(1.15em * var(--cv-line-scale, 1)) !important;
+          text-align: justify;
+          text-justify: inter-word;
+        }
+        .cv-printable div {
           line-height: calc(1.15em * var(--cv-line-scale, 1)) !important;
         }
       `}</style>
