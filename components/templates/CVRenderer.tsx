@@ -713,9 +713,13 @@ export const CVRenderer = ({
           line-height: calc(1.15em * var(--cv-line-scale, 1)) !important;
           text-align: justify;
           text-justify: inter-word;
+          overflow-wrap: break-word;
+          word-break: break-word;
         }
-        .cv-printable div {
+        .cv-printable div, .cv-printable span, .cv-printable h1, .cv-printable h2, .cv-printable h3, .cv-printable h4 {
           line-height: calc(1.15em * var(--cv-line-scale, 1)) !important;
+          overflow-wrap: break-word;
+          word-break: break-word;
         }
       `}</style>
 
