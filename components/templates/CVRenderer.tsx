@@ -684,7 +684,7 @@ export const CVRenderer = ({
   // cancels that out, so the box's visible on-screen size stays constant —
   // only the density of what's inside it changes as the slider moves.
   const boxWidth = applyDisplayZoom ? `${794 / fontScale}px` : "100%";
-  const boxMinHeight = applyDisplayZoom ? `${1123 / fontScale}px` : "1123px";
+  const boxMinHeight = applyDisplayZoom ? `${1123 / fontScale}px` : "100%";
   return (
     <CVContext.Provider value={ctxValue}>
       <div
@@ -693,7 +693,7 @@ export const CVRenderer = ({
         style={{
           width: boxWidth,
           minHeight: boxMinHeight,
-          maxHeight: applyDisplayZoom ? undefined : "none",
+          maxHeight: applyDisplayZoom ? undefined : "100%",
           zoom: fontScale,
           ["--cv-line-scale" as any]: lineScale,
         }}
