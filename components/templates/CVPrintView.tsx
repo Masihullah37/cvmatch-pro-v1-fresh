@@ -187,13 +187,42 @@ const CVPrintView = ({ template }: { template: any }) => {
     // accidentally creating an additional PDF page.
     const TARGET_HEIGHT = 1118;
 
+    // const PAGE_WIDTH = 794;
+
+    // // Applies zoom and compensating width together so the rendered
+    // // footprint remains exactly PAGE_WIDTH px at every density.
+    // const applyDensity = (density: number) => {
+    //   el.style.width = `${PAGE_WIDTH / density}px`;
+    //   (el.style as any).zoom = String(density);
+
+    //   // Force layout/reflow so scrollHeight is measured after zoom changes.
+    //   void el.offsetHeight;
+    // };
+
     const PAGE_WIDTH = 794;
+    const PAGE_HEIGHT = 1123; // A4 height in px at 96 DPI
 
     // Applies zoom and compensating width together so the rendered
     // footprint remains exactly PAGE_WIDTH px at every density.
     const applyDensity = (density: number) => {
       el.style.width = `${PAGE_WIDTH / density}px`;
       (el.style as any).zoom = String(density);
+
+      // Keep the box AND the template's own root visual layer exactly one
+      // A4 page (1123px visual) tall at any density, so the template's
+      // background/design reaches the bottom of the page even on short
+      // content. Pre-enlarging by 1/density here cancels out the zoom
+      // that's about to shrink it back down — same trick as PAGE_WIDTH
+      // above, applied to height. min-height only: never stretches
+      // content, never affects multi-page flow.
+      el.style.minHeight = `${PAGE_HEIGHT / density}px`;
+      const rendererRoot = el.firstElementChild as HTMLElement | null;
+      const templateRoot = rendererRoot
+        ? (rendererRoot.querySelector(":scope > div") as HTMLElement | null)
+        : null;
+      if (templateRoot) {
+        templateRoot.style.minHeight = `${PAGE_HEIGHT / density}px`;
+      }
 
       // Force layout/reflow so scrollHeight is measured after zoom changes.
       void el.offsetHeight;
@@ -332,10 +361,6 @@ const CVPrintView = ({ template }: { template: any }) => {
             background: white;
           }
 
-          [data-testid="cv-content"] > .cv-printable > div {
-            min-height: 297mm;
-          }
-
           .cv-printable .flex {
             break-inside: auto !important;
             page-break-inside: auto !important;
@@ -398,9 +423,20 @@ const CVPrintView = ({ template }: { template: any }) => {
         data-testid="cv-content"
         ref={contentRef}
         className="cv-printable"
+        // style={{
+        //   width: "794px",
+        //   minHeight: "1123px",
+        //   maxHeight: "none",
+        //   height: "auto",
+        //   background: "white",
+        //   margin: 0,
+        //   padding: 0,
+        //   visibility: isMeasured ? "visible" : "hidden",
+        // }}
+
+
         style={{
           width: "794px",
-          minHeight: "1123px",
           maxHeight: "none",
           height: "auto",
           background: "white",
