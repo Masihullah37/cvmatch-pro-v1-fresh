@@ -99,29 +99,35 @@ export default async function TemplatesPage({
 
   const dbUser = await syncUserWithClerk();
 
-  // const analysisResults = await db.select().from(cvAnalyses).where(eq(cvAnalyses.id, analysisId)).limit(1);
-  // const analysis = analysisResults[0];
-
-  // if (!analysis) notFound();
-
-  // const userCredits = dbUser ? getEffectiveCredits(dbUser) : 0;
-
   const analysisResults = await db.select().from(cvAnalyses).where(eq(cvAnalyses.id, analysisId)).limit(1);
   const analysis = analysisResults[0];
 
   if (!analysis) notFound();
 
-  // ✅ Ownership check — prevents anyone who merely has this URL (e.g. via
-  // a shared link) from viewing another person's CV. A shared link must
-  // only work for the person who actually created this analysis.
+  // Security & Ownership check:
+  // Prevents unauthorized access or claiming of another person's CV.
+  const currentTrackingToken = await getHashedTrackingToken();
+
   if (analysis.userId) {
+    // CV belongs to a registered user — strictly check user ownership
     if (!dbUser || analysis.userId !== dbUser.id) {
       notFound();
     }
   } else {
-    const currentTrackingToken = await getHashedTrackingToken();
-    if (!analysis.guestSessionId || analysis.guestSessionId !== currentTrackingToken) {
+    // Unowned guest CV: MUST prove ownership via guest tracking token
+    const isMatchingGuest = Boolean(
+      analysis.guestSessionId && analysis.guestSessionId === currentTrackingToken
+    );
+
+    if (!isMatchingGuest) {
+      // Security enforcement: Never allow an arbitrary user/guest to view or claim an unowned CV
       notFound();
+    }
+
+    // Safely claim the guest CV for the logged-in user only after proving tracking token ownership
+    if (dbUser) {
+      await db.update(cvAnalyses).set({ userId: dbUser.id }).where(eq(cvAnalyses.id, analysis.id));
+      analysis.userId = dbUser.id;
     }
   }
 
@@ -143,7 +149,7 @@ export default async function TemplatesPage({
 
   // ── Fetch templates ───────────────────────────────────────────────────────
   const templates = await ensureTemplatesExist(analysisId, analysis);
-  // ✅ Deduplicate templates by style to prevent UI duplication from DB race conditions
+  //  Deduplicate templates by style to prevent UI duplication from DB race conditions
   const uniqueTemplates = Array.from(
     new Map(templates.map((t) => [t.templateStyle, t])).values()
   ).sort((a, b) => (a.templateNumber ?? 0) - (b.templateNumber ?? 0));
@@ -160,7 +166,7 @@ export default async function TemplatesPage({
   const isPlanPaid = plan === 'pro' || plan === 'monthly';
   const hasStructuralAccess = isJustPaid || hasAvailableCredits || isPlanPaid;
 
-  // ✅ Fix: Check if user owns ANY template for this specific analysis
+  //  Fix: Check if user owns ANY template for this specific analysis
   const ownsAnyInAnalysis = uniqueTemplates.some(t => ownedTemplateIds.has(t.id) || t.isPaid);
 
   const safeTemplates = uniqueTemplates.map((t) => {

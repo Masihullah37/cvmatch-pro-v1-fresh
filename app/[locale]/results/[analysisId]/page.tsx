@@ -59,16 +59,30 @@ export default async function ResultsPage({
     ? await db.query.users.findFirst({ where: eq(users.clerkId, userId) })
     : null;
 
-  // ✅ Ownership check — same reasoning as the templates page: a shared
-  // link must not expose this CV's data to anyone but its actual owner.
+  // Security & Ownership check:
+  // Prevents unauthorized access or claiming of another person's CV.
+  const currentTrackingToken = await getHashedTrackingToken();
+
   if (analysis.userId) {
+    // CV belongs to a registered user — strictly check user ownership
     if (!dbUser || analysis.userId !== dbUser.id) {
       notFound();
     }
   } else {
-    const currentTrackingToken = await getHashedTrackingToken();
-    if (!analysis.guestSessionId || analysis.guestSessionId !== currentTrackingToken) {
+    // Unowned guest CV: MUST prove ownership via guest tracking token
+    const isMatchingGuest = Boolean(
+      analysis.guestSessionId && analysis.guestSessionId === currentTrackingToken
+    );
+
+    if (!isMatchingGuest) {
+      // Security enforcement: Never allow an arbitrary user/guest to view or claim an unowned CV
       notFound();
+    }
+
+    // Safely claim the guest CV for the logged-in user only after proving tracking token ownership
+    if (dbUser) {
+      await db.update(cvAnalyses).set({ userId: dbUser.id }).where(eq(cvAnalyses.id, analysis.id));
+      analysis.userId = dbUser.id;
     }
   }
 
