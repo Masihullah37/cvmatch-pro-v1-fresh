@@ -14,6 +14,7 @@ import { Link } from "@/i18n/routing";
 import { PlanType } from "@/lib/billing/get-user-plan";
 import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 import { getHashedTrackingToken } from "@/lib/anonymous-tracking";
+import { cookies } from "next/headers";
 
 // Revert to original unique templates
 // const STYLES = [...CV_TEMPLATE_STYLES]; // 28 templates
@@ -114,9 +115,13 @@ export default async function TemplatesPage({
       notFound();
     }
   } else {
-    // Unowned guest CV: MUST prove ownership via guest tracking token
+    // Unowned guest CV: MUST prove ownership via guest tracking token or pending login claim cookie
+    const cookieStore = await cookies();
+    const pendingClaimId = cookieStore.get("pending_claim_analysis")?.value;
+
     const isMatchingGuest = Boolean(
-      analysis.guestSessionId && analysis.guestSessionId === currentTrackingToken
+      (analysis.guestSessionId && analysis.guestSessionId === currentTrackingToken) ||
+      (pendingClaimId && pendingClaimId === analysis.id)
     );
 
     if (!isMatchingGuest) {

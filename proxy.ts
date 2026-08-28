@@ -113,7 +113,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     response.cookies.set("_cvb_track", token, {
       maxAge: 30 * 24 * 3600, // 30 days
       secure: true,
-      sameSite: "strict",
+      sameSite: "lax",
       httpOnly: false,
     });
   }
