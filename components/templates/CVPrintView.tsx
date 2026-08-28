@@ -33,19 +33,6 @@ const CVPrintView = ({ template }: { template: any }) => {
     // Keep a 4.5px safety buffer to prevent sub-pixel rounding from
     // accidentally creating an additional PDF page.
     const TARGET_HEIGHT = 1118;
-
-    // const PAGE_WIDTH = 794;
-
-    // // Applies zoom and compensating width together so the rendered
-    // // footprint remains exactly PAGE_WIDTH px at every density.
-    // const applyDensity = (density: number) => {
-    //   el.style.width = `${PAGE_WIDTH / density}px`;
-    //   (el.style as any).zoom = String(density);
-
-    //   // Force layout/reflow so scrollHeight is measured after zoom changes.
-    //   void el.offsetHeight;
-    // };
-
     const PAGE_WIDTH = 794;
     const PAGE_HEIGHT = 1123; // A4 height in px at 96 DPI
 

@@ -15,6 +15,7 @@ import { redis } from "@/lib/rate-limit/upstash";
 import { getUserPlan } from "@/lib/billing/get-user-plan";
 import crypto from "crypto";
 import { cookies } from "next/headers";
+import { getHashedTrackingToken } from "@/lib/anonymous-tracking";
 
 /**
  * RULE: Prevent AI Token Waste
@@ -172,6 +173,7 @@ export async function performCVAnalysis(formData: FormData) {
         _originalCvText: cvText, // Store raw text inside JSON to avoid schema changes
       },
       detectedPlatform: detectedPlatform,
+      guestSessionId: dbUserId ? null : await getHashedTrackingToken(),
     }).returning();
     newAnalysis = result[0];
   } catch (dbError: any) {
@@ -778,6 +780,7 @@ export async function createQuickCVAnalysis() {
     // ADD THIS FLAG
     detectedPlatform: "manual_cv_creation",
     optimizedData: DEMO_FALLBACK,
+    guestSessionId: dbUserId ? null : await getHashedTrackingToken(),
   }).returning();
 
   return newAnalysis.id;
