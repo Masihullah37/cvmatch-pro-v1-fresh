@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 // Survives the component being unmounted/remounted by an unrelated parent
 // re-render — plain module state, not React state, so it isn't reset.
@@ -10,9 +10,11 @@ const InlineEditInteractive = ({ value, path, isInteractive, onUpdate, className
   // Only drop the draft once the parent's value has actually caught up to it —
   // clearing it right on blur (before the parent re-renders) is what let the
   // old value flash back in if a remount landed in that gap.
-  if (Object.prototype.hasOwnProperty.call(draftCache, path) && draftCache[path] === value) {
-    delete draftCache[path];
-  }
+  useEffect(() => {
+    if (Object.prototype.hasOwnProperty.call(draftCache, path) && draftCache[path] === value) {
+      delete draftCache[path];
+    }
+  }, [path, value]);
 
   const hasDraft = Object.prototype.hasOwnProperty.call(draftCache, path);
   const [isEditing, setIsEditing] = useState(false);
@@ -24,6 +26,7 @@ const InlineEditInteractive = ({ value, path, isInteractive, onUpdate, className
   const handleChange = (v: string) => {
     setCurrentValue(v);
     draftCache[path] = v;
+    if (onUpdate) onUpdate(path, v);
   };
 
   const handleBlur = () => {

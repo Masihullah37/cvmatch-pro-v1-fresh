@@ -2,10 +2,13 @@
 
 /* eslint-disable */
 import React, { createContext, useContext } from 'react';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import Watermark from "@/components/templates/Watermark";
 import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";
 import InlineEditInteractive from './InlineEditInteractive';
 import DraggableSectionInteractive from './DraggableSectionInteractive';
+import DraggableEntryInteractive from './DraggableEntryInteractive';
 
 // Inline SVG icons to -avoid lucide-react client-only restriction
 const MapPin = ({
@@ -79,6 +82,30 @@ const Mail = ({
   </svg>
 );
 
+const User = ({
+  size = 24,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <circle cx="12" cy="8" r="4" />
+    <path d="M20 21a8 8 0 0 0-16 0" />
+  </svg>
+);
+
 const Star = ({
   size = 24,
   className = "",
@@ -144,10 +171,27 @@ const useCVCtx = () => useContext(CVContext);
 // };
 
 const InlineEdit = (props: any) => {
-  if (!props.isInteractive) {
-    return <span className={props.className}>{props.value || (props.multiline ? "\u00A0\n\u00A0" : "\u00A0")}</span>;
-  }
-  return <InlineEditInteractive {...props} />;
+  const content = props.isInteractive
+    ? <InlineEditInteractive {...props} />
+    : <span className={props.className}>{props.value || (props.multiline ? "\u00A0\n\u00A0" : "\u00A0")}</span>;
+
+  const Icon = props.path === "userName"
+    ? User
+    : props.path === "contact.location"
+      ? MapPin
+      : props.path === "contact.email"
+        ? Mail
+        : props.path === "contact.phone"
+          ? Phone
+          : null;
+
+  if (!Icon) return content;
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1.5 align-middle">
+      <Icon size={12} className="shrink-0 opacity-70" />
+      {content}
+    </span>
+  );
 };
 
 // const DraggableSection = ({ id, isInteractive, onDelete, children, style: extraStyle = {}, className = '' }: any) => {
@@ -262,36 +306,86 @@ const LanguagesSection = ({ headerClass, itemClass, layout = "text", languages: 
   const hdrs = sectionHeaders ?? ctx.headers;
   if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("languages")) return null;
   if (!iact && (!langs || langs.length === 0)) return null;
+
+  const langSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 15 } })
+  );
+  const langList = asRecordArray(langs);
+  const langIds = langList.map((_: any, i: number) => `lang-entry-${i}`);
+  const handleLangDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !upd) return;
+    const oldIdx = langIds.indexOf(active.id);
+    const newIdx = langIds.indexOf(over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    upd('languages', arrayMove(langList, oldIdx, newIdx));
+  };
+
   if (layout === "stars") {
     return (
       <DraggableSection id="languages" isInteractive={iact} onDelete={del}>
         <SectionTitle sectionKey="languages" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
-        <div className="space-y-2 mt-3">
-          {asRecordArray(langs).map((l: any, i: number) => (
-            <div key={i} className={`${itemClass} flex items-center justify-between gap-2 break-words min-w-0`}>
-              <span className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={iact} onUpdate={upd} /></span>
-              <span className="flex gap-0.5 shrink-0">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <Star key={n} size={10} className={n <= levelToStars(l.level) ? "fill-current text-current" : "text-current opacity-25"} />
+        {iact ? (
+          <DndContext sensors={langSensors} collisionDetection={closestCenter} onDragEnd={handleLangDragEnd}>
+            <SortableContext items={langIds} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2 mt-3">
+                {langList.map((l: any, i: number) => (
+                  <DraggableEntryInteractive key={langIds[i]} id={langIds[i]} className={`${itemClass} flex items-center justify-between gap-2 break-words min-w-0`}>
+                    <span className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={iact} onUpdate={upd} /></span>
+                    <span className="flex gap-0.5 shrink-0">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} size={10} className={n <= levelToStars(l.level) ? "fill-current text-current" : "text-current opacity-25"} />
+                      ))}
+                    </span>
+                  </DraggableEntryInteractive>
                 ))}
-              </span>
-            </div>
-          ))}
-        </div>
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <div className="space-y-2 mt-3">
+            {langList.map((l: any, i: number) => (
+              <div key={i} className={`${itemClass} flex items-center justify-between gap-2 break-words min-w-0`}>
+                <span className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={iact} onUpdate={upd} /></span>
+                <span className="flex gap-0.5 shrink-0">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star key={n} size={10} className={n <= levelToStars(l.level) ? "fill-current text-current" : "text-current opacity-25"} />
+                  ))}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </DraggableSection>
     );
   }
   return (
     <DraggableSection id="languages" isInteractive={iact} onDelete={del}>
       <SectionTitle sectionKey="languages" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
-      <div className="space-y-1 mt-3">
-        {asRecordArray(langs).map((l: any, i: number) => (
-          <p key={i} className={`${itemClass} break-words min-w-0`}>
-            <strong className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={iact} onUpdate={upd} /></strong>
-            {l.level && <span className="opacity-70 break-words min-w-0"> — <InlineEdit value={l.level} path={`languages.${i}.level`} isInteractive={iact} onUpdate={upd} /></span>}
-          </p>
-        ))}
-      </div>
+      {iact ? (
+        <DndContext sensors={langSensors} collisionDetection={closestCenter} onDragEnd={handleLangDragEnd}>
+          <SortableContext items={langIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-1 mt-3">
+              {langList.map((l: any, i: number) => (
+                <DraggableEntryInteractive key={langIds[i]} id={langIds[i]} className={`${itemClass} break-words min-w-0`}>
+                  <strong className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={iact} onUpdate={upd} /></strong>
+                  {l.level && <span className="opacity-70 break-words min-w-0"> — <InlineEdit value={l.level} path={`languages.${i}.level`} isInteractive={iact} onUpdate={upd} /></span>}
+                </DraggableEntryInteractive>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="space-y-1 mt-3">
+          {langList.map((l: any, i: number) => (
+            <p key={i} className={`${itemClass} break-words min-w-0`}>
+              <strong className="break-words min-w-0"><InlineEdit value={l.language || l.name || (typeof l === "string" ? l : "")} path={`languages.${i}.language`} isInteractive={iact} onUpdate={upd} /></strong>
+              {l.level && <span className="opacity-70 break-words min-w-0"> — <InlineEdit value={l.level} path={`languages.${i}.level`} isInteractive={iact} onUpdate={upd} /></span>}
+            </p>
+          ))}
+        </div>
+      )}
     </DraggableSection>
   );
 };
@@ -305,23 +399,58 @@ const ProjectsSection = ({ headerClass, itemClass, projects: sectionProjects, is
   const hdrs = sectionHeaders ?? ctx.headers;
   if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("projects")) return null;
   if (!iact && (!projs || projs.length === 0)) return null;
+
+  const projSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 15 } })
+  );
+  const projList = asRecordArray(projs);
+  const projIds = projList.map((_: any, i: number) => `proj-entry-${i}`);
+  const handleProjDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !upd) return;
+    const oldIdx = projIds.indexOf(active.id);
+    const newIdx = projIds.indexOf(over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    upd('projects', arrayMove(projList, oldIdx, newIdx));
+  };
+
   return (
     <DraggableSection id="projects" isInteractive={iact} onDelete={del}>
       <SectionTitle sectionKey="projects" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
-      <div className="space-y-4 mt-3">
-        {asRecordArray(projs).map((proj: any, i: number) => (
-          // <div key={i} className={itemClass}>
-          <div key={i} className={`${itemClass} break-inside-avoid-page`}>
-            <p className="font-bold break-words"><InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={iact} onUpdate={upd} /></p>
-            {(proj.technologies || iact) && (
-              <p className="text-xs opacity-60 break-words italic">
-                <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={iact} onUpdate={(path: string, val: any) => upd && upd(path, val.split(",").map((s: string) => s.trim()))} />
-              </p>
-            )}
-            <p className="text-xs mt-1 break-words whitespace-pre-wrap"><InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={iact} onUpdate={upd} multiline /></p>
-          </div>
-        ))}
-      </div>
+      {iact ? (
+        <DndContext sensors={projSensors} collisionDetection={closestCenter} onDragEnd={handleProjDragEnd}>
+          <SortableContext items={projIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4 mt-3">
+              {projList.map((proj: any, i: number) => (
+                <DraggableEntryInteractive key={projIds[i]} id={projIds[i]} className={`${itemClass} break-inside-avoid-page`}>
+                  <p className="font-bold break-words"><InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={iact} onUpdate={upd} /></p>
+                  {(proj.technologies || iact) && (
+                    <p className="text-xs opacity-60 break-words italic">
+                      <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={iact} onUpdate={(path: string, val: any) => upd && upd(path, val.split(",").map((s: string) => s.trim()))} />
+                    </p>
+                  )}
+                  <p className="text-xs mt-1 break-words whitespace-pre-wrap"><InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={iact} onUpdate={upd} multiline /></p>
+                </DraggableEntryInteractive>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="space-y-4 mt-3">
+          {projList.map((proj: any, i: number) => (
+            <div key={i} className={`${itemClass} break-inside-avoid-page`}>
+              <p className="font-bold break-words"><InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={iact} onUpdate={upd} /></p>
+              {(proj.technologies || iact) && (
+                <p className="text-xs opacity-60 break-words italic">
+                  <InlineEdit value={Array.isArray(proj.technologies) ? proj.technologies.join(", ") : (proj.technologies || "")} path={`projects.${i}.technologies`} isInteractive={iact} onUpdate={(path: string, val: any) => upd && upd(path, val.split(",").map((s: string) => s.trim()))} />
+                </p>
+              )}
+              <p className="text-xs mt-1 break-words whitespace-pre-wrap"><InlineEdit value={proj.description} path={`projects.${i}.description`} isInteractive={iact} onUpdate={upd} multiline /></p>
+            </div>
+          ))}
+        </div>
+      )}
     </DraggableSection>
   );
 };
@@ -335,25 +464,64 @@ const ExperienceSection = ({ headerClass, experiences: sectionExperiences, isInt
   const hdrs = sectionHeaders ?? ctx.headers;
   if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("experience")) return null;
   if (!iact && (!exps || exps.length === 0)) return null;
+
+  // Entry-level drag sensors (independent from section-level)
+  const entrySensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 15 } })
+  );
+  const entryIds = asRecordArray(exps).map((_: any, i: number) => `exp-entry-${i}`);
+
+  const handleEntryDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !upd) return;
+    const oldIdx = entryIds.indexOf(active.id);
+    const newIdx = entryIds.indexOf(over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    upd('experience', arrayMove(asRecordArray(exps), oldIdx, newIdx));
+  };
+
+  const expList = asRecordArray(exps);
   return (
     <DraggableSection id="experience" isInteractive={iact} onDelete={del}>
       <ExperienceTitle className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
-      <div className="space-y-10">
-        {asRecordArray(exps).map((exp: any, i: number) => (
-          // <div key={i} className="flex gap-6 relative">
-          <div key={i} className="flex gap-6 relative break-inside-avoid-page">
-            <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
-            <div className="flex-1 pb-4 min-w-0">
-              <div className="flex justify-between items-start mb-2 gap-4">
-                <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={iact} onUpdate={upd} /></h4>
-                <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right"><InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={iact} onUpdate={upd} /></p>
-              </div>
-              <div className="text-[10px] text-slate-400 mb-2 break-words"><InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={iact} onUpdate={upd} /></div>
-              <p className="text-[11px] leading-relaxed text-slate-500 whitespace-pre-wrap break-words"><InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={iact} onUpdate={upd} multiline /></p>
+      {iact ? (
+        <DndContext sensors={entrySensors} collisionDetection={closestCenter} onDragEnd={handleEntryDragEnd}>
+          <SortableContext items={entryIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-10">
+              {expList.map((exp: any, i: number) => (
+                <DraggableEntryInteractive key={entryIds[i]} id={entryIds[i]} className="flex gap-6 relative break-inside-avoid-page">
+                  <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
+                  <div className="flex-1 pb-4 min-w-0">
+                    <div className="flex justify-between items-start mb-2 gap-4">
+                      <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={iact} onUpdate={upd} /></h4>
+                      <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right"><InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={iact} onUpdate={upd} /></p>
+                    </div>
+                    <div className="text-[10px] text-slate-400 mb-2 break-words"><InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={iact} onUpdate={upd} /></div>
+                    <p className="text-[11px] leading-relaxed text-slate-500 whitespace-pre-wrap break-words"><InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={iact} onUpdate={upd} multiline /></p>
+                  </div>
+                </DraggableEntryInteractive>
+              ))}
             </div>
-          </div>
-        ))}
-      </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="space-y-10">
+          {expList.map((exp: any, i: number) => (
+            <div key={i} className="flex gap-6 relative break-inside-avoid-page">
+              <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
+              <div className="flex-1 pb-4 min-w-0">
+                <div className="flex justify-between items-start mb-2 gap-4">
+                  <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={iact} onUpdate={upd} /></h4>
+                  <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right"><InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={iact} onUpdate={upd} /></p>
+                </div>
+                <div className="text-[10px] text-slate-400 mb-2 break-words"><InlineEdit value={exp.period} path={`experience.${i}.period`} isInteractive={iact} onUpdate={upd} /></div>
+                <p className="text-[11px] leading-relaxed text-slate-500 whitespace-pre-wrap break-words"><InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={iact} onUpdate={upd} multiline /></p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </DraggableSection>
   );
 };
@@ -367,25 +535,62 @@ const EducationSection = ({ headerClass, education: sectionEducation, isInteract
   const hdrs = sectionHeaders ?? ctx.headers;
   if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("education")) return null;
   if (!iact && (!edu || edu.length === 0)) return null;
+
+  const eduSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 15 } })
+  );
+  const eduList = asRecordArray(edu);
+  const eduIds = eduList.map((_: any, i: number) => `edu-entry-${i}`);
+  const handleEduDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !upd) return;
+    const oldIdx = eduIds.indexOf(active.id);
+    const newIdx = eduIds.indexOf(over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    upd('education', arrayMove(eduList, oldIdx, newIdx));
+  };
+
   return (
     <DraggableSection id="education" isInteractive={iact} onDelete={del}>
       <SectionTitle sectionKey="education" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
-      <div className="space-y-8">
-        {asRecordArray(edu).map((e: any, i: number) => (
-          // <div key={i} className="flex gap-6 relative">
-          <div key={i} className="flex gap-6 relative break-inside-avoid-page">
-            <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
-            <div className="flex-1 pb-4 min-w-0">
-              <div className="flex flex-col sm:flex-row justify-between items-start mb-2 gap-1 sm:gap-4 min-w-0">
-                <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={e.school} path={`education.${i}.school`} isInteractive={iact} onUpdate={upd} /></h4>
-                <p className="flex-1 min-w-0 text-[12px] font-black text-slate-700 break-words sm:text-right"><InlineEdit value={e.degree} path={`education.${i}.degree`} isInteractive={iact} onUpdate={upd} /></p>
-              </div>
-              <p className="text-[11px] text-slate-400 break-words"><InlineEdit value={e.year} path={`education.${i}.year`} isInteractive={iact} onUpdate={upd} /></p>
-              {e.details && <p className="text-[11px] text-slate-500 mt-1 break-words whitespace-pre-wrap"><InlineEdit value={e.details} path={`education.${i}.details`} isInteractive={iact} onUpdate={upd} multiline /></p>}
+      {iact ? (
+        <DndContext sensors={eduSensors} collisionDetection={closestCenter} onDragEnd={handleEduDragEnd}>
+          <SortableContext items={eduIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-8">
+              {eduList.map((e: any, i: number) => (
+                <DraggableEntryInteractive key={eduIds[i]} id={eduIds[i]} className="flex gap-6 relative break-inside-avoid-page">
+                  <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
+                  <div className="flex-1 pb-4 min-w-0">
+                    <div className="flex flex-col sm:flex-row justify-between items-start mb-2 gap-1 sm:gap-4 min-w-0">
+                      <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={e.school} path={`education.${i}.school`} isInteractive={iact} onUpdate={upd} /></h4>
+                      <p className="flex-1 min-w-0 text-[12px] font-black text-slate-700 break-words sm:text-right"><InlineEdit value={e.degree} path={`education.${i}.degree`} isInteractive={iact} onUpdate={upd} /></p>
+                    </div>
+                    <p className="text-[11px] text-slate-400 break-words"><InlineEdit value={e.year} path={`education.${i}.year`} isInteractive={iact} onUpdate={upd} /></p>
+                    {e.details && <p className="text-[11px] text-slate-500 mt-1 break-words whitespace-pre-wrap"><InlineEdit value={e.details} path={`education.${i}.details`} isInteractive={iact} onUpdate={upd} multiline /></p>}
+                  </div>
+                </DraggableEntryInteractive>
+              ))}
             </div>
-          </div>
-        ))}
-      </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="space-y-8">
+          {eduList.map((e: any, i: number) => (
+            <div key={i} className="flex gap-6 relative break-inside-avoid-page">
+              <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
+              <div className="flex-1 pb-4 min-w-0">
+                <div className="flex flex-col sm:flex-row justify-between items-start mb-2 gap-1 sm:gap-4 min-w-0">
+                  <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={e.school} path={`education.${i}.school`} isInteractive={iact} onUpdate={upd} /></h4>
+                  <p className="flex-1 min-w-0 text-[12px] font-black text-slate-700 break-words sm:text-right"><InlineEdit value={e.degree} path={`education.${i}.degree`} isInteractive={iact} onUpdate={upd} /></p>
+                </div>
+                <p className="text-[11px] text-slate-400 break-words"><InlineEdit value={e.year} path={`education.${i}.year`} isInteractive={iact} onUpdate={upd} /></p>
+                {e.details && <p className="text-[11px] text-slate-500 mt-1 break-words whitespace-pre-wrap"><InlineEdit value={e.details} path={`education.${i}.details`} isInteractive={iact} onUpdate={upd} multiline /></p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </DraggableSection>
   );
 };
@@ -413,6 +618,20 @@ const SkillsSection = ({ headerClass, itemClass, layout = "tags", skills: sectio
   const del = deleteHandler ?? ctx.onDeleteSection;
   const upd = updateHandler ?? ctx.onUpdate;
   const hdrs = sectionHeaders ?? ctx.headers;
+  const skillSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 15 } })
+  );
+  const skillList = asStringArray(sks);
+  const skillIds = skillList.map((_: string, i: number) => `skill-entry-${i}`);
+  const handleSkillDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !upd) return;
+    const oldIdx = skillIds.indexOf(active.id);
+    const newIdx = skillIds.indexOf(over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    upd("skills", arrayMove(skillList, oldIdx, newIdx));
+  };
   if (ctx.data.sectionOrder && !ctx.data.sectionOrder.includes("skills")) return null;
   if (!iact && (!sks || sks.length === 0)) return null;
   if (layout === "bars") {
@@ -420,29 +639,60 @@ const SkillsSection = ({ headerClass, itemClass, layout = "tags", skills: sectio
     return (
       <DraggableSection id="skills" isInteractive={iact} onDelete={del}>
         <SectionTitle sectionKey="skills" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
-        <div className="space-y-3 mt-3">
-          {asStringArray(sks).map((s: string, i: number) => (
-            <div key={i} className={`${itemClass} break-words min-w-0`}>
-              <InlineEdit value={s} path={`skills.${i}`} isInteractive={iact} onUpdate={upd} />
-              <div className="w-full h-1.5 bg-black/10 rounded-full mt-1.5 overflow-hidden">
-                <div className="h-full rounded-full bg-current" style={{ width: `${barWidths[i % barWidths.length]}%` }} />
+        {iact ? (
+          <DndContext sensors={skillSensors} collisionDetection={closestCenter} onDragEnd={handleSkillDragEnd}>
+            <SortableContext items={skillIds} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3 mt-3">
+                {skillList.map((s: string, i: number) => (
+                  <DraggableEntryInteractive key={skillIds[i]} id={skillIds[i]} className={`${itemClass} break-words min-w-0`}>
+                    <InlineEdit value={s} path={`skills.${i}`} isInteractive={iact} onUpdate={upd} />
+                    <div className="w-full h-1.5 bg-black/10 rounded-full mt-1.5 overflow-hidden">
+                      <div className="h-full rounded-full bg-current" style={{ width: `${barWidths[i % barWidths.length]}%` }} />
+                    </div>
+                  </DraggableEntryInteractive>
+                ))}
               </div>
-            </div>
-          ))}
-        </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <div className="space-y-3 mt-3">
+            {skillList.map((s: string, i: number) => (
+              <div key={i} className={`${itemClass} break-words min-w-0`}>
+                <InlineEdit value={s} path={`skills.${i}`} isInteractive={iact} onUpdate={upd} />
+                <div className="w-full h-1.5 bg-black/10 rounded-full mt-1.5 overflow-hidden">
+                  <div className="h-full rounded-full bg-current" style={{ width: `${barWidths[i % barWidths.length]}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </DraggableSection>
     );
   }
   return (
     <DraggableSection id="skills" isInteractive={iact} onDelete={del}>
       <SectionTitle sectionKey="skills" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
-      <div className={layout === "tags" ? "flex flex-wrap gap-2 mt-3" : "space-y-2 mt-3"}>
-        {asStringArray(sks).map((s: string, i: number) => (
-          <span key={i} className={`${itemClass} ${layout === "tags" ? "inline-block" : "block"} break-words min-w-0 max-w-full`}>
-            <InlineEdit value={s} path={`skills.${i}`} isInteractive={iact} onUpdate={upd} />
-          </span>
-        ))}
-      </div>
+      {iact ? (
+        <DndContext sensors={skillSensors} collisionDetection={closestCenter} onDragEnd={handleSkillDragEnd}>
+          <SortableContext items={skillIds} strategy={verticalListSortingStrategy}>
+            <div className={layout === "tags" ? "flex flex-wrap gap-2 mt-3" : "space-y-2 mt-3"}>
+              {skillList.map((s: string, i: number) => (
+                <DraggableEntryInteractive key={skillIds[i]} id={skillIds[i]} className={`${itemClass} ${layout === "tags" ? "inline-block" : "block"} break-words min-w-0 max-w-full`}>
+                  <InlineEdit value={s} path={`skills.${i}`} isInteractive={iact} onUpdate={upd} />
+                </DraggableEntryInteractive>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className={layout === "tags" ? "flex flex-wrap gap-2 mt-3" : "space-y-2 mt-3"}>
+          {skillList.map((s: string, i: number) => (
+            <span key={i} className={`${itemClass} ${layout === "tags" ? "inline-block" : "block"} break-words min-w-0 max-w-full`}>
+              <InlineEdit value={s} path={`skills.${i}`} isInteractive={iact} onUpdate={upd} />
+            </span>
+          ))}
+        </div>
+      )}
     </DraggableSection>
   );
 };
@@ -488,23 +738,23 @@ const IdentityHeader = ({ nameClass, titleClass, containerClass = "", contactCon
         )}
         <div className="flex-1 min-w-0">
           <h1 className={`${nameClass} break-words`}><InlineEdit value={dn} path="userName" isInteractive={iact} onUpdate={upd} /></h1>
-          <p className={`${titleClass} break-words`}><InlineEdit value={dt} path="jobTitle" isInteractive={iact} onUpdate={upd} /></p>
+          {(dt || iact) && <p className={`${titleClass} break-words`}><InlineEdit value={dt} path="jobTitle" isInteractive={iact} onUpdate={upd} /></p>}
         </div>
       </div>
       {showContact && ctx.headers?.contact && (
         contactAsAbsolute ? (
           <div className={contactContainerClass}>
-            {cd?.location && <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd.location} path="contact.location" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <MapPin size={10} className="text-current opacity-70 shrink-0" />}</div>}
-            <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.phone || ""} path="contact.phone" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <Phone size={10} className="text-current opacity-70 shrink-0" />}</div>
-            <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.email || ""} path="contact.email" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <Mail size={10} className="text-current opacity-70 shrink-0" />}</div>
+            {cd?.location && <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd.location} path="contact.location" isInteractive={iact} onUpdate={upd} /></span></div>}
+            <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.phone || ""} path="contact.phone" isInteractive={iact} onUpdate={upd} /></span></div>
+            <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.email || ""} path="contact.email" isInteractive={iact} onUpdate={upd} /></span></div>
             <div className="break-words min-w-0"><ContactLinks contact={cd} isInteractive={iact} onUpdate={upd} /></div>
           </div>
         ) : (
           <DraggableSection id="contact" isInteractive={iact} onDelete={ctx.onDeleteSection}>
             <div className={`${contactContainerClass} text-current flex-1 min-w-0 max-w-[50%]`}>
-              {cd?.location && <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd.location} path="contact.location" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <MapPin size={10} className="text-current opacity-70 shrink-0" />}</div>}
-              <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.phone || ""} path="contact.phone" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <Phone size={10} className="text-current opacity-70 shrink-0" />}</div>
-              <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.email || ""} path="contact.email" isInteractive={iact} onUpdate={upd} /></span>{showIcons && <Mail size={10} className="text-current opacity-70 shrink-0" />}</div>
+              {cd?.location && <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd.location} path="contact.location" isInteractive={iact} onUpdate={upd} /></span></div>}
+              <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.phone || ""} path="contact.phone" isInteractive={iact} onUpdate={upd} /></span></div>
+              <div className="flex items-center justify-end gap-2"><span className="break-words min-w-0"><InlineEdit value={cd?.email || ""} path="contact.email" isInteractive={iact} onUpdate={upd} /></span></div>
               <div className="break-words min-w-0"><ContactLinks contact={cd} isInteractive={iact} onUpdate={upd} /></div>
             </div>
           </DraggableSection>
@@ -528,6 +778,10 @@ const DynamicMainSections = ({ headerClass, itemClass, data: sectionData, style:
   const del = deleteHandler ?? ctx.onDeleteSection;
   const upd = updateHandler ?? ctx.onUpdate;
   const hdrs = sectionHeaders ?? ctx.headers;
+  const customEntrySensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 15 } })
+  );
   const order = Array.from(new Set(sd?.sectionOrder || ["summary", "experience", "projects", "education", "skills", "languages"])) as string[];
   return (
     <>
@@ -548,12 +802,37 @@ const DynamicMainSections = ({ headerClass, itemClass, data: sectionData, style:
           const items = sd[key];
           const isEmpty = !items || (Array.isArray(items) && items.length === 0) || (typeof items === 'string' && items.trim() === '');
           if (!iact && isEmpty) return null;
+          const customEntryIds = Array.isArray(items)
+            ? items.map((_: any, i: number) => `${key}-custom-entry-${i}`)
+            : [];
+          const handleCustomEntryDragEnd = (event: any) => {
+            const { active, over } = event;
+            if (!over || active.id === over.id || !upd) return;
+            const oldIdx = customEntryIds.indexOf(active.id);
+            const newIdx = customEntryIds.indexOf(over.id);
+            if (oldIdx < 0 || newIdx < 0) return;
+            upd(key, arrayMove(items, oldIdx, newIdx));
+          };
           return (
             <DraggableSection key={key} id={key} isInteractive={iact} onDelete={del}>
               <div className="mt-2 mb-2">
                 <SectionTitle sectionKey={key} className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
                 {Array.isArray(items) ? (
-                  <div className="space-y-1 mt-3">{items.map((it: any, i: number) => (<p key={i} className={`${itemClass} break-words min-w-0`}><InlineEdit value={it} path={`${key}.${i}`} isInteractive={iact} onUpdate={upd} /></p>))}</div>
+                  iact ? (
+                    <DndContext sensors={customEntrySensors} collisionDetection={closestCenter} onDragEnd={handleCustomEntryDragEnd}>
+                      <SortableContext items={customEntryIds} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-1 mt-3">
+                          {items.map((it: any, i: number) => (
+                            <DraggableEntryInteractive key={customEntryIds[i]} id={customEntryIds[i]} className={`${itemClass} break-words min-w-0`}>
+                              <InlineEdit value={it} path={`${key}.${i}`} isInteractive={iact} onUpdate={upd} />
+                            </DraggableEntryInteractive>
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  ) : (
+                    <div className="space-y-1 mt-3">{items.map((it: any, i: number) => (<p key={i} className={`${itemClass} break-words min-w-0`}><InlineEdit value={it} path={`${key}.${i}`} isInteractive={iact} onUpdate={upd} /></p>))}</div>
+                  )
                 ) : (
                   <p className={`${itemClass} mt-3 whitespace-pre-wrap break-words min-w-0`}><InlineEdit value={items} path={key} isInteractive={iact} onUpdate={upd} multiline /></p>
                 )}
@@ -644,7 +923,7 @@ export const CVRenderer = ({
             : "";
   const photoUrl = resolvedPhotoUrl;
   const hasPhotoSlot = Boolean(photoUrl);
-  const title = data.jobTitle || analysisData?.jobTitle || "Optimisé par IA";
+  const title = data.jobTitle || analysisData?.jobTitle || "";
   const summaryText =
     data.summary ||
     "Professionnel expérimenté avec une solide expertise dans son domaine.";
@@ -700,6 +979,10 @@ export const CVRenderer = ({
       >
 
         <style>{`
+        .cv-printable,
+        .cv-printable *:not(svg):not(path) {
+          font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
+        }
         .cv-readable-sidebar,
         .cv-readable-sidebar *:not(input):not(textarea):not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(rect):not(.cv-section-controls):not(.cv-section-controls *) { color: #ffffff !important; }
         .cv-readable-sidebar .muted-readable { color: rgba(255,255,255,.78) !important; }
@@ -3083,9 +3366,9 @@ export const CVRenderer = ({
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
                 <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3">
-                  {contact?.phone && <span className="flex items-center gap-1.5 text-[10px] text-teal-50"><Phone size={11} /><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
-                  {contact?.email && <span className="flex items-center gap-1.5 text-[10px] text-teal-50"><Mail size={11} /><InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
-                  {contact?.location && <span className="flex items-center gap-1.5 text-[10px] text-teal-50"><MapPin size={11} /><InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
+                  {contact?.phone && <span className="flex items-center text-[10px] text-teal-50"><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
+                  {contact?.email && <span className="flex items-center text-[10px] text-teal-50"><InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
+                  {contact?.location && <span className="flex items-center text-[10px] text-teal-50"><InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
                   <ContactLinks className="text-[10px] text-teal-50" />
                 </div>
               </div>

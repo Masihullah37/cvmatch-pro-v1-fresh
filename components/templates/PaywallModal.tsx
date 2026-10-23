@@ -1,6 +1,6 @@
 'use client';
 
-import { Lock, Download, CreditCard, Check, ShieldCheck, Zap, Loader2 } from 'lucide-react';
+import { Lock, Download, CreditCard, Check, ShieldCheck, Zap, Loader2, Clock3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ interface PaywallModalProps {
   templateId?: string;
   mobileView?: string;
   returnUrl?: string;
+  isExpired?: boolean;
 }
 
 export default function PaywallModal({
@@ -26,6 +27,7 @@ export default function PaywallModal({
   templateNumber,
   templateId,
   mobileView,
+  isExpired = false,
 }: PaywallModalProps) {
   const router = useRouter();
   const locale = useLocale();
@@ -127,6 +129,29 @@ export default function PaywallModal({
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
 
+          {isExpired && (
+            <div role="status" className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-5 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-left">
+              <div className="flex items-start gap-4">
+                <div className="rounded-2xl bg-amber-100 p-3 text-amber-700">
+                  <Clock3 size={22} />
+                </div>
+                <div>
+                  <p className="font-black text-slate-900">Votre abonnement a expiré</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                    Choisissez une formule ci-dessous pour retrouver l’accès à vos modèles et téléchargements.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => document.getElementById("subscription-option")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                className="shrink-0 rounded-xl bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-wider text-white transition hover:bg-primary"
+              >
+                Choisir une formule
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col items-center text-center space-y-6 mb-12">
             <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-blue-50 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-2 border border-blue-100">
               <Zap size={14} className="fill-primary" />
@@ -181,7 +206,7 @@ export default function PaywallModal({
             </div>
 
             {/* Pro Access - Subscription */}
-            <div className="flex flex-col h-full rounded-[2.5rem] border-2 border-primary bg-blue-50/30 p-8 shadow-2xl shadow-primary/10 transition-all relative group">
+            <div id="subscription-option" className="flex flex-col h-full rounded-[2.5rem] border-2 border-primary bg-blue-50/30 p-8 shadow-2xl shadow-primary/10 transition-all relative group">
               <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-accent text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-[0.25em] shadow-xl shadow-accent/20 border-4 border-white">
                 Accès Illimité
               </div>

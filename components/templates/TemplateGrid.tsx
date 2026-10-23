@@ -941,6 +941,11 @@ export default function TemplateGrid({
   const [showDensityPanel, setShowDensityPanel] = useState(false);
 
   const editingDataRef = useRef<any>(null);
+  const selectedTemplateRef = useRef<string | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistEditsRef = useRef<
+    (data: any, templateId: string | null, keepalive?: boolean) => Promise<boolean>
+  >(async () => false);
   const previewViewportRef = useRef<HTMLDivElement>(null);
   const previewContentRef = useRef<HTMLDivElement>(null);
   const [previewContentHeight, setPreviewContentHeight] = useState(0);
@@ -972,6 +977,10 @@ export default function TemplateGrid({
   useEffect(() => {
     editingDataRef.current = editingData;
   }, [editingData]);
+
+  useEffect(() => {
+    selectedTemplateRef.current = selectedTemplate;
+  }, [selectedTemplate]);
 
   useEffect(() => {
     setTemplates(initialTemplates);
@@ -1025,7 +1034,7 @@ export default function TemplateGrid({
         sessionStorage.removeItem(`cv_anon_edits_${analysisId}`);
         hasRestoredEdits.current = true;
         // Auto-save the restored data to the database for the newly logged-in user
-        persistEdits(parsedData);
+        persistEdits(parsedData, selectedTemplate);
       } catch (e) {
         console.error("Failed to restore anon edits", e);
       }
@@ -1060,6 +1069,23 @@ export default function TemplateGrid({
   // We tie this strictly to credits/ownership so watermarks reappear when balance is 0.
   const hasPaid = isJustPaid || hasAvailableCredits || (selectedTpl?.hideWatermark ?? false);
 
+  const readSavedDraft = (templateId: string, fallback: any) => {
+    try {
+      const rawDraft = localStorage.getItem(`cv_draft_${analysisId}_${templateId}`);
+      if (!rawDraft) return fallback;
+
+      const draft = JSON.parse(rawDraft);
+      if (draft && typeof draft === "object" && !Array.isArray(draft)) {
+        return draft;
+      }
+
+      console.error("Ignoring invalid saved CV draft", { analysisId, templateId });
+    } catch (error) {
+      console.error("Failed to restore saved CV draft", error);
+    }
+    return fallback;
+  };
+
   const handleSelectById = async (id: string) => {
     const template = initialTemplates.find((t: any) => String(t.id) === String(id));
     if (!template) return;
@@ -1073,7 +1099,7 @@ export default function TemplateGrid({
       // RULE: Template selection is always FREE (0 credits).
       // Credits are only deducted at Download time.
 
-      const data = JSON.parse(JSON.stringify(template.templateData || {}));
+      const data = JSON.parse(JSON.stringify(readSavedDraft(id, template.templateData) || {}));
       if (!data.contact) data.contact = { email: "", phone: "", location: "" };
       const headerKeys = data.headers ? Object.keys(data.headers) : Object.keys(DEFAULT_HEADERS);
       data.headers = headerKeys.reduce((acc: Record<string, string>, key: string) => {
@@ -1113,7 +1139,7 @@ export default function TemplateGrid({
       // RULE: Template selection is always FREE (0 credits).
       // Credits are only deducted at Download time.
 
-      const data = JSON.parse(JSON.stringify(template.templateData || {}));
+      const data = JSON.parse(JSON.stringify(readSavedDraft(id, template.templateData) || {}));
       if (!data.contact) data.contact = { email: "", phone: "", location: "" };
       const headerKeys = data.headers ? Object.keys(data.headers) : Object.keys(DEFAULT_HEADERS);
       data.headers = headerKeys.reduce((acc: Record<string, string>, key: string) => {
@@ -1191,22 +1217,105 @@ export default function TemplateGrid({
     }
   };
 
-  const persistEdits = async (data: any) => {
+  const persistEdits = useCallback(async (
+    data: any,
+    templateId: string | null,
+    keepalive = false,
+  ) => {
+    if (!templateId) return false;
+
     try {
       const res = await fetch("/api/update-cv-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        keepalive,
         body: JSON.stringify({
           analysisId,
-          templateId: selectedTemplate,
+          templateId,
           optimizedData: data,
         }),
       });
+      if (!res.ok) {
+        console.error("Failed to auto-save CV edits", {
+          analysisId,
+          templateId,
+          status: res.status,
+        });
+      }
       return res.ok;
-    } catch {
+    } catch (error) {
+      console.error("Failed to save CV edits", error);
       return false;
     }
-  };
+  }, [analysisId, selectedTemplate]);
+
+  useEffect(() => {
+    persistEditsRef.current = persistEdits;
+  }, [persistEdits]);
+
+  useEffect(() => {
+    if (!selectedTemplate || !editingData) return;
+
+    try {
+      localStorage.setItem(
+        `cv_draft_${analysisId}_${selectedTemplate}`,
+        JSON.stringify(editingData),
+      );
+    } catch (error) {
+      console.error("Failed to persist CV draft locally", error);
+    }
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
+    if (!userId) {
+      setSaveStatus("saved");
+      return;
+    }
+
+    setSaveStatus("saving");
+    const draftToSave = editingData;
+    const templateToSave = selectedTemplate;
+    autoSaveTimerRef.current = setTimeout(async () => {
+      autoSaveTimerRef.current = null;
+      const ok = await persistEdits(draftToSave, templateToSave);
+      if (!mountedRef.current) return;
+
+      if (ok) {
+        setTemplates((current) =>
+          current.map((template) =>
+            String(template.id) === String(templateToSave)
+              ? { ...template, templateData: draftToSave }
+              : template,
+          ),
+        );
+      }
+      setSaveStatus(ok ? "saved" : "error");
+      if (ok) {
+        setTimeout(() => {
+          if (mountedRef.current) {
+            setSaveStatus((status) => status === "saved" ? "idle" : status);
+          }
+        }, 2500);
+      }
+    }, 3000);
+  }, [analysisId, editingData, persistEdits, selectedTemplate, userId]);
+
+  useEffect(() => {
+    return () => {
+      if (!autoSaveTimerRef.current) return;
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+
+      const latestData = editingDataRef.current;
+      const latestTemplateId = selectedTemplateRef.current;
+      if (latestData && latestTemplateId) {
+        void persistEditsRef.current(latestData, latestTemplateId, true);
+      }
+    };
+  }, []);
 
 
   const handleSave = async () => {
@@ -1227,7 +1336,11 @@ export default function TemplateGrid({
           : t,
       ),
     );
-    const ok = await persistEdits(editingData);
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    const ok = await persistEdits(editingData, selectedTemplate);
     setSaveStatus(ok ? "saved" : "error");
     if (ok) setTimeout(() => setSaveStatus("idle"), 2500);
   };
@@ -1962,6 +2075,7 @@ export default function TemplateGrid({
           templateNumber={selectedTpl?.templateNumber}
           templateId={selectedTemplate ?? undefined}
           mobileView={mobileView}
+          isExpired={isExpired && !hasPaid}
         />
       )}
       {showGuestAuthModal && !userId && (
