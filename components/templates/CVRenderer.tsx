@@ -727,7 +727,7 @@ const SkillsSection = ({ headerClass, itemClass, layout = "tags", skills: sectio
   );
 };
 
-const ContactSection = ({ headerClass, itemClass = "", contact: contactData, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
+const ContactSection = ({ headerClass, itemClass = "", contentClassName = "", contact: contactData, isInteractive: interactive, onDeleteSection: deleteHandler, onUpdate: updateHandler, headers: sectionHeaders }: any) => {
   const ctx = useCVCtx();
   const cd = contactData ?? ctx.contact;
   const iact = interactive ?? ctx.isInteractive;
@@ -739,7 +739,7 @@ const ContactSection = ({ headerClass, itemClass = "", contact: contactData, isI
   return (
     <DraggableSection id="contact" isInteractive={iact} onDelete={del}>
       <SectionTitle sectionKey="contact" className={headerClass} headers={hdrs} isInteractive={iact} onUpdate={upd} />
-      <div className={`space-y-2 ${itemClass} break-words min-w-0`}>
+      <div className={`space-y-2 ${contentClassName} ${itemClass} break-words min-w-0`}>
         {cd?.location && <p className="break-words"><InlineEdit value={cd.location} path="contact.location" isInteractive={iact} onUpdate={upd} /></p>}
         <p className="break-words"><InlineEdit value={cd?.email || ""} path="contact.email" isInteractive={iact} onUpdate={upd} /></p>
         <p className="break-words"><InlineEdit value={cd?.phone || ""} path="contact.phone" isInteractive={iact} onUpdate={upd} /></p>
@@ -902,7 +902,7 @@ const DynamicSidebarSections = ({ sidebarKeys, configs, data: sectionData, isInt
       {sorted.map((key: string) => {
         const cfg = configs[key];
         if (!cfg) return null;
-        if (key === 'contact') return <ContactSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} />;
+        if (key === 'contact') return <ContactSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} contentClassName="mt-2" />;
         if (key === 'languages') return <LanguagesSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} languages={sectionLanguages} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
         if (key === 'skills') return <SkillsSection key={key} headerClass={cfg.headerClass} itemClass={cfg.itemClass} layout={cfg.layout || 'tags'} skills={sectionSkills} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
         if (key === 'education') return <EducationSection key={key} headerClass={cfg.headerClass} education={undefined} isInteractive={interactive} onDeleteSection={deleteHandler} onUpdate={updateHandler} headers={sectionHeaders} />;
