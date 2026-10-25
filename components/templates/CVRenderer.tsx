@@ -1033,6 +1033,9 @@ export const CVRenderer = ({
           overflow-wrap: break-word;
           word-break: break-word;
         }
+        .cv-printable p.cv-job-title-centered {
+          text-align: center !important;
+        }
         .cv-printable div, .cv-printable span, .cv-printable h1, .cv-printable h2, .cv-printable h3, .cv-printable h4 {
           line-height: calc(1.15em * var(--cv-line-scale, 1)) !important;
           overflow-wrap: break-word;
@@ -1121,7 +1124,7 @@ export const CVRenderer = ({
               <h1 className="text-5xl font-bold uppercase tracking-widest mb-4">
                 <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
               </h1>
-              <p className="text-xl italic text-gray-500">
+              <p className="cv-job-title-centered text-xl italic text-gray-500">
                 <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
               </p>
               {headers.contact && (
@@ -1232,7 +1235,7 @@ export const CVRenderer = ({
           <div className="p-16 font-sans text-gray-900">
             <IdentityHeader
               nameClass="text-5xl font-black tracking-tighter text-center"
-              titleClass="text-xl font-bold text-gray-500 mt-1 text-center"
+              titleClass="cv-job-title-centered text-xl font-bold text-gray-500 mt-1 text-center"
               containerClass="flex justify-between items-start border-b-4 border-gray-900 pb-8 mb-10"
               isInteractive={isInteractive}
               onUpdate={onUpdate}
@@ -1742,7 +1745,7 @@ export const CVRenderer = ({
                 <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">
                   <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </h1>
-                <p className="text-sm font-bold text-pink-600 uppercase tracking-[0.25em] mt-2">
+                <p className="cv-job-title-centered text-sm font-bold text-pink-600 uppercase tracking-[0.25em] mt-2">
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
               </header>
@@ -2556,7 +2559,7 @@ export const CVRenderer = ({
                 <h1 className="text-4xl font-black uppercase tracking-tight break-words leading-tight text-white text-center">
                   <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </h1>
-                <p className="text-sm font-medium text-slate-300 mt-2 tracking-widest break-words text-center">
+                <p className="cv-job-title-centered text-sm font-medium text-slate-300 mt-2 tracking-widest break-words text-center">
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
               </div>
@@ -2781,7 +2784,7 @@ export const CVRenderer = ({
                 <h1 className="text-4xl font-black text-slate-900 tracking-tight break-words leading-tight text-center">
                   <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </h1>
-                <p className="text-sm font-bold text-slate-500 mt-1 uppercase tracking-widest break-words text-center">
+                <p className="cv-job-title-centered text-sm font-bold text-slate-500 mt-1 uppercase tracking-widest break-words text-center">
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
               </div>
@@ -3021,7 +3024,7 @@ export const CVRenderer = ({
                 <h1 className="text-4xl font-black uppercase tracking-tight break-words leading-tight text-white text-center">
                   <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </h1>
-                <p className="text-sm font-medium text-white/80 mt-2 tracking-widest break-words text-center">
+                <p className="cv-job-title-centered text-sm font-medium text-white/80 mt-2 tracking-widest break-words text-center">
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
               </div>
@@ -3202,7 +3205,7 @@ export const CVRenderer = ({
                   <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </h1>
                 <div className="h-px bg-[#c9b99a] my-3 w-full" />
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8c7b6b] break-words text-center">
+                <p className="cv-job-title-centered text-[10px] font-bold uppercase tracking-[0.3em] text-[#8c7b6b] break-words text-center">
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
               </div>
