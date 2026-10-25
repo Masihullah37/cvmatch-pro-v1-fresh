@@ -1680,10 +1680,10 @@ export const CVRenderer = ({
                 </div>
               )}
               <h1 className="text-4xl font-bold mb-2 tracking-tight"><InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} /></h1>
-              <p className="text-lg text-gray-600 italic mb-4"><InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
+              <p className="cv-job-title-centered text-lg text-gray-600 italic mb-4"><InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
               {headers.contact && (
                 <DraggableSection id="contact" isInteractive={isInteractive} onDelete={onDeleteSection}>
-                  <div className="flex justify-center gap-6 text-xs text-gray-500 border-y border-gray-100 py-3 text-current">
+                  <div className="mt-2 flex justify-center gap-6 text-xs text-gray-500 border-y border-gray-100 py-3 text-current">
                     {contact.location && <span><InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} /> • </span>}
                     <span><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
                     <span>•</span>
@@ -1809,10 +1809,10 @@ export const CVRenderer = ({
               <h1 className="text-4xl font-bold tracking-wide mb-2">
                 <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
               </h1>
-              <p className="text-lg italic text-slate-600 mb-4">
+              <p className="cv-job-title-centered text-lg italic text-slate-600 mb-4">
                 <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
               </p>
-              <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-500 font-sans">
+              <div className="mt-2 flex flex-wrap justify-center gap-4 text-xs text-slate-500 font-sans">
                 <span><InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
                 <span>•</span>
                 <span><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
