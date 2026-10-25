@@ -82,27 +82,15 @@ const Mail = ({
   </svg>
 );
 
-const User = ({
-  size = 24,
-  className = "",
-}: {
-  size?: number;
-  className?: string;
-}) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <circle cx="12" cy="8" r="4" />
-    <path d="M20 21a8 8 0 0 0-16 0" />
+const LinkedIn = ({ size = 14 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-label="LinkedIn">
+    <path d="M19 3A2 2 0 0 1 21 5v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14ZM8.34 17.5V9.54H5.68v7.96h2.66ZM7.01 8.45c.88 0 1.43-.58 1.43-1.3-.02-.74-.55-1.3-1.41-1.3s-1.43.56-1.43 1.3c0 .72.55 1.3 1.39 1.3h.02Zm5.43 9.05v-4.44c0-.24.02-.48.09-.65.19-.48.62-.98 1.34-.98.94 0 1.31.73 1.31 1.8v4.27h2.66v-4.56c0-2.44-1.3-3.58-3.04-3.58-1.4 0-2.02.77-2.37 1.3v.03h-.02l.02-.03V9.54H9.77c.04.75 0 7.96 0 7.96h2.67Z" />
+  </svg>
+);
+
+const GitHub = ({ size = 14 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-label="GitHub">
+    <path d="M12 .8a11.2 11.2 0 0 0-3.54 21.83c.56.1.77-.24.77-.54v-2.1c-3.14.68-3.8-1.33-3.8-1.33-.51-1.3-1.26-1.65-1.26-1.65-1.03-.7.08-.69.08-.69 1.14.08 1.74 1.17 1.74 1.17 1.01 1.73 2.65 1.23 3.3.94.1-.73.4-1.23.72-1.51-2.5-.28-5.13-1.25-5.13-5.56 0-1.23.44-2.23 1.17-3.02-.12-.29-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15a10.7 10.7 0 0 1 5.6 0c2.14-1.45 3.09-1.15 3.09-1.15.61 1.55.23 2.69.11 2.98.73.79 1.17 1.79 1.17 3.02 0 4.32-2.63 5.27-5.14 5.55.4.35.76 1.03.76 2.08v3.1c0 .3.2.65.78.54A11.2 11.2 0 0 0 12 .8Z" />
   </svg>
 );
 
@@ -175,9 +163,7 @@ const InlineEdit = (props: any) => {
     ? <InlineEditInteractive {...props} />
     : <span className={props.className}>{props.value || (props.multiline ? "\u00A0\n\u00A0" : "\u00A0")}</span>;
 
-  const Icon = props.path === "userName"
-    ? User
-    : props.path === "contact.location"
+  const Icon = props.path === "contact.location"
       ? MapPin
       : props.path === "contact.email"
         ? Mail
@@ -210,6 +196,52 @@ const DraggableSection = ({ id, isInteractive, onDelete, children, style: extraS
     <DraggableSectionInteractive id={id} onDelete={onDelete} style={extraStyle} className={className}>
       {children}
     </DraggableSectionInteractive>
+  );
+};
+
+const DraggableEntryList = ({
+  section,
+  items,
+  isInteractive,
+  onUpdate,
+  className = "",
+  children,
+}: any) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 15 } })
+  );
+  const ids = items.map((_: any, index: number) => `${section}-entry-${index}`);
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !onUpdate) return;
+    const oldIndex = ids.indexOf(active.id);
+    const newIndex = ids.indexOf(over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    onUpdate(section, arrayMove(items, oldIndex, newIndex));
+  };
+  const list = (draggable: boolean) => (
+    <div className={className}>
+      {items.map((item: any, index: number) => {
+        const content = children(item, index);
+        return draggable ? (
+          <DraggableEntryInteractive key={ids[index]} id={ids[index]}>
+            {content}
+          </DraggableEntryInteractive>
+        ) : (
+          <React.Fragment key={ids[index]}>{content}</React.Fragment>
+        );
+      })}
+    </div>
+  );
+
+  if (!isInteractive) return list(false);
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        {list(true)}
+      </SortableContext>
+    </DndContext>
   );
 };
 // ─── Stable module-scope sub-components ─────────────────────────────────────
@@ -256,14 +288,12 @@ const ContactLinks = ({ className, contact: contactData, isInteractive: interact
     <>
       {cd?.linkedin && (
         <p className={className}>
-          <strong>LinkedIn:</strong>{" "}
-          <InlineEdit value={cd.linkedin} path="contact.linkedin" isInteractive={iact} onUpdate={upd} />
+          <span className="inline-flex items-center gap-1.5"><LinkedIn /><InlineEdit value={cd.linkedin} path="contact.linkedin" isInteractive={iact} onUpdate={upd} /></span>
         </p>
       )}
       {cd?.github && (
         <p className={className}>
-          <strong>GitHub:</strong>{" "}
-          <InlineEdit value={cd.github} path="contact.github" isInteractive={iact} onUpdate={upd} />
+          <span className="inline-flex items-center gap-1.5"><GitHub /><InlineEdit value={cd.github} path="contact.github" isInteractive={iact} onUpdate={upd} /></span>
         </p>
       )}
       {cd?.portfolio && (
@@ -923,7 +953,11 @@ export const CVRenderer = ({
             : "";
   const photoUrl = resolvedPhotoUrl;
   const hasPhotoSlot = Boolean(photoUrl);
-  const title = data.jobTitle || analysisData?.jobTitle || "";
+  const rawTitle = data.jobTitle || analysisData?.jobTitle || "";
+  const title = typeof rawTitle === "string" &&
+    ["poste visé", "post visé", "optimisé par ia"].includes(rawTitle.trim().toLocaleLowerCase("fr"))
+    ? ""
+    : rawTitle;
   const summaryText =
     data.summary ||
     "Professionnel expérimenté avec une solide expertise dans son domaine.";
@@ -1197,8 +1231,8 @@ export const CVRenderer = ({
         {style === "Aether" && (
           <div className="p-16 font-sans text-gray-900">
             <IdentityHeader
-              nameClass="text-5xl font-black tracking-tighter"
-              titleClass="text-xl font-bold text-gray-500 mt-1"
+              nameClass="text-5xl font-black tracking-tighter text-center"
+              titleClass="text-xl font-bold text-gray-500 mt-1 text-center"
               containerClass="flex justify-between items-start border-b-4 border-gray-900 pb-8 mb-10"
               isInteractive={isInteractive}
               onUpdate={onUpdate}
@@ -1217,13 +1251,13 @@ export const CVRenderer = ({
                       return (
                         <DraggableSection key={key} id="skills" isInteractive={isInteractive} onDelete={onDeleteSection}>
                           <SectionTitle sectionKey="skills" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
-                          <div className="space-y-2">
-                            {skills.map((s: string, i: number) => (
-                              <p key={i} className="text-xs font-bold break-words whitespace-pre-wrap">
+                          <DraggableEntryList section="skills" items={skills} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-2">
+                            {(s: string, i: number) => (
+                              <p className="text-xs font-bold break-words whitespace-pre-wrap">
                                 • <InlineEdit value={s} path={`skills.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} />
                               </p>
-                            ))}
-                          </div>
+                            )}
+                          </DraggableEntryList>
                         </DraggableSection>
                       );
                     }
@@ -1232,8 +1266,9 @@ export const CVRenderer = ({
                       return (
                         <DraggableSection key={key} id="experience" isInteractive={isInteractive} onDelete={onDeleteSection}>
                           <SectionTitle sectionKey="experience" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
-                          {experiences.map((exp: any, i: number) => (
-                            <div key={i} className="mb-6">
+                          <DraggableEntryList section="experience" items={experiences} isInteractive={isInteractive} onUpdate={onUpdate}>
+                            {(exp: any, i: number) => (
+                            <div className="mb-6">
                               <p className="font-black text-base break-words">
                                 <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 {" | "}
@@ -1246,7 +1281,8 @@ export const CVRenderer = ({
                                 <InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
                               </p>
                             </div>
-                          ))}
+                          )}
+                          </DraggableEntryList>
                         </DraggableSection>
                       );
                     }
@@ -1255,8 +1291,9 @@ export const CVRenderer = ({
                       return (
                         <DraggableSection key={key} id="education" isInteractive={isInteractive} onDelete={onDeleteSection}>
                           <SectionTitle sectionKey="education" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
-                          {education.map((edu: any, i: number) => (
-                            <div key={i} className="mb-4">
+                          <DraggableEntryList section="education" items={education} isInteractive={isInteractive} onUpdate={onUpdate}>
+                            {(edu: any, i: number) => (
+                            <div className="mb-4">
                               <p className="font-black text-base break-words">
                                 <InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
                               </p>
@@ -1271,7 +1308,8 @@ export const CVRenderer = ({
                                 </p>
                               )}
                             </div>
-                          ))}
+                          )}
+                          </DraggableEntryList>
                         </DraggableSection>
                       );
                     }
@@ -1300,13 +1338,13 @@ export const CVRenderer = ({
                         <DraggableSection key={key} id={key} isInteractive={isInteractive} onDelete={onDeleteSection}>
                           <SectionTitle sectionKey={key} className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
                           {Array.isArray(items) ? (
-                            <div className="space-y-1 mt-3">
-                              {items.map((it: any, i: number) => (
-                                <p key={i} className="text-xs break-words min-w-0">
+                            <DraggableEntryList section={key} items={items} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-1 mt-3">
+                              {(it: any, i: number) => (
+                                <p className="text-xs break-words min-w-0">
                                   • <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 </p>
-                              ))}
-                            </div>
+                              )}
+                            </DraggableEntryList>
                           ) : (
                             <p className="text-xs mt-3 whitespace-pre-wrap break-words min-w-0 text-gray-600 leading-relaxed">
                               <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
@@ -2515,10 +2553,10 @@ export const CVRenderer = ({
               </h1>
               <p className="text-sm font-medium text-white/75 mt-2 tracking-widest break-words"> */}
               <div className="bg-[#4a4a4a] px-8 py-8 flex flex-col justify-center" style={{ minHeight: "180px" }}>
-                <h1 className="text-4xl font-black uppercase tracking-tight break-words leading-tight text-white">
+                <h1 className="text-4xl font-black uppercase tracking-tight break-words leading-tight text-white text-center">
                   <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </h1>
-                <p className="text-sm font-medium text-slate-300 mt-2 tracking-widest break-words">
+                <p className="text-sm font-medium text-slate-300 mt-2 tracking-widest break-words text-center">
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
               </div>
@@ -2558,8 +2596,9 @@ export const CVRenderer = ({
                           <div className="relative pl-5">
                             <div className="absolute left-[5px] top-1 bottom-1 w-px bg-slate-300" />
                             <div className="space-y-5">
-                              {experiences.map((exp: any, i: number) => (
-                                <div key={i} className="relative">
+                              <DraggableEntryList section="experience" items={experiences} isInteractive={isInteractive} onUpdate={onUpdate}>
+                                {(exp: any, i: number) => (
+                                <div className="relative">
                                   <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
                                   <div className="flex justify-between items-start gap-2 mb-0.5">
                                     <div className="min-w-0">
@@ -2578,7 +2617,8 @@ export const CVRenderer = ({
                                     <InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
                                   </p>
                                 </div>
-                              ))}
+                              )}
+                              </DraggableEntryList>
                             </div>
                           </div>
                         </DraggableSection>
@@ -2597,8 +2637,9 @@ export const CVRenderer = ({
                           <div className="relative pl-5">
                             <div className="absolute left-[5px] top-1 bottom-1 w-px bg-slate-300" />
                             <div className="space-y-4">
-                              {education.map((edu: any, i: number) => (
-                                <div key={i} className="relative">
+                              <DraggableEntryList section="education" items={education} isInteractive={isInteractive} onUpdate={onUpdate}>
+                                {(edu: any, i: number) => (
+                                <div className="relative">
                                   <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
                                   <div className="flex justify-between items-start gap-2 mb-0.5">
                                     <div className="min-w-0">
@@ -2619,7 +2660,8 @@ export const CVRenderer = ({
                                     </p>
                                   )}
                                 </div>
-                              ))}
+                              )}
+                              </DraggableEntryList>
                             </div>
                           </div>
                         </DraggableSection>
@@ -2635,9 +2677,9 @@ export const CVRenderer = ({
                             <InlineEdit value={headers?.projects || "Projets"} path="headers.projects" isInteractive={isInteractive} onUpdate={onUpdate} />
                             <span className="flex-1 h-px bg-slate-200 block" />
                           </h3>
-                          <div className="space-y-4">
-                            {projects.map((proj: any, i: number) => (
-                              <div key={i} className="relative pl-5">
+                          <DraggableEntryList section="projects" items={projects} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-4">
+                            {(proj: any, i: number) => (
+                              <div className="relative pl-5">
                                 <div className="absolute left-[5px] top-1.5 w-3 h-3 rounded-full border-2 border-[#4a4a4a] bg-white" />
                                 <p className="font-black text-[11px] text-slate-900 break-words">
                                   <InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={isInteractive} onUpdate={onUpdate} />
@@ -2653,8 +2695,8 @@ export const CVRenderer = ({
                                   </p>
                                 )}
                               </div>
-                            ))}
-                          </div>
+                            )}
+                          </DraggableEntryList>
                         </DraggableSection>
                       );
                     }
@@ -2672,13 +2714,13 @@ export const CVRenderer = ({
                             <span className="flex-1 h-px bg-slate-200 block" />
                           </h3>
                           {Array.isArray(items) ? (
-                            <div className="space-y-1">
-                              {items.map((it: any, i: number) => (
-                                <p key={i} className="text-[11px] text-slate-600 break-words">
+                            <DraggableEntryList section={key} items={items} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-1">
+                              {(it: any, i: number) => (
+                                <p className="text-[11px] text-slate-600 break-words">
                                   • <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 </p>
-                              ))}
-                            </div>
+                              )}
+                            </DraggableEntryList>
                           ) : (
                             <p className="text-[11px] text-slate-600 whitespace-pre-wrap break-words">
                               <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
@@ -2736,10 +2778,10 @@ export const CVRenderer = ({
             {/* Right main content */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
               <div className="px-8 pt-8 pb-6 border-b border-slate-100">
-                <h1 className="text-4xl font-black text-slate-900 tracking-tight break-words leading-tight">
+                <h1 className="text-4xl font-black text-slate-900 tracking-tight break-words leading-tight text-center">
                   <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </h1>
-                <p className="text-sm font-bold text-slate-500 mt-1 uppercase tracking-widest break-words">
+                <p className="text-sm font-bold text-slate-500 mt-1 uppercase tracking-widest break-words text-center">
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
               </div>
@@ -2771,8 +2813,9 @@ export const CVRenderer = ({
                             <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
                           <div className="space-y-5">
-                            {asRecordArray(experiences).map((exp: any, i: number) => (
-                              <div key={i} className="flex gap-4 relative">
+                            <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-5">
+                            {(exp: any, i: number) => (
+                              <div className="flex gap-4 relative">
                                 <div className="w-px bg-slate-200 relative shrink-0">
                                   <div className="absolute top-1.5 -left-1 w-2.5 h-2.5 bg-[#4ab5b0] rounded-full" />
                                 </div>
@@ -2793,7 +2836,8 @@ export const CVRenderer = ({
                                   </p>
                                 </div>
                               </div>
-                            ))}
+                            )}
+                            </DraggableEntryList>
                           </div>
                         </DraggableSection>
                       );
@@ -2807,8 +2851,9 @@ export const CVRenderer = ({
                             <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
                           <div className="space-y-3">
-                            {asRecordArray(education).map((edu: any, i: number) => (
-                              <div key={i}>
+                            <DraggableEntryList section="education" items={asRecordArray(education)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-3">
+                            {(edu: any, i: number) => (
+                              <div>
                                 <p className="font-black text-[11px] text-slate-900 break-words">
                                   <InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 </p>
@@ -2817,7 +2862,8 @@ export const CVRenderer = ({
                                   {edu.year && <span className="text-slate-400"> • <InlineEdit value={edu.year} path={`education.${i}.year`} isInteractive={isInteractive} onUpdate={onUpdate} /></span>}
                                 </p>
                               </div>
-                            ))}
+                            )}
+                            </DraggableEntryList>
                           </div>
                         </DraggableSection>
                       );
@@ -2831,8 +2877,9 @@ export const CVRenderer = ({
                             <InlineEdit value={headers?.projects || "Projets"} path="headers.projects" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
                           <div className="space-y-3">
-                            {asRecordArray(projects).map((proj: any, i: number) => (
-                              <div key={i}>
+                            <DraggableEntryList section="projects" items={asRecordArray(projects)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-3">
+                            {(proj: any, i: number) => (
+                              <div>
                                 <p className="font-black text-[11px] text-slate-900 break-words">
                                   <InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 </p>
@@ -2847,7 +2894,8 @@ export const CVRenderer = ({
                                   </p>
                                 )}
                               </div>
-                            ))}
+                            )}
+                            </DraggableEntryList>
                           </div>
                         </DraggableSection>
                       );
@@ -2865,9 +2913,9 @@ export const CVRenderer = ({
                             <InlineEdit value={headers?.[key] || key} path={`headers.${key}`} isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
                           {Array.isArray(items) ? (
-                            <div className="space-y-1">{items.map((it: any, i: number) => (
-                              <p key={i} className="text-[10px] text-slate-600 break-words">• <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>
-                            ))}</div>
+                            <DraggableEntryList section={key} items={items} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-1">
+                              {(it: any, i: number) => <p className="text-[10px] text-slate-600 break-words">• <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>}
+                            </DraggableEntryList>
                           ) : (
                             <p className="text-[10px] text-slate-600 whitespace-pre-wrap break-words">
                               <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
@@ -2911,9 +2959,9 @@ export const CVRenderer = ({
                       <h3 className="text-xs font-black text-slate-800 border-b border-slate-500 pb-1 mb-3 uppercase tracking-wide">
                         <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
                       </h3>
-                      <div className="space-y-4">
-                        {education.map((edu: any, i: number) => (
-                          <div key={i} className="flex flex-col gap-0.5 min-w-0 text-left">
+                      <DraggableEntryList section="education" items={education} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-4">
+                        {(edu: any, i: number) => (
+                          <div className="flex flex-col gap-0.5 min-w-0 text-left">
                             {/* 1. Date ABOVE school */}
                             <p className="text-[9px] text-slate-500 font-bold whitespace-nowrap">
                               <InlineEdit value={edu.year || edu.period} path={`education.${i}.year`} isInteractive={isInteractive} onUpdate={onUpdate} />
@@ -2932,8 +2980,8 @@ export const CVRenderer = ({
                               </p>
                             )}
                           </div>
-                        ))}
-                      </div>
+                        )}
+                      </DraggableEntryList>
                     </DraggableSection>
                   </div>
                 )}
@@ -2970,10 +3018,10 @@ export const CVRenderer = ({
             {/* Right main content */}
             <div className="flex-1 flex flex-col min-w-0">
               <div className="bg-[#5a5a5a] text-white px-10 flex flex-col justify-center" style={{ minHeight: "200px" }}>
-                <h1 className="text-4xl font-black uppercase tracking-tight break-words leading-tight text-white">
+                <h1 className="text-4xl font-black uppercase tracking-tight break-words leading-tight text-white text-center">
                   <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </h1>
-                <p className="text-sm font-medium text-white/80 mt-2 tracking-widest break-words">
+                <p className="text-sm font-medium text-white/80 mt-2 tracking-widest break-words text-center">
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
               </div>
@@ -3007,9 +3055,9 @@ export const CVRenderer = ({
                           <h3 className="text-sm font-black text-slate-800 border-b-2 border-slate-200 pb-1 mb-5 uppercase tracking-wide">
                             <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <div className="space-y-6">
-                            {asRecordArray(experiences).map((exp: any, i: number) => (
-                              <div key={i} className="flex gap-4">
+                          <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-6">
+                            {(exp: any, i: number) => (
+                              <div className="flex gap-4">
                                 <div className="flex flex-col items-center shrink-0">
                                   <div className="w-4 h-4 rounded-full border-2 border-slate-400 bg-white mt-0.5 shrink-0" />
                                   {i < experiences.length - 1 && <div className="w-px flex-1 bg-slate-200 mt-1" />}
@@ -3033,8 +3081,8 @@ export const CVRenderer = ({
                                   </p>
                                 </div>
                               </div>
-                            ))}
-                          </div>
+                            )}
+                          </DraggableEntryList>
                         </DraggableSection>
                       );
                     }
@@ -3046,9 +3094,9 @@ export const CVRenderer = ({
                           <h3 className="text-sm font-black text-slate-800 border-b-2 border-slate-200 pb-1 mb-4 uppercase tracking-wide">
                             <InlineEdit value={headers?.projects || "Projets"} path="headers.projects" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <div className="space-y-3">
-                            {asRecordArray(projects).map((proj: any, i: number) => (
-                              <div key={i} className="flex gap-4">
+                          <DraggableEntryList section="projects" items={asRecordArray(projects)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-3">
+                            {(proj: any, i: number) => (
+                              <div className="flex gap-4">
                                 <div className="flex flex-col items-center shrink-0">
                                   <div className="w-4 h-4 rounded-full border-2 border-slate-400 bg-white mt-0.5 shrink-0" />
                                 </div>
@@ -3068,8 +3116,8 @@ export const CVRenderer = ({
                                   )}
                                 </div>
                               </div>
-                            ))}
-                          </div>
+                            )}
+                          </DraggableEntryList>
                         </DraggableSection>
                       );
                     }
@@ -3086,9 +3134,9 @@ export const CVRenderer = ({
                             <InlineEdit value={headers?.[key] || key} path={`headers.${key}`} isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
                           {Array.isArray(items) ? (
-                            <div className="space-y-1">{items.map((it: any, i: number) => (
-                              <p key={i} className="text-[10px] text-slate-600 break-words">• <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>
-                            ))}</div>
+                            <DraggableEntryList section={key} items={items} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-1">
+                              {(it: any, i: number) => <p className="text-[10px] text-slate-600 break-words">• <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>}
+                            </DraggableEntryList>
                           ) : (
                             <p className="text-[10px] text-slate-600 whitespace-pre-wrap break-words">
                               <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
@@ -3150,11 +3198,11 @@ export const CVRenderer = ({
             {/* Right main content */}
             <div className="flex-1 flex flex-col min-w-0 bg-white">
               <div className="px-10 pt-10 pb-6 flex flex-col justify-center" style={{ minHeight: "260px" }}>
-                <h1 className="text-4xl font-black uppercase tracking-[0.1em] text-[#2c2c2c] leading-tight break-words">
+                <h1 className="text-4xl font-black uppercase tracking-[0.1em] text-[#2c2c2c] leading-tight break-words text-center">
                   <InlineEdit value={name} path="userName" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </h1>
                 <div className="h-px bg-[#c9b99a] my-3 w-full" />
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8c7b6b] break-words">
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8c7b6b] break-words text-center">
                   <InlineEdit value={title} path="jobTitle" isInteractive={isInteractive} onUpdate={onUpdate} />
                 </p>
               </div>
@@ -3188,9 +3236,9 @@ export const CVRenderer = ({
                           <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-4">
                             <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <div className="space-y-5">
-                            {asRecordArray(experiences).map((exp: any, i: number) => (
-                              <div key={i}>
+                          <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-5">
+                            {(exp: any, i: number) => (
+                              <div>
                                 <p className="text-[10px] font-black text-[#2c2c2c] uppercase tracking-wide break-words">
                                   <InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 </p>
@@ -3203,8 +3251,8 @@ export const CVRenderer = ({
                                   <InlineEdit value={exp.description} path={`experience.${i}.description`} isInteractive={isInteractive} onUpdate={onUpdate} multiline />
                                 </p>
                               </div>
-                            ))}
-                          </div>
+                            )}
+                          </DraggableEntryList>
                         </DraggableSection>
                       );
                     }
@@ -3216,9 +3264,9 @@ export const CVRenderer = ({
                           <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-4">
                             <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <div className="space-y-4">
-                            {asRecordArray(education).map((edu: any, i: number) => (
-                              <div key={i}>
+                          <DraggableEntryList section="education" items={asRecordArray(education)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-4">
+                            {(edu: any, i: number) => (
+                              <div>
                                 <p className="text-[10px] font-black text-[#2c2c2c] uppercase tracking-wide break-words">
                                   <InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 </p>
@@ -3232,8 +3280,8 @@ export const CVRenderer = ({
                                   </p>
                                 )}
                               </div>
-                            ))}
-                          </div>
+                            )}
+                          </DraggableEntryList>
                         </DraggableSection>
                       );
                     }
@@ -3245,9 +3293,9 @@ export const CVRenderer = ({
                           <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-3">
                             <InlineEdit value={headers?.projects || "Projets"} path="headers.projects" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <div className="space-y-3">
-                            {asRecordArray(projects).map((proj: any, i: number) => (
-                              <div key={i}>
+                          <DraggableEntryList section="projects" items={asRecordArray(projects)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-3">
+                            {(proj: any, i: number) => (
+                              <div>
                                 <p className="font-black text-[10px] text-[#2c2c2c] break-words">
                                   <InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 </p>
@@ -3263,8 +3311,8 @@ export const CVRenderer = ({
                                   </p>
                                 )}
                               </div>
-                            ))}
-                          </div>
+                            )}
+                          </DraggableEntryList>
                         </DraggableSection>
                       );
                     }
@@ -3281,9 +3329,9 @@ export const CVRenderer = ({
                             <InlineEdit value={headers?.[key] || key} path={`headers.${key}`} isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
                           {Array.isArray(items) ? (
-                            <div className="space-y-1">{items.map((it: any, i: number) => (
-                              <p key={i} className="text-[10px] text-[#4a4a4a] break-words">• <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>
-                            ))}</div>
+                            <DraggableEntryList section={key} items={items} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-1">
+                              {(it: any, i: number) => <p className="text-[10px] text-[#4a4a4a] break-words">• <InlineEdit value={it} path={`${key}.${i}`} isInteractive={isInteractive} onUpdate={onUpdate} /></p>}
+                            </DraggableEntryList>
                           ) : (
                             <p className="text-[10px] text-[#4a4a4a] whitespace-pre-wrap break-words">
                               <InlineEdit value={items} path={key} isInteractive={isInteractive} onUpdate={onUpdate} multiline />

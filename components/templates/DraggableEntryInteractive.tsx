@@ -31,11 +31,11 @@ const DraggableEntryInteractive = ({ id, children, className = "" }: {
       <div
         {...attributes}
         {...listeners}
-        className="cv-section-controls absolute -left-5 top-2 opacity-0 group-hover/entry:opacity-100 cursor-grab active:cursor-grabbing p-1 bg-white rounded shadow border border-slate-200 text-slate-400 hover:text-slate-700 transition-all z-[90] touch-none"
+        className="cv-section-controls absolute -left-6 top-1 opacity-100 md:opacity-0 md:group-hover/entry:opacity-100 cursor-grab active:cursor-grabbing p-1.5 bg-white rounded shadow border border-slate-300 text-slate-600 hover:text-slate-900 transition-all z-[90] touch-none"
         title="Réordonner"
         style={{ touchAction: 'none' }}
       >
-        <GripVertical size={12} strokeWidth={2} />
+        <GripVertical size={14} strokeWidth={2.5} />
       </div>
       {children}
     </div>
