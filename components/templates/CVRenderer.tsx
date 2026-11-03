@@ -1017,8 +1017,34 @@ export const CVRenderer = ({
         .cv-printable *:not(svg):not(path) {
           font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
         }
+        .cv-printable {
+          font-kerning: normal;
+          text-rendering: optimizeLegibility;
+        }
+        .cv-printable .text-slate-300,
+        .cv-printable .text-slate-400,
+        .cv-printable .text-gray-300,
+        .cv-printable .text-gray-400,
+        .cv-printable .text-zinc-300,
+        .cv-printable .text-zinc-400,
+        .cv-printable .text-neutral-300,
+        .cv-printable .text-neutral-400,
+        .cv-printable .text-stone-300,
+        .cv-printable .text-stone-400 {
+          color: #475569 !important;
+        }
         .cv-readable-sidebar,
         .cv-readable-sidebar *:not(input):not(textarea):not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(rect):not(.cv-section-controls):not(.cv-section-controls *) { color: #ffffff !important; }
+        .cv-readable-sidebar .text-slate-300,
+        .cv-readable-sidebar .text-slate-400,
+        .cv-readable-sidebar .text-gray-300,
+        .cv-readable-sidebar .text-gray-400,
+        .cv-readable-sidebar .text-zinc-300,
+        .cv-readable-sidebar .text-zinc-400,
+        .cv-readable-sidebar .text-neutral-300,
+        .cv-readable-sidebar .text-neutral-400,
+        .cv-readable-sidebar .text-stone-300,
+        .cv-readable-sidebar .text-stone-400 { color: #ffffff !important; }
         .cv-readable-sidebar .muted-readable { color: rgba(255,255,255,.78) !important; }
         .cv-readable-sidebar [class*="border-"] { border-color: rgba(255,255,255,.24) !important; }
         .cv-readable-sidebar input,
