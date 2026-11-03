@@ -53,13 +53,12 @@ describe("CV import mapping", () => {
     }));
     expect(mapped.certifications).toContain("Cloud Architect");
     expect(mapped.certifications).toContain("issuer: Example Org");
-    expect(mapped.additionalSections).toContain("Unclassified source detail");
+    expect(mapped.certifications).toContain("Unclassified source detail");
     expect(mapped.headers).toEqual(expect.objectContaining({
       experience: "Expérience",
-      additionalSections: "Autres informations",
     }));
     expect(mapped.sectionOrder).toContain("certifications");
-    expect(mapped.sectionOrder).toContain("additionalSections");
+    expect(mapped.sectionOrder).not.toContain("additionalSections");
   });
 
   it("retains imported list entries when optimized content omits them", () => {
@@ -93,16 +92,65 @@ describe("CV import mapping", () => {
     expect(result.certifications).toContain("Original Certification");
   });
 
-  it("keeps source headings and lines when structured extraction misses a section", () => {
+  it("maps unmatched text under known source headings into the corresponding editable section", () => {
     const mapped = mapImportedCvData(
       { userName: "Alex Morgan", experience: [], skills: [] },
       "Professional Experience\nSenior engineer leading platform migrations",
     );
 
-    expect(mapped.additionalSections).toEqual([
-      "Professional Experience",
-      "Senior engineer leading platform migrations",
-    ]);
+    expect(mapped.experience).toContainEqual(expect.objectContaining({
+      description: "Senior engineer leading platform migrations",
+    }));
+    expect(mapped.additionalSections).toBeUndefined();
+  });
+
+  it("removes semantically equivalent line-wrapped content without dropping unique sections", () => {
+    const mapped = mapImportedCvData(
+      {
+        userName: "Alex Morgan",
+        professionalSummary: "Led platform migration for global teams",
+        professionalExperience: [{
+          position: "Engineer",
+          employer: "Example Corp",
+          responsibilities: "Developed reliable systems for cloud teams",
+        }],
+        skills: ["PostgreSQL", "SQL"],
+      },
+      [
+        "Professional Summary",
+        "Managed platform migration for global teams",
+        "Professional Experience",
+        "Built reliable systems",
+        "for cloud teams",
+        "Skills",
+        "• PostgreSQL",
+        "SQL",
+        "Awards",
+        "Top 10 engineer award",
+      ].join("\n"),
+    );
+
+    expect(mapped.summary).toBe("Led platform migration for global teams");
+    expect(mapped.experience).toHaveLength(1);
+    expect(mapped.skills).toEqual(["PostgreSQL", "SQL"]);
+    expect(mapped.awards).toContain("Top 10 engineer award");
+    expect(mapped.additionalSections).toBeUndefined();
+  });
+
+  it("renders distinct unmatched content as editable text in the default editor template", () => {
+    const data = mapImportedCvData(
+      { userName: "Alex Morgan", skills: [] },
+      "Alex Morgan\nVolunteer coordinator for the City Food Bank",
+    );
+    const markup = renderToStaticMarkup(
+      <CVRenderer
+        template={{ templateStyle: CV_TEMPLATE_STYLES[0], templateData: data }}
+        isInteractive
+      />,
+    );
+
+    expect(markup).toContain("Volunteer coordinator for the City Food Bank");
+    expect(markup).toContain('title="Cliquez pour modifier"');
   });
 });
 
