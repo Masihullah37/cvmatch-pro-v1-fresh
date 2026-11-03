@@ -116,6 +116,35 @@ describe("CV import mapping", () => {
     expect(mapped.additionalSections).toBeUndefined();
   });
 
+  it("uses the uploaded profile section verbatim and excludes pre-section page/contact debris", () => {
+    const mapped = preserveImportedCvContent(
+      {
+        userName: "Alex Morgan",
+        summary: "AI-rewritten summary that was not in the uploaded CV.",
+      },
+      {
+        userName: "Alex Morgan",
+        summary: "A generated replacement profile.",
+      },
+      [
+        "Alex Morgan",
+        "EMAIL Téléphone LOCALISATION Page (0) Break ----------",
+        "Profil",
+        "Experienced product manager focused on accessible digital services.",
+        "Delivered customer-centered products across international teams.",
+        "Expérience professionnelle",
+        "Senior Product Manager",
+      ].join("\n"),
+    );
+
+    expect(mapped.summary).toBe(
+      "Experienced product manager focused on accessible digital services.\n" +
+      "Delivered customer-centered products across international teams.",
+    );
+    expect(mapped.summary).not.toContain("Alex Morgan");
+    expect(mapped.summary).not.toContain("Page");
+  });
+
   it("maps differently labeled contact fields into the existing contact section", () => {
     const mapped = mapImportedCvData(
       { userName: "Alex Morgan", contact: {} },
@@ -151,6 +180,41 @@ describe("CV import mapping", () => {
     expect(mapped.experience).toEqual([
       expect.objectContaining({
         description: "Built reliable systems for customers",
+      }),
+    ]);
+  });
+
+  it("keeps unmatched source experience details attached to their corresponding entries", () => {
+    const mapped = mapImportedCvData(
+      {
+        experience: [
+          { title: "Product Manager", company: "Northwind", period: "2021-2023", description: "" },
+          { title: "Business Analyst", company: "Contoso", period: "2019-2021", description: "" },
+        ],
+      },
+      [
+        "Professional Experience",
+        "Product Manager",
+        "Northwind",
+        "2021-2023",
+        "Launched a forecasting platform used by 200 teams.",
+        "Business Analyst",
+        "Contoso",
+        "2019-2021",
+        "Automated monthly reporting and reduced delivery time by 30%.",
+      ].join("\n"),
+    );
+
+    expect(mapped.experience).toEqual([
+      expect.objectContaining({
+        title: "Product Manager",
+        company: "Northwind",
+        description: "Launched a forecasting platform used by 200 teams.",
+      }),
+      expect.objectContaining({
+        title: "Business Analyst",
+        company: "Contoso",
+        description: "Automated monthly reporting and reduced delivery time by 30%.",
       }),
     ]);
   });

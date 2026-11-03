@@ -41,32 +41,54 @@ function docxHtmlToText(html: string): string {
 async function extractDocxXmlText(buffer: Buffer): Promise<string> {
   const JSZip = require("jszip");
   const zip = await JSZip.loadAsync(buffer);
-  const documentXml = zip.file("word/document.xml");
-  if (!documentXml) {
-    throw new Error("Le document Word ne contient pas sa partie principale.");
+  const relationshipFile = zip.file("_rels/.rels");
+  const relationships = relationshipFile
+    ? await relationshipFile.async("string")
+    : "";
+  const documentTarget = relationships.match(
+    /<Relationship\b(?=[^>]*\bType=["'][^"']*\/officeDocument["'])[^>]*\bTarget=["']([^"']+)["']/i,
+  )?.[1]?.replace(/^\/+/, "");
+  const xmlPaths = Object.keys(zip.files).filter((path) =>
+    /^word\/(?:document(?:\d+)?|header\d*|footer\d*|footnotes|endnotes)\.xml$/i.test(path),
+  );
+  if (documentTarget && zip.file(documentTarget)) {
+    xmlPaths.unshift(documentTarget);
   }
 
-  const xml = await documentXml.async("string");
-  const { load } = require("cheerio") as typeof import("cheerio");
-  const $ = load(xml, { xml: { xmlMode: true } });
-  $("w\\:tab").replaceWith(" ");
-  $("w\\:br, w\\:cr").replaceWith("\n");
+  const uniquePaths = [...new Set(xmlPaths)];
+  if (!uniquePaths.length) {
+    throw new Error("Le document Word ne contient pas de document XML lisible.");
+  }
 
-  return $("w\\:body")
-    .find("w\\:p")
-    .toArray()
-    .filter((paragraph) => !$(paragraph).parents("w\\:p").length)
-    .map((paragraph) =>
-      $(paragraph)
-        .find("w\\:t, a\\:t")
-        .map((_, text) => $(text).text())
-        .get()
-        .join("")
-        .trim(),
-    )
-    .filter(Boolean)
-    .join("\n")
-    .trim();
+  const decodeXml = (value: string) => value
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
+
+  const documentTexts: string[] = [];
+  for (const path of uniquePaths) {
+    const xml: string = await zip.file(path)!.async("string");
+    const paragraphs: string[] =
+      xml.match(/<(?:[\w.-]+:)?p\b[^>]*>[\s\S]*?<\/(?:[\w.-]+:)?p\s*>/gi) || [];
+    const text = paragraphs
+      .map((paragraph) => {
+        const withBreaks = paragraph
+          .replace(/<(?:[\w.-]+:)?tab\b[^>]*\/>/gi, " ")
+          .replace(/<(?:[\w.-]+:)?(?:br|cr)\b[^>]*\/>/gi, "\n");
+        return (withBreaks.match(/<(?:[\w.-]+:)?t\b[^>]*>[\s\S]*?<\/(?:[\w.-]+:)?t\s*>/gi) || [])
+          .map((element) => decodeXml(element.replace(/^<[^>]*>|<\/[^>]*>$/g, "")))
+          .join("")
+          .trim();
+      })
+      .filter(Boolean);
+    if (paragraphs.length && text.length) documentTexts.push(text.join("\n"));
+  }
+
+  return documentTexts.join("\n").trim();
 }
 
 export function getCVFileType(buffer: Buffer, filename: string): CVFileType {

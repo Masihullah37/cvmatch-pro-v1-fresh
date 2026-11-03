@@ -3,6 +3,7 @@ type CvRecord = Record<string, unknown>;
 const SECTION_ALIASES: Record<string, string> = {
   about: "summary",
   profile: "summary",
+  profil: "summary",
   professionalprofile: "summary",
   professionalsummary: "summary",
   careerobjective: "summary",
@@ -420,6 +421,7 @@ interface SourceSection {
   key: string;
   title: string;
   lines: string[];
+  explicitHeading?: boolean;
 }
 
 function semanticTokens(value: string): Set<string> {
@@ -512,6 +514,7 @@ function parseSourceSections(text: string, source: CvRecord): SourceSection[] {
     key: "summary",
     title: "Profil",
     lines: [],
+    explicitHeading: false,
   };
   sections.push(currentSection);
 
@@ -528,7 +531,7 @@ function parseSourceSections(text: string, source: CvRecord): SourceSection[] {
           })()
         : undefined);
     if (heading) {
-      currentSection = { ...heading, lines: [] };
+      currentSection = { ...heading, lines: [], explicitHeading: true };
       sections.push(currentSection);
     } else {
       currentSection.lines.push(line);
@@ -536,6 +539,15 @@ function parseSourceSections(text: string, source: CvRecord): SourceSection[] {
   }
 
   return sections.filter((section) => section.lines.length > 0);
+}
+
+function extractExplicitSummary(text: string, source: CvRecord): string {
+  return removeExtractionArtifacts(
+    parseSourceSections(text, source)
+      .filter((section) => section.key === "summary" && section.explicitHeading)
+      .flatMap((section) => section.lines)
+      .join("\n"),
+  );
 }
 
 function appendSectionContent(
@@ -557,10 +569,7 @@ function appendSectionContent(
       data.skills = mergeUnique(skillEntries(data.skills), skillEntries(uniqueLines));
       return;
     case "experience":
-      data.experience = [
-        ...normalizeExperience(data.experience),
-        { title: "", company: "", period: "", description: uniqueLines.join("\n") },
-      ];
+      data.experience = appendExperienceDetails(data.experience, uniqueLines);
       return;
     case "education":
       data.education = [
@@ -588,6 +597,53 @@ function appendSectionContent(
       headers[section.key] = textValue(headers[section.key]) || section.title;
       if (!sectionOrder.includes(section.key)) sectionOrder.push(section.key);
   }
+}
+
+function appendExperienceDetails(value: unknown, lines: string[]): CvRecord[] {
+  const experiences = normalizeExperience(value);
+  if (!experiences.length) {
+    const description = removeExtractionArtifacts(lines.join("\n"));
+    return description
+      ? [{ title: "", company: "", period: "", description }]
+      : [];
+  }
+
+  let activeIndex = 0;
+  for (const line of lines) {
+    const lineText = normalizeText(line);
+    const matchingIndex = experiences.findIndex((experience) => {
+      const identifiers = ["title", "company", "period"]
+        .map((field) => textValue(experience[field]))
+        .filter(Boolean);
+      return identifiers.some((identifier) =>
+        normalizeText(identifier) === lineText ||
+        isSemanticallyRepresented(identifier, [line]),
+      );
+    });
+    if (matchingIndex >= 0) {
+      activeIndex = matchingIndex;
+      const identifiers = ["title", "company", "period"]
+        .map((field) => normalizeText(textValue(experiences[activeIndex][field])))
+        .filter(Boolean);
+      if (identifiers.includes(lineText)) continue;
+    }
+
+    const experience = experiences[activeIndex];
+    if (isSemanticallyRepresented(line, [
+      textValue(experience.title),
+      textValue(experience.company),
+      textValue(experience.period),
+      textValue(experience.description),
+    ])) {
+      continue;
+    }
+    const description = removeExtractionArtifacts(
+      [textValue(experience.description), line].filter(Boolean).join("\n"),
+    );
+    experiences[activeIndex] = { ...experience, description };
+  }
+
+  return experiences;
 }
 
 function mergeContactLines(data: CvRecord, lines: string[]): string[] {
@@ -763,7 +819,21 @@ export function mapImportedCvData(
       .filter(([key]) => !key.startsWith("_") && key !== excludeKey)
       .flatMap(([, value]) => collectTextFragments(value));
 
-  for (const section of parseSourceSections(originalText, source)) {
+  const sourceSections = parseSourceSections(originalText, source);
+  const explicitSummary = sourceSections
+    .filter((section) => section.key === "summary" && section.explicitHeading)
+    .flatMap((section) => section.lines);
+  const hasExplicitSummary = explicitSummary.length > 0;
+  if (hasExplicitSummary && !textValue(source.summary || source.professionalSummary || source.profile || source.objective)) {
+    data.summary = removeExtractionArtifacts(explicitSummary.join("\n"));
+  }
+
+  for (const section of sourceSections) {
+    if (section.key === "summary" && hasExplicitSummary) continue;
+    if (section.key === "experience") {
+      data.experience = appendExperienceDetails(data.experience, section.lines);
+      continue;
+    }
     const unmatchedLines: string[] = [];
     for (const line of section.lines) {
       if (!isSemanticallyRepresented(line, [...representedContent(), ...unmatchedLines])) {
@@ -814,17 +884,28 @@ export function preserveImportedCvContent(
 ): CvRecord {
   const baseline = mapImportedCvData(imported, originalText);
   const generated = mapImportedCvData(optimized, originalText);
+  const uploadedSummary = extractExplicitSummary(originalText, asRecord(imported));
+  if (uploadedSummary) {
+    baseline.summary = uploadedSummary;
+    generated.summary = uploadedSummary;
+  }
   const merged: CvRecord = { ...baseline, ...generated };
 
   merged.userName = textValue(generated.userName) || baseline.userName;
   merged.jobTitle = textValue(generated.jobTitle) || baseline.jobTitle;
 
-  for (const field of ["experience", "education", "skills", "languages", "interests"]) {
+  for (const field of ["education", "skills", "languages", "interests"]) {
     merged[field] = mergeUnique(
       Array.isArray(generated[field]) ? generated[field] as unknown[] : [],
       Array.isArray(baseline[field]) ? baseline[field] as unknown[] : [],
     );
   }
+  merged.experience = originalText && Array.isArray(baseline.experience) && baseline.experience.length
+    ? baseline.experience
+    : mergeUnique(
+        Array.isArray(generated.experience) ? generated.experience : [],
+        Array.isArray(baseline.experience) ? baseline.experience : [],
+      );
   merged.projects = Array.isArray(baseline.projects) && baseline.projects.length
     ? baseline.projects
     : Array.isArray(generated.projects)
@@ -847,11 +928,7 @@ export function preserveImportedCvContent(
     sectionEntries(baseline.additionalSections),
   );
 
-  const originalSummary = textValue(baseline.summary);
-  const optimizedSummary = textValue(generated.summary);
-  if (originalSummary && !normalizeText(optimizedSummary).includes(normalizeText(originalSummary))) {
-    merged.summary = [optimizedSummary, originalSummary].filter(Boolean).join("\n\n");
-  }
+  merged.summary = textValue(baseline.summary) || textValue(generated.summary);
 
   merged.contact = {
     ...Object.fromEntries(
