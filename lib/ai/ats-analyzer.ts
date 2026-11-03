@@ -420,8 +420,10 @@ export async function extractRawCVData(cvText: string) {
 
 Extract all information from this CV exactly as written. Do NOT optimize or rephrase anything.
 
-Return EXACTLY:
-{"userName":"","jobTitle":"","summary":"","contact":{"email":"","phone":"","location":"","linkedin":"","github":"","portfolio":""},"experience":[{"title":"","company":"","period":"","description":""}],"education":[{"degree":"","school":"","year":"","details":""}],"projects":[{"name":"","description":"","technologies":[]}],"skills":[],"languages":[{"language":"","level":""}],"interests":[]}
+Return this JSON structure, including every section from the source CV:
+{"userName":"","jobTitle":"","summary":"","contact":{"email":"","phone":"","location":"","linkedin":"","github":"","portfolio":""},"experience":[{"title":"","company":"","period":"","description":""}],"education":[{"degree":"","school":"","year":"","details":""}],"projects":[{"name":"","description":"","technologies":[]}],"skills":[],"languages":[{"language":"","level":""}],"interests":[],"additionalSections":[{"title":"","content":""}]}
+
+Map sections by their purpose, even when their heading uses different wording. Keep separate skills as separate strings. Put certifications, awards, publications, volunteering, and any other content that does not fit the standard fields in additionalSections. Do not omit any source content.
 
 CV:
 ${safeCvText}`;

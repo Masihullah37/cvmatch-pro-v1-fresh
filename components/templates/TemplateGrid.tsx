@@ -91,6 +91,7 @@ const DEFAULT_HEADERS: Record<string, string> = {
   skills: "Compétences",
   languages: "Langues",
   contact: "Contact",
+  additionalSections: "Autres informations",
 };
 
 const sectionColors: Record<string, string> = {

@@ -94,6 +94,26 @@ const GitHub = ({ size = 14 }: { size?: number }) => (
   </svg>
 );
 
+const PortfolioIcon = ({ size = 14 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    role="img"
+    aria-label="Portfolio"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M2 12h20" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z" />
+  </svg>
+);
+
 const Star = ({
   size = 24,
   className = "",
@@ -298,8 +318,10 @@ const ContactLinks = ({ className, contact: contactData, isInteractive: interact
       )}
       {cd?.portfolio && (
         <p className={className}>
-          <strong>Portfolio:</strong>{" "}
-          <InlineEdit value={cd.portfolio} path="contact.portfolio" isInteractive={iact} onUpdate={upd} />
+          <span className="inline-flex items-center gap-1.5">
+            <PortfolioIcon />
+            <InlineEdit value={cd.portfolio} path="contact.portfolio" isInteractive={iact} onUpdate={upd} />
+          </span>
         </p>
       )}
     </>
@@ -1812,6 +1834,7 @@ export const CVRenderer = ({
                   <p className="text-current"><InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
                   <p className="text-current"><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
                   <p className="text-current"><InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
+                  <ContactLinks className="text-current" />
                 </div>
               )}
             </header>
@@ -1844,6 +1867,7 @@ export const CVRenderer = ({
                 <span><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
                 <span>•</span>
                 <span><InlineEdit value={contact.location} path="contact.location" isInteractive={isInteractive} onUpdate={onUpdate} /></span>
+                <ContactLinks className="text-current" />
               </div>
             </header>
             <section className="mb-8 pb-6 border-b border-slate-200 font-sans">
@@ -1938,6 +1962,7 @@ export const CVRenderer = ({
               <div className="relative z-10 text-right text-xs space-y-1 shrink-0 text-blue-100 [&_*]:text-blue-100">
                 <p><InlineEdit value={contact.email} path="contact.email" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
                 <p><InlineEdit value={contact.phone} path="contact.phone" isInteractive={isInteractive} onUpdate={onUpdate} /></p>
+                <ContactLinks className="text-current" />
               </div>
             </header>
             <div className="p-10 grid grid-cols-12 gap-10">
@@ -2389,7 +2414,7 @@ export const CVRenderer = ({
                   )}
                   {contact?.linkedin && (
                     <p className="flex items-center gap-2 break-words">
-                      <span className="font-black text-slate-800 shrink-0">L:</span>
+                      <LinkedIn size={14} />
                       <InlineEdit value={contact.linkedin} path="contact.linkedin" isInteractive={isInteractive} onUpdate={onUpdate} />
                     </p>
                   )}
@@ -2401,7 +2426,7 @@ export const CVRenderer = ({
                   )}
                   {contact?.portfolio && (
                     <p className="flex items-center gap-2 break-words">
-                      <span className="font-black text-slate-800 shrink-0">W:</span>
+                      <PortfolioIcon size={14} />
                       <InlineEdit value={contact.portfolio} path="contact.portfolio" isInteractive={isInteractive} onUpdate={onUpdate} />
                     </p>
                   )}

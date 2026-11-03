@@ -1,10 +1,11 @@
 export function asStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
-    return value.map((item) =>
-      typeof item === "string"
+    return value.flatMap((item) => {
+      const text = typeof item === "string"
         ? item
-        : String((item as { name?: string; skill?: string })?.name ?? (item as { skill?: string })?.skill ?? item ?? "")
-    );
+        : String((item as { name?: string; skill?: string })?.name ?? (item as { skill?: string })?.skill ?? item ?? "");
+      return text.split(/[,;|\n]/).map((skill) => skill.trim()).filter(Boolean);
+    });
   }
   if (typeof value === "string") {
     const trimmed = value.trim();
