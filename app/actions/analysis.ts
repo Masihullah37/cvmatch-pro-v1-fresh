@@ -16,6 +16,7 @@ import { getUserPlan } from "@/lib/billing/get-user-plan";
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { getHashedTrackingToken } from "@/lib/anonymous-tracking";
+import { mapImportedCvData } from "@/lib/cv/import-mapping";
 
 /**
  * RULE: Prevent AI Token Waste
@@ -130,6 +131,7 @@ export async function performCVAnalysis(formData: FormData) {
 
   // 2. Extract Raw CV Data (Rule: Never generate AI content for unpaid users)
   const rawData = await extractRawCVData(cvText);
+  const importedData = mapImportedCvData(rawData, cvText);
 
   // 3. Create Analysis Record
   let newAnalysis: typeof cvAnalyses.$inferSelect;
@@ -169,7 +171,7 @@ export async function performCVAnalysis(formData: FormData) {
       jobTitle: jobTitle || "Poste Visé",
       jobDescription: jobDescription,
       optimizedData: {
-        ...rawData,
+        ...importedData,
         _originalCvText: cvText, // Store raw text inside JSON to avoid schema changes
       },
       detectedPlatform: detectedPlatform,

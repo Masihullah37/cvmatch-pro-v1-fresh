@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { cvAnalyses, cvTemplates } from '@/lib/db/schema';
 import { generateOptimizedCV, recalculateScoreForStructuredCV } from '@/lib/ai/ats-analyzer';
 import { validateOptimizedCV } from '@/lib/ai/resume-validator';
+import { mapImportedCvData, preserveImportedCvContent } from '@/lib/cv/import-mapping';
 
 export async function POST(req: Request) {
   try {
@@ -28,43 +29,39 @@ export async function POST(req: Request) {
     }
 
     const optimizedData = analysis.optimizedData as any;
+    const originalCvText =
+      optimizedData?._originalCvText ||
+      optimizedData?._originalcvtext ||
+      "";
 
     // ── Reconstruct existing structured CV from DB ─────────
-    const existingStructuredCV = {
+    const existingStructuredCV = mapImportedCvData({
+      ...optimizedData,
       userName: optimizedData?.userName || "",
       jobTitle: optimizedData?.jobTitle || "",
       summary: optimizedData?.summary || "",
       contact: optimizedData?.contact || {},
-      experience: Array.isArray(optimizedData?.experience)
-        ? optimizedData.experience
-        : [],
-      education: Array.isArray(optimizedData?.education)
-        ? optimizedData.education
-        : [],
-      skills: Array.isArray(optimizedData?.skills)
-        ? optimizedData.skills
-        : [],
-      languages: Array.isArray(optimizedData?.languages)
-        ? optimizedData.languages
-        : [],
-      projects: Array.isArray(optimizedData?.projects)
-        ? optimizedData.projects
-        : [],
-      interests: Array.isArray(optimizedData?.interests)
-        ? optimizedData.interests
-        : [],
-    };
+    }, originalCvText);
+    const existingExperience = Array.isArray(existingStructuredCV.experience)
+      ? existingStructuredCV.experience
+      : [];
+    const existingEducation = Array.isArray(existingStructuredCV.education)
+      ? existingStructuredCV.education
+      : [];
+    const existingSkills = Array.isArray(existingStructuredCV.skills)
+      ? existingStructuredCV.skills
+      : [];
 
     const hasStructuredData =
       existingStructuredCV.userName ||
-      existingStructuredCV.experience.length > 0 ||
-      existingStructuredCV.education.length > 0;
+      existingExperience.length > 0 ||
+      existingEducation.length > 0;
 
     console.log("[generate-templates] CV data check:", {
       hasStructuredData,
       existingUserName: existingStructuredCV.userName,
-      existingExperienceCount: existingStructuredCV.experience.length,
-      existingSkillsCount: existingStructuredCV.skills.length,
+      existingExperienceCount: existingExperience.length,
+      existingSkillsCount: existingSkills.length,
     });
 
     const analysisResult = {
@@ -96,12 +93,6 @@ export async function POST(req: Request) {
     // we fall back to the existing optimizedData from the DB.
     let optimizedContent: any = null;
     let aiSucceeded = false;
-
-    // Cleanly extract the stored raw CV text from DB BEFORE the function call
-    const originalCvText =
-      optimizedData?._originalCvText ||
-      optimizedData?._originalcvtext ||
-      "";
 
     try {
 
@@ -154,6 +145,12 @@ export async function POST(req: Request) {
         );
       }
     }
+
+    optimizedContent = preserveImportedCvContent(
+      existingStructuredCV,
+      optimizedContent,
+      originalCvText,
+    );
 
     // ── Step 4: Ensure contact object is always complete ───
     const safeContact = {

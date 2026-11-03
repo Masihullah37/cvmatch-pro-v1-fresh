@@ -15,6 +15,10 @@ import { PlanType } from "@/lib/billing/get-user-plan";
 import { CV_TEMPLATE_STYLES } from "@/lib/cv-template-styles";
 import { getHashedTrackingToken } from "@/lib/anonymous-tracking";
 import { cookies } from "next/headers";
+import {
+  mapImportedCvData,
+  preserveImportedCvContent,
+} from "@/lib/cv/import-mapping";
 
 // Revert to original unique templates
 // const STYLES = [...CV_TEMPLATE_STYLES]; // 28 templates
@@ -41,11 +45,13 @@ function getTemplateContent(analysisData: any) {
   if (typeof content === "string") {
     try { content = JSON.parse(content); } catch { content = DEMO_FALLBACK; }
   }
-  if ((content as any)._originalCvText) delete (content as any)._originalCvText;
-  return {
+  const originalCvText = (content as any)._originalCvText || "";
+  delete (content as any)._originalCvText;
+  return mapImportedCvData({
+    ...DEMO_FALLBACK,
     ...content,
     contact: content.contact || DEMO_FALLBACK.contact,
-  };
+  }, originalCvText);
 }
 
 async function ensureTemplatesExist(analysisId: string, analysisData: any) {
@@ -84,7 +90,18 @@ async function ensureTemplatesExist(analysisId: string, analysisData: any) {
     }
   }
 
-  return await db.select().from(cvTemplates).where(eq(cvTemplates.analysisId, analysisId));
+  const savedTemplates = await db.select().from(cvTemplates).where(eq(cvTemplates.analysisId, analysisId));
+  const originalCvText =
+    (analysisData?.optimizedData as any)?._originalCvText || "";
+
+  return savedTemplates.map((template) => ({
+    ...template,
+    templateData: preserveImportedCvContent(
+      content,
+      template.templateData,
+      originalCvText,
+    ),
+  }));
 }
 
 export default async function TemplatesPage({
