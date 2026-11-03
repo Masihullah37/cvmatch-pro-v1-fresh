@@ -40,6 +40,9 @@ const SECTION_ALIASES: Record<string, string> = {
   selectedprojects: "projects",
   hobbies: "interests",
   extracurricularactivities: "interests",
+  contactinformation: "contact",
+  contactdetails: "contact",
+  personaldetails: "contact",
 };
 
 const RESERVED_KEYS = new Set([
@@ -92,6 +95,55 @@ function normalizeText(value: string): string {
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
+}
+
+function resolveSectionKey(value: string): string | undefined {
+  const aliasedSection = SECTION_ALIASES[normalizeKey(value)];
+  if (aliasedSection) return aliasedSection;
+
+  const words = normalizeText(
+    value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " "),
+  ).split(/\s+/);
+  if (!words.length || words.length > 6) return undefined;
+  if (words.slice(1).some((word) => /ing$/.test(word) && !["training", "learning"].includes(word))) {
+    return undefined;
+  }
+  const has = (...terms: string[]) => terms.some((term) => words.includes(term));
+
+  if (has("profile", "summary", "objective", "introduction", "about", "biography")) {
+    return "summary";
+  }
+  if (has("language", "languages", "multilingual")) return "languages";
+  if (has("education", "academic", "qualification", "qualifications", "study", "studies")) {
+    return "education";
+  }
+  if (has("training", "course", "courses") && words.some((word) =>
+    ["academic", "education", "professional", "development", "vocational"].includes(word),
+  )) {
+    return "education";
+  }
+  if (
+    has("project", "projects") &&
+    words.length <= 3 &&
+    !has("manager", "management", "coordinator")
+  ) {
+    return "projects";
+  }
+  if (
+    has("skill", "skills", "competency", "competencies", "expertise", "proficiency", "proficiencies", "strengths", "abilities", "capabilities", "technology", "technologies", "tools") &&
+    !has("include", "includes", "including", "use", "using", "used", "develop", "developing", "apply", "applying")
+  ) {
+    return "skills";
+  }
+  if (
+    has("experience", "employment", "history", "background") ||
+    (has("career") && has("highlights", "summary", "history", "path", "profile", "experience")) ||
+    (has("role", "roles", "position", "positions") && has("professional", "relevant", "selected", "career", "history"))
+  ) {
+    return "experience";
+  }
+  if (has("interest", "interests", "hobbies", "hobby", "extracurricular")) return "interests";
+  return undefined;
 }
 
 function asRecord(value: unknown): CvRecord {
@@ -289,6 +341,7 @@ const SOURCE_SECTION_HEADINGS = new Set([
   "certifications", "certificates", "licenses", "achievements",
   "key achievements", "awards", "publications", "volunteer experience",
   "volunteering", "references", "professional development",
+  "contact information", "contact details", "personal details",
 ]);
 
 const SECTION_SYNONYMS: Record<string, string> = {
@@ -405,26 +458,27 @@ function parseSourceSections(text: string, source: CvRecord): SourceSection[] {
   }
   for (const heading of SOURCE_SECTION_HEADINGS) {
     const normalized = normalizeKey(heading);
-    const key = SECTION_ALIASES[normalized] || normalized;
+    const key = resolveSectionKey(heading) || SECTION_ALIASES[normalized] || normalized;
     headingMap.set(normalizeText(heading), { key, title: heading });
   }
   for (const [key, title] of Object.entries(asRecord(source.headers))) {
     if (typeof title === "string") {
-      headingMap.set(normalizeText(title), { key, title });
+      headingMap.set(normalizeText(title), { key: resolveSectionKey(title) || key, title });
     }
   }
   for (const key of Object.keys(source)) {
     if (RESERVED_KEYS.has(normalizeKey(key)) || key.startsWith("_")) continue;
+    const sectionKey = resolveSectionKey(key) || key;
     headingMap.set(normalizeText(key.replace(/[_-]+/g, " ")), {
-      key,
+      key: sectionKey,
       title: key.replace(/[_-]+/g, " "),
     });
   }
 
   const sections: SourceSection[] = [];
   let currentSection: SourceSection = {
-    key: "additionalSections",
-    title: "Autres informations",
+    key: "summary",
+    title: "Profil",
     lines: [],
   };
   sections.push(currentSection);
@@ -432,7 +486,15 @@ function parseSourceSections(text: string, source: CvRecord): SourceSection[] {
   for (const rawLine of text.split(/\r?\n/)) {
     const line = cleanSourceLine(rawLine);
     if (!line) continue;
-    const heading = headingMap.get(normalizeText(line));
+    const heading = headingMap.get(normalizeText(line)) ||
+      (line.length <= 64 &&
+      line.split(/\s+/).length <= 5 &&
+      !/[.!?;,:]/.test(line)
+        ? (() => {
+            const key = resolveSectionKey(line);
+            return key ? { key, title: line } : undefined;
+          })()
+        : undefined);
     if (heading) {
       currentSection = { ...heading, lines: [] };
       sections.push(currentSection);
@@ -496,6 +558,67 @@ function appendSectionContent(
   }
 }
 
+function mergeContactLines(data: CvRecord, lines: string[]): string[] {
+  const contact = asRecord(data.contact);
+  const fieldAliases: Record<string, string> = {
+    email: "email",
+    mail: "email",
+    courriel: "email",
+    phone: "phone",
+    telephone: "phone",
+    mobile: "phone",
+    tel: "phone",
+    address: "location",
+    adresse: "location",
+    location: "location",
+    localisation: "location",
+    city: "location",
+    linkedin: "linkedin",
+    github: "github",
+    portfolio: "portfolio",
+    website: "portfolio",
+    siteweb: "portfolio",
+  };
+  const unmatched: string[] = [];
+
+  for (const line of lines) {
+    const labeledValue = line.match(/^([^:：]{1,40})\s*[:：]\s*(.+)$/);
+    let field = labeledValue ? fieldAliases[normalizeKey(labeledValue[1])] : undefined;
+    let value = labeledValue?.[2]?.trim() || "";
+
+    if (!field) {
+      const email = line.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/);
+      const url = line.match(/https?:\/\/\S+/i);
+      if (email) {
+        field = "email";
+        value = email[0];
+      } else if (url) {
+        const normalizedUrl = url[0].toLowerCase();
+        field = normalizedUrl.includes("linkedin")
+          ? "linkedin"
+          : normalizedUrl.includes("github")
+            ? "github"
+            : "portfolio";
+        value = url[0];
+      }
+    }
+
+    if (!field || !value) {
+      unmatched.push(line);
+      continue;
+    }
+
+    const currentValues = textValue(contact[field])
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    contact[field] = mergeUnique(currentValues, [value]).join("\n");
+  }
+
+  data.contact = contact;
+  return unmatched;
+}
+
 export function mapImportedCvData(
   input: unknown,
   originalText = "",
@@ -505,7 +628,7 @@ export function mapImportedCvData(
   const sourceKeys = Object.keys(source);
 
   for (const key of sourceKeys) {
-    const canonical = SECTION_ALIASES[normalizeKey(key)];
+    const canonical = resolveSectionKey(key);
     if (canonical && source[canonical] == null) {
       data[canonical] = source[key];
     }
@@ -527,7 +650,7 @@ export function mapImportedCvData(
   };
 
   const experienceAliases = sourceKeys
-    .filter((key) => SECTION_ALIASES[normalizeKey(key)] === "experience")
+    .filter((key) => resolveSectionKey(key) === "experience")
     .map((key) => normalizeExperience(source[key]));
   data.experience = mergeUnique(
     normalizeExperience(source.experience),
@@ -536,32 +659,39 @@ export function mapImportedCvData(
   data.education = mergeUnique(
     normalizeRecords(source.education, "education"),
     ...sourceKeys
-      .filter((key) => SECTION_ALIASES[normalizeKey(key)] === "education")
+      .filter((key) => resolveSectionKey(key) === "education")
       .map((key) => normalizeRecords(source[key], "education")),
   );
   data.skills = skillEntries(source.skills);
-  for (const key of sourceKeys.filter((item) => SECTION_ALIASES[normalizeKey(item)] === "skills")) {
+  for (const key of sourceKeys.filter((item) => resolveSectionKey(item) === "skills")) {
     data.skills = mergeUnique(data.skills as string[], skillEntries(source[key]));
   }
   data.languages = mergeUnique(
     normalizeRecords(source.languages, "languages"),
     ...sourceKeys
-      .filter((key) => SECTION_ALIASES[normalizeKey(key)] === "languages")
+      .filter((key) => resolveSectionKey(key) === "languages")
       .map((key) => normalizeRecords(source[key], "languages")),
   );
   data.projects = mergeUnique(
     normalizeRecords(source.projects, "projects"),
     ...sourceKeys
-      .filter((key) => SECTION_ALIASES[normalizeKey(key)] === "projects")
+      .filter((key) => resolveSectionKey(key) === "projects")
       .map((key) => normalizeRecords(source[key], "projects")),
   );
   data.interests = mergeUnique(
     sectionEntries(source.interests),
     ...sourceKeys
-      .filter((key) => SECTION_ALIASES[normalizeKey(key)] === "interests")
+      .filter((key) => resolveSectionKey(key) === "interests")
       .map((key) => sectionEntries(source[key]))
   );
 
+  const sourceHeaders = Object.fromEntries(
+    Object.entries(asRecord(source.headers)).filter(([key, title]) => {
+      const canonical = resolveSectionKey(key) ||
+        (typeof title === "string" ? resolveSectionKey(title) : undefined);
+      return !canonical || canonical === key;
+    }),
+  );
   const headers: CvRecord = {
     summary: "Profil",
     experience: "Expérience",
@@ -570,10 +700,14 @@ export function mapImportedCvData(
     skills: "Compétences",
     languages: "Langues",
     contact: "Contact",
-    ...asRecord(source.headers),
+    ...sourceHeaders,
   };
   const sectionOrder = Array.isArray(source.sectionOrder)
-    ? source.sectionOrder.filter((key): key is string => typeof key === "string")
+    ? mergeUnique(
+        source.sectionOrder
+          .filter((key): key is string => typeof key === "string")
+          .map((key) => resolveSectionKey(key) || key),
+      )
     : ["summary", "experience", "education", "projects", "skills", "languages", "contact"];
   if (hasSectionContent(data.contact) && !sectionOrder.includes("contact")) {
     sectionOrder.push("contact");
@@ -584,7 +718,7 @@ export function mapImportedCvData(
   ]);
   for (const key of sourceKeys) {
     const normalized = normalizeKey(key);
-    if (knownFields.has(normalized) || !key.trim() || key.startsWith("_")) continue;
+    if (knownFields.has(normalized) || resolveSectionKey(key) || !key.trim() || key.startsWith("_")) continue;
     const lines = sectionEntries(source[key]);
     if (!lines.length) continue;
     headers[key] = textValue(headers[key]) || key.replace(/[_-]+/g, " ");
@@ -605,12 +739,13 @@ export function mapImportedCvData(
       }
     }
     if (section.key === "contact") {
+      const unmatchedContactLines = mergeContactLines(data, unmatchedLines);
       appendSectionContent(
         data,
         headers,
         sectionOrder,
         { key: "additionalSections", title: "Autres informations", lines: [] },
-        unmatchedLines,
+        unmatchedContactLines,
       );
     } else {
       appendSectionContent(data, headers, sectionOrder, section, unmatchedLines);
