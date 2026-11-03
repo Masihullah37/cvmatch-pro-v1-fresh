@@ -473,7 +473,7 @@ const ProjectsSection = ({ headerClass, itemClass, projects: sectionProjects, is
       {iact ? (
         <DndContext sensors={projSensors} collisionDetection={closestCenter} onDragEnd={handleProjDragEnd}>
           <SortableContext items={projIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-4 mt-3">
+            <div className="space-y-3 mt-3">
               {projList.map((proj: any, i: number) => (
                 <DraggableEntryInteractive key={projIds[i]} id={projIds[i]} className={`${itemClass} break-inside-avoid-page`}>
                   <p className="font-bold break-words"><InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={iact} onUpdate={upd} /></p>
@@ -489,7 +489,7 @@ const ProjectsSection = ({ headerClass, itemClass, projects: sectionProjects, is
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="space-y-4 mt-3">
+        <div className="space-y-3 mt-3">
           {projList.map((proj: any, i: number) => (
             <div key={i} className={`${itemClass} break-inside-avoid-page`}>
               <p className="font-bold break-words"><InlineEdit value={proj.name} path={`projects.${i}.name`} isInteractive={iact} onUpdate={upd} /></p>
@@ -540,11 +540,11 @@ const ExperienceSection = ({ headerClass, experiences: sectionExperiences, isInt
       {iact ? (
         <DndContext sensors={entrySensors} collisionDetection={closestCenter} onDragEnd={handleEntryDragEnd}>
           <SortableContext items={entryIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-10">
+            <div className="space-y-6">
               {expList.map((exp: any, i: number) => (
                 <DraggableEntryInteractive key={entryIds[i]} id={entryIds[i]} className="flex gap-6 relative break-inside-avoid-page">
                   <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
-                  <div className="flex-1 pb-4 min-w-0">
+                  <div className="flex-1 pb-2 min-w-0">
                     <div className="flex justify-between items-start mb-2 gap-4">
                       <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={iact} onUpdate={upd} /></h4>
                       <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right"><InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={iact} onUpdate={upd} /></p>
@@ -558,11 +558,11 @@ const ExperienceSection = ({ headerClass, experiences: sectionExperiences, isInt
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-6">
           {expList.map((exp: any, i: number) => (
             <div key={i} className="flex gap-6 relative break-inside-avoid-page">
               <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
-              <div className="flex-1 pb-4 min-w-0">
+              <div className="flex-1 pb-2 min-w-0">
                 <div className="flex justify-between items-start mb-2 gap-4">
                   <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={iact} onUpdate={upd} /></h4>
                   <p className="flex-[0.8] min-w-0 text-[12px] font-black text-slate-700 break-words text-right"><InlineEdit value={exp.title} path={`experience.${i}.title`} isInteractive={iact} onUpdate={upd} /></p>
@@ -609,11 +609,11 @@ const EducationSection = ({ headerClass, education: sectionEducation, isInteract
       {iact ? (
         <DndContext sensors={eduSensors} collisionDetection={closestCenter} onDragEnd={handleEduDragEnd}>
           <SortableContext items={eduIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-8">
+            <div className="space-y-5">
               {eduList.map((e: any, i: number) => (
                 <DraggableEntryInteractive key={eduIds[i]} id={eduIds[i]} className="flex gap-6 relative break-inside-avoid-page">
                   <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
-                  <div className="flex-1 pb-4 min-w-0">
+                  <div className="flex-1 pb-2 min-w-0">
                     <div className="flex flex-col sm:flex-row justify-between items-start mb-2 gap-1 sm:gap-4 min-w-0">
                       <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={e.school} path={`education.${i}.school`} isInteractive={iact} onUpdate={upd} /></h4>
                       <p className="flex-1 min-w-0 text-[12px] font-black text-slate-700 break-words sm:text-right"><InlineEdit value={e.degree} path={`education.${i}.degree`} isInteractive={iact} onUpdate={upd} /></p>
@@ -627,11 +627,11 @@ const EducationSection = ({ headerClass, education: sectionEducation, isInteract
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-5">
           {eduList.map((e: any, i: number) => (
             <div key={i} className="flex gap-6 relative break-inside-avoid-page">
               <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
-              <div className="flex-1 pb-4 min-w-0">
+              <div className="flex-1 pb-2 min-w-0">
                 <div className="flex flex-col sm:flex-row justify-between items-start mb-2 gap-1 sm:gap-4 min-w-0">
                   <h4 className="flex-1 min-w-0 text-[13px] font-black text-slate-900 uppercase break-words"><InlineEdit value={e.school} path={`education.${i}.school`} isInteractive={iact} onUpdate={upd} /></h4>
                   <p className="flex-1 min-w-0 text-[12px] font-black text-slate-700 break-words sm:text-right"><InlineEdit value={e.degree} path={`education.${i}.degree`} isInteractive={iact} onUpdate={upd} /></p>
@@ -1319,7 +1319,7 @@ export const CVRenderer = ({
                           <SectionTitle sectionKey="experience" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
                           <DraggableEntryList section="experience" items={experiences} isInteractive={isInteractive} onUpdate={onUpdate}>
                             {(exp: any, i: number) => (
-                            <div className="mb-6">
+                            <div className="mb-4">
                               <p className="font-black text-base break-words">
                                 <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 {" | "}
@@ -2649,7 +2649,7 @@ export const CVRenderer = ({
                           </h3>
                           <div className="relative pl-5">
                             <div className="absolute left-[5px] top-1 bottom-1 w-px bg-slate-300" />
-                            <div className="space-y-5">
+                            <div className="space-y-4">
                               <DraggableEntryList section="experience" items={experiences} isInteractive={isInteractive} onUpdate={onUpdate}>
                                 {(exp: any, i: number) => (
                                 <div className="relative">
@@ -3109,7 +3109,7 @@ export const CVRenderer = ({
                           <h3 className="text-sm font-black text-slate-800 border-b-2 border-slate-200 pb-1 mb-5 uppercase tracking-wide">
                             <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-6">
+                          <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-5">
                             {(exp: any, i: number) => (
                               <div className="flex gap-4">
                                 <div className="flex flex-col items-center shrink-0">
@@ -3290,7 +3290,7 @@ export const CVRenderer = ({
                           <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-4">
                             <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-5">
+                          <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-4">
                             {(exp: any, i: number) => (
                               <div>
                                 <p className="text-[10px] font-black text-[#2c2c2c] uppercase tracking-wide break-words">

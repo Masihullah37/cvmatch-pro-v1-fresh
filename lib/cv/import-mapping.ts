@@ -13,6 +13,7 @@ const SECTION_ALIASES: Record<string, string> = {
   employment: "experience",
   workhistory: "experience",
   careerhistory: "experience",
+  jobhistory: "experience",
   professionalhistory: "experience",
   relevantexperience: "experience",
   careerexperience: "experience",
@@ -27,6 +28,7 @@ const SECTION_ALIASES: Record<string, string> = {
   formation: "education",
   competencies: "skills",
   corecompetencies: "skills",
+  skillsandcompetencies: "skills",
   keycompetencies: "skills",
   coreskills: "skills",
   technicalskills: "skills",
@@ -278,13 +280,221 @@ function normalizeRecords(
 
 const SOURCE_SECTION_HEADINGS = new Set([
   "profile", "summary", "professional summary", "about", "objective",
-  "experience", "professional experience", "work experience", "work history",
-  "employment history", "career history", "education", "academic background",
+  "career summary", "experience", "professional experience", "work experience",
+  "work history", "job history", "employment history", "career history",
+  "education", "academic background",
   "training", "skills", "competencies", "core competencies", "technical skills",
-  "expertise", "languages", "projects", "interests", "hobbies", "contact",
-  "certifications", "certificates", "awards", "publications", "volunteering",
-  "references", "professional development",
+  "skills and competencies", "expertise", "technical proficiencies", "languages",
+  "projects", "interests", "hobbies", "contact", "certification",
+  "certifications", "certificates", "licenses", "achievements",
+  "key achievements", "awards", "publications", "volunteer experience",
+  "volunteering", "references", "professional development",
 ]);
+
+const SECTION_SYNONYMS: Record<string, string> = {
+  built: "developed",
+  created: "developed",
+  engineered: "developed",
+  implemented: "developed",
+  managed: "led",
+  oversaw: "led",
+  supervised: "led",
+  directed: "led",
+  duties: "responsibilities",
+  tasks: "responsibilities",
+  responsibilities: "responsibility",
+  clients: "customer",
+  customers: "customer",
+  applications: "software",
+  systems: "system",
+  improved: "improve",
+  increased: "improve",
+  boosted: "improve",
+  reduced: "reduce",
+  decreased: "reduce",
+  certificates: "certification",
+  certifications: "certification",
+  awards: "award",
+  honours: "award",
+  honors: "award",
+  qualifications: "qualification",
+  degrees: "qualification",
+  employment: "experience",
+  career: "experience",
+  work: "experience",
+};
+
+const SEMANTIC_STOP_WORDS = new Set([
+  "a", "an", "and", "at", "by", "for", "from", "in", "into", "of", "on",
+  "or", "the", "to", "via", "with", "as", "is", "was", "were", "this",
+  "that", "their", "our", "your", "his", "her", "its", "i", "we", "they",
+  "he", "she", "it", "you", "me", "my", "be", "been", "being", "have",
+  "has", "had", "do", "does", "did", "responsible", "using",
+]);
+
+interface SourceSection {
+  key: string;
+  title: string;
+  lines: string[];
+}
+
+function semanticTokens(value: string): Set<string> {
+  return new Set(
+    normalizeText(value)
+      .split(/\s+/)
+      .filter((token) => token.length > 1 && !SEMANTIC_STOP_WORDS.has(token))
+      .map((token) => SECTION_SYNONYMS[token] || token),
+  );
+}
+
+function isSemanticallyRepresented(candidate: string, values: string[]): boolean {
+  const candidateText = normalizeText(candidate);
+  if (!candidateText) return true;
+
+  const candidateTokens = semanticTokens(candidate);
+  for (const value of values) {
+    const representedText = normalizeText(value);
+    if (!representedText) continue;
+    if (` ${representedText} `.includes(` ${candidateText} `)) {
+      return true;
+    }
+
+    const representedTokens = semanticTokens(value);
+    const smallerSet = candidateTokens.size <= representedTokens.size
+      ? candidateTokens
+      : representedTokens;
+    const largerSet = candidateTokens.size <= representedTokens.size
+      ? representedTokens
+      : candidateTokens;
+    if (smallerSet.size < 2) continue;
+    const shared = [...smallerSet].filter((token) => largerSet.has(token)).length;
+    if (shared >= 2 && shared / smallerSet.size >= 0.75) return true;
+  }
+  return false;
+}
+
+function collectTextFragments(value: unknown): string[] {
+  if (typeof value === "string" || typeof value === "number") {
+    const text = String(value).trim();
+    return text ? [text] : [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(collectTextFragments);
+  }
+  if (value && typeof value === "object") {
+    const record = value as CvRecord;
+    const values = Object.values(record).flatMap(collectTextFragments);
+    const combined = values.join(" ");
+    return combined ? [combined, ...values] : values;
+  }
+  return [];
+}
+
+function cleanSourceLine(line: string): string {
+  return line
+    .replace(/^[\s•●▪◦\-–—*]+/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseSourceSections(text: string, source: CvRecord): SourceSection[] {
+  const headingMap = new Map<string, { key: string; title: string }>();
+
+  for (const [heading, key] of Object.entries(SECTION_ALIASES)) {
+    headingMap.set(normalizeText(heading), { key, title: heading });
+  }
+  for (const heading of SOURCE_SECTION_HEADINGS) {
+    const normalized = normalizeKey(heading);
+    const key = SECTION_ALIASES[normalized] || normalized;
+    headingMap.set(normalizeText(heading), { key, title: heading });
+  }
+  for (const [key, title] of Object.entries(asRecord(source.headers))) {
+    if (typeof title === "string") {
+      headingMap.set(normalizeText(title), { key, title });
+    }
+  }
+  for (const key of Object.keys(source)) {
+    if (RESERVED_KEYS.has(normalizeKey(key)) || key.startsWith("_")) continue;
+    headingMap.set(normalizeText(key.replace(/[_-]+/g, " ")), {
+      key,
+      title: key.replace(/[_-]+/g, " "),
+    });
+  }
+
+  const sections: SourceSection[] = [];
+  let currentSection: SourceSection = {
+    key: "additionalSections",
+    title: "Autres informations",
+    lines: [],
+  };
+  sections.push(currentSection);
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = cleanSourceLine(rawLine);
+    if (!line) continue;
+    const heading = headingMap.get(normalizeText(line));
+    if (heading) {
+      currentSection = { ...heading, lines: [] };
+      sections.push(currentSection);
+    } else {
+      currentSection.lines.push(line);
+    }
+  }
+
+  return sections.filter((section) => section.lines.length > 0);
+}
+
+function appendSectionContent(
+  data: CvRecord,
+  headers: CvRecord,
+  sectionOrder: string[],
+  section: SourceSection,
+  lines: string[],
+): void {
+  if (!lines.length) return;
+  const uniqueLines = mergeUnique(lines);
+  if (!uniqueLines.length) return;
+
+  switch (section.key) {
+    case "summary":
+      data.summary = [textValue(data.summary), ...uniqueLines].filter(Boolean).join("\n");
+      return;
+    case "skills":
+      data.skills = mergeUnique(skillEntries(data.skills), skillEntries(uniqueLines));
+      return;
+    case "experience":
+      data.experience = [
+        ...normalizeExperience(data.experience),
+        { title: "", company: "", period: "", description: uniqueLines.join("\n") },
+      ];
+      return;
+    case "education":
+      data.education = [
+        ...normalizeRecords(data.education, "education"),
+        { degree: "", school: "", year: "", details: uniqueLines.join("\n") },
+      ];
+      return;
+    case "languages":
+      data.languages = mergeUnique(
+        normalizeRecords(data.languages, "languages"),
+        normalizeRecords(uniqueLines, "languages"),
+      );
+      return;
+    case "projects":
+      data.projects = [
+        ...normalizeRecords(data.projects, "projects"),
+        { name: "", description: uniqueLines.join("\n"), technologies: [] },
+      ];
+      return;
+    case "interests":
+      data.interests = mergeUnique(sectionEntries(data.interests), uniqueLines);
+      return;
+    default:
+      data[section.key] = mergeUnique(sectionEntries(data[section.key]), uniqueLines);
+      headers[section.key] = textValue(headers[section.key]) || section.title;
+      if (!sectionOrder.includes(section.key)) sectionOrder.push(section.key);
+  }
+}
 
 export function mapImportedCvData(
   input: unknown,
@@ -382,47 +592,47 @@ export function mapImportedCvData(
     data[key] = lines;
   }
 
-  const additionalLines = sectionEntries(source.additionalSections);
-  const representedText = normalizeText(
-    JSON.stringify({
-      userName: data.userName,
-      jobTitle: data.jobTitle,
-      summary: data.summary,
-      contact: data.contact,
-      experience: data.experience,
-      education: data.education,
-      skills: data.skills,
-      languages: data.languages,
-      projects: data.projects,
-      interests: data.interests,
-      custom: sourceKeys
-        .filter((key) => !knownFields.has(normalizeKey(key)))
-        .map((key) => data[key]),
-    }),
-  );
-  const residualLines = originalText
-    .split(/\r?\n/)
-    .map((line) => line.replace(/^[\s•●▪◦\-–—*]+/, "").trim())
-    .filter((line) => {
-      if (line.length < 3) return false;
-      const normalized = normalizeText(line);
-      const sourceKey = normalizeKey(line);
-      const canonical = SECTION_ALIASES[sourceKey] || sourceKey;
-      const isHeading = SOURCE_SECTION_HEADINGS.has(normalized);
-      const headingAlreadyMapped = isHeading && (
-        (canonical in data && hasSectionContent(data[canonical])) ||
-        (canonical === "contact" && hasSectionContent(data.contact)) ||
-        sourceKeys.some((key) => normalizeKey(key) === sourceKey && hasSectionContent(data[key]))
+  const representedContent = (excludeKey?: string) =>
+    Object.entries(data)
+      .filter(([key]) => !key.startsWith("_") && key !== excludeKey)
+      .flatMap(([, value]) => collectTextFragments(value));
+
+  for (const section of parseSourceSections(originalText, source)) {
+    const unmatchedLines: string[] = [];
+    for (const line of section.lines) {
+      if (!isSemanticallyRepresented(line, [...representedContent(), ...unmatchedLines])) {
+        unmatchedLines.push(line);
+      }
+    }
+    if (section.key === "contact") {
+      appendSectionContent(
+        data,
+        headers,
+        sectionOrder,
+        { key: "additionalSections", title: "Autres informations", lines: [] },
+        unmatchedLines,
       );
-      return normalized.length > 2 &&
-        !headingAlreadyMapped &&
-        !representedText.includes(normalized);
-    });
-  const preservedAdditional = mergeUnique(additionalLines, residualLines);
-  if (preservedAdditional.length) {
-    data.additionalSections = preservedAdditional;
+    } else {
+      appendSectionContent(data, headers, sectionOrder, section, unmatchedLines);
+    }
+  }
+
+  const uniqueAdditional: string[] = [];
+  const existingContent = representedContent("additionalSections");
+  for (const line of sectionEntries(data.additionalSections)) {
+    if (!isSemanticallyRepresented(line, [...existingContent, ...uniqueAdditional])) {
+      uniqueAdditional.push(line);
+    }
+  }
+  if (uniqueAdditional.length) {
+    data.additionalSections = uniqueAdditional;
     headers.additionalSections = textValue(headers.additionalSections) || "Autres informations";
     if (!sectionOrder.includes("additionalSections")) sectionOrder.push("additionalSections");
+  } else {
+    delete data.additionalSections;
+    delete headers.additionalSections;
+    const additionalIndex = sectionOrder.indexOf("additionalSections");
+    if (additionalIndex !== -1) sectionOrder.splice(additionalIndex, 1);
   }
 
   data.headers = headers;
