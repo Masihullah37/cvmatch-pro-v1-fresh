@@ -1,32 +1,63 @@
-import { createRequire } from 'module';
+import { createRequire } from "module";
+
 const require = createRequire(import.meta.url);
+
+export type CVFileType = "pdf" | "doc" | "docx";
+
+const PDF_SIGNATURE = Buffer.from("%PDF");
+const DOC_SIGNATURE = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+
+export function getCVFileType(buffer: Buffer, filename: string): CVFileType {
+  const cleanPath = filename.toLowerCase().split(/[?#]/, 1)[0].replace(/[\\/]+$/, "");
+  const filenameOnly = cleanPath.slice(Math.max(cleanPath.lastIndexOf("/"), cleanPath.lastIndexOf("\\")) + 1);
+  const extensionIndex = filenameOnly.lastIndexOf(".");
+  const extension = extensionIndex >= 0 ? filenameOnly.slice(extensionIndex) : "";
+
+  if (extension === ".pdf") {
+    if (!buffer.subarray(0, PDF_SIGNATURE.length).equals(PDF_SIGNATURE)) {
+      throw new Error("Le fichier PDF est invalide ou endommagé.");
+    }
+    return "pdf";
+  }
+
+  if (extension === ".docx") {
+    if (buffer.length < 4 || buffer.subarray(0, 2).toString("ascii") !== "PK") {
+      throw new Error("Le fichier Word .docx est invalide ou endommagé.");
+    }
+    return "docx";
+  }
+
+  if (extension === ".doc") {
+    if (buffer.length < DOC_SIGNATURE.length || !buffer.subarray(0, DOC_SIGNATURE.length).equals(DOC_SIGNATURE)) {
+      throw new Error("Le fichier Word .doc est invalide ou endommagé.");
+    }
+    return "doc";
+  }
+
+  if (!extension && buffer.subarray(0, PDF_SIGNATURE.length).equals(PDF_SIGNATURE)) {
+    return "pdf";
+  }
+
+  throw new Error("Format de fichier non pris en charge. Importez un fichier PDF, .doc ou .docx.");
+}
 
 export async function parseCVFile(buffer: Buffer, filename: string): Promise<string> {
   try {
-    const fileExt = filename.toLowerCase();
-    
-    // Detect PDF and DOCX using magic bytes
-    const isPdf = buffer.length >= 4 && buffer.slice(0, 4).toString('ascii') === '%PDF';
-    const isDocx = buffer.length >= 2 && buffer.slice(0, 2).toString('ascii') === 'PK';
+    const fileType = getCVFileType(buffer, filename);
 
-    if (fileExt.endsWith('.pdf') || isPdf) {
-      console.log(`Parsing PDF: ${filename} (isPdf: ${isPdf}), Buffer length: ${buffer.length}`);
-      
-      const PDFParser = require('pdf2json');
+    if (fileType === "pdf") {
+      const PDFParser = require("pdf2json");
       const pdfParser = new (PDFParser.default || PDFParser)(null, 1);
 
-      return new Promise((resolve, reject) => {
-        pdfParser.on("pdfParser_dataError", (errData: any) => {
-          console.error('pdf2json Error:', errData);
-          reject(new Error(errData.parserError || 'PDF parsing failed'));
+      return await new Promise((resolve, reject) => {
+        pdfParser.on("pdfParser_dataError", (errData: { parserError?: string }) => {
+          reject(new Error(errData.parserError || "Échec de l'extraction du texte du PDF."));
         });
-        
+
         pdfParser.on("pdfParser_dataReady", () => {
           const text = pdfParser.getRawTextContent();
-          console.log('PDF parsed successfully, text length:', text.length);
-          
-          if (!text || text.trim().length === 0) {
-            reject(new Error('PDF appears to be empty or contains only images. Please upload a text-based PDF.'));
+          if (!text || !text.trim()) {
+            reject(new Error("Le PDF ne contient pas de texte sélectionnable."));
           } else {
             resolve(text);
           }
@@ -36,26 +67,26 @@ export async function parseCVFile(buffer: Buffer, filename: string): Promise<str
       });
     }
 
-    if (fileExt.endsWith('.docx') || fileExt.endsWith('.doc') || isDocx) {
-      console.log(`Parsing Word document: ${filename} (isDocx: ${isDocx})`);
-      try {
-        const mammoth = require('mammoth');
-        const result = await mammoth.extractRawText({ buffer });
-        console.log('DOCX parsed, text length:', result.value?.length);
-        return result.value || '';
-      } catch (e: any) {
-        console.error('Mammoth error:', e);
-        throw new Error(`Failed to parse Word document: ${e.message}`);
+    if (fileType === "docx") {
+      const mammoth = require("mammoth");
+      const result = await mammoth.extractRawText({ buffer });
+      const text = result.value || "";
+      if (!text.trim()) {
+        throw new Error("Le document Word .docx ne contient aucun texte lisible.");
       }
+      return text;
     }
 
-    // Fallback: treat as plain text
-    const text = buffer.toString('utf-8');
-    console.log('Plain text fallback, length:', text.length);
+    const WordExtractor = require("word-extractor");
+    const document = await new WordExtractor().extract(buffer);
+    const text = document.getBody() || "";
+    if (!text.trim()) {
+      throw new Error("Le document Word .doc ne contient aucun texte lisible.");
+    }
     return text;
-
-  } catch (error: any) {
-    console.error('CV Parsing Error:', error?.message || error);
-    throw new Error(`Failed to parse CV: ${error?.message || 'Unknown error'}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erreur inconnue";
+    console.error("CV Parsing Error:", message);
+    throw new Error(`Impossible de lire le fichier CV : ${message}`);
   }
 }

@@ -540,7 +540,7 @@ const ExperienceSection = ({ headerClass, experiences: sectionExperiences, isInt
       {iact ? (
         <DndContext sensors={entrySensors} collisionDetection={closestCenter} onDragEnd={handleEntryDragEnd}>
           <SortableContext items={entryIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-6">
+            <div className="space-y-5">
               {expList.map((exp: any, i: number) => (
                 <DraggableEntryInteractive key={entryIds[i]} id={entryIds[i]} className="flex gap-6 relative break-inside-avoid-page">
                   <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
@@ -558,7 +558,7 @@ const ExperienceSection = ({ headerClass, experiences: sectionExperiences, isInt
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {expList.map((exp: any, i: number) => (
             <div key={i} className="flex gap-6 relative break-inside-avoid-page">
               <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
@@ -609,7 +609,7 @@ const EducationSection = ({ headerClass, education: sectionEducation, isInteract
       {iact ? (
         <DndContext sensors={eduSensors} collisionDetection={closestCenter} onDragEnd={handleEduDragEnd}>
           <SortableContext items={eduIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-5">
+            <div className="space-y-4">
               {eduList.map((e: any, i: number) => (
                 <DraggableEntryInteractive key={eduIds[i]} id={eduIds[i]} className="flex gap-6 relative break-inside-avoid-page">
                   <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
@@ -627,7 +627,7 @@ const EducationSection = ({ headerClass, education: sectionEducation, isInteract
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           {eduList.map((e: any, i: number) => (
             <div key={i} className="flex gap-6 relative break-inside-avoid-page">
               <div className="w-px bg-slate-200 relative"><div className="absolute top-2 -left-1 w-2.5 h-2.5 bg-[#3d3d3d] rounded-full"></div></div>
@@ -1317,9 +1317,9 @@ export const CVRenderer = ({
                       return (
                         <DraggableSection key={key} id="experience" isInteractive={isInteractive} onDelete={onDeleteSection}>
                           <SectionTitle sectionKey="experience" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
-                          <DraggableEntryList section="experience" items={experiences} isInteractive={isInteractive} onUpdate={onUpdate}>
+                          <DraggableEntryList section="experience" items={experiences} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-3">
                             {(exp: any, i: number) => (
-                            <div className="mb-4">
+                            <div className="mb-3">
                               <p className="font-black text-base break-words">
                                 <InlineEdit value={exp.company} path={`experience.${i}.company`} isInteractive={isInteractive} onUpdate={onUpdate} />
                                 {" | "}
@@ -1342,9 +1342,9 @@ export const CVRenderer = ({
                       return (
                         <DraggableSection key={key} id="education" isInteractive={isInteractive} onDelete={onDeleteSection}>
                           <SectionTitle sectionKey="education" className="text-sm font-black uppercase border-b border-gray-200 pb-2 mb-4" headers={headers} isInteractive={isInteractive} onUpdate={onUpdate} />
-                          <DraggableEntryList section="education" items={education} isInteractive={isInteractive} onUpdate={onUpdate}>
+                          <DraggableEntryList section="education" items={education} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-3">
                             {(edu: any, i: number) => (
-                            <div className="mb-4">
+                            <div className="mb-3">
                               <p className="font-black text-base break-words">
                                 <InlineEdit value={edu.degree} path={`education.${i}.degree`} isInteractive={isInteractive} onUpdate={onUpdate} />
                               </p>
@@ -2866,8 +2866,8 @@ export const CVRenderer = ({
                           <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 border-b-2 border-[#4ab5b0] pb-1 mb-4">
                             <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <div className="space-y-5">
-                            <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-5">
+                          <div className="space-y-4">
+                            <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-4">
                             {(exp: any, i: number) => (
                               <div className="flex gap-4 relative">
                                 <div className="w-px bg-slate-200 relative shrink-0">
@@ -3013,7 +3013,7 @@ export const CVRenderer = ({
                       <h3 className="text-xs font-black text-slate-800 border-b border-slate-500 pb-1 mb-3 uppercase tracking-wide">
                         <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
                       </h3>
-                      <DraggableEntryList section="education" items={education} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-4">
+                      <DraggableEntryList section="education" items={education} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-3">
                         {(edu: any, i: number) => (
                           <div className="flex flex-col gap-0.5 min-w-0 text-left">
                             {/* 1. Date ABOVE school */}
@@ -3109,7 +3109,7 @@ export const CVRenderer = ({
                           <h3 className="text-sm font-black text-slate-800 border-b-2 border-slate-200 pb-1 mb-5 uppercase tracking-wide">
                             <InlineEdit value={headers?.experience || "Expérience"} path="headers.experience" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-5">
+                          <DraggableEntryList section="experience" items={asRecordArray(experiences)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-4">
                             {(exp: any, i: number) => (
                               <div className="flex gap-4">
                                 <div className="flex flex-col items-center shrink-0">
@@ -3318,7 +3318,7 @@ export const CVRenderer = ({
                           <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2c2c2c] border-b border-[#c9b99a] pb-1 mb-4">
                             <InlineEdit value={headers?.education || "Formation"} path="headers.education" isInteractive={isInteractive} onUpdate={onUpdate} />
                           </h3>
-                          <DraggableEntryList section="education" items={asRecordArray(education)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-4">
+                          <DraggableEntryList section="education" items={asRecordArray(education)} isInteractive={isInteractive} onUpdate={onUpdate} className="space-y-3">
                             {(edu: any, i: number) => (
                               <div>
                                 <p className="text-[10px] font-black text-[#2c2c2c] uppercase tracking-wide break-words">
