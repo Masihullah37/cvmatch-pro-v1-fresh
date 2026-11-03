@@ -1745,7 +1745,7 @@ export default function TemplateGrid({
                 <div className="relative bg-slate-50 overflow-hidden" style={{ height: 320 }}>
                   <div className={`absolute inset-0 flex justify-center items-start pt-6`}>
                     {/* <div className="scale-[0.38] origin-top transform-gpu"> */}
-                    <div className="scale-[0.38] origin-top transform-gpu pointer-events-none">
+                    <div className="scale-[0.38] origin-top pointer-events-none">
                       <CVRenderer template={template} isPaid={hasPaid} analysisData={analysisData} />
                     </div>
                   </div>
@@ -1948,7 +1948,7 @@ export default function TemplateGrid({
                       >
                         <div style={{ height: 180 }} className="relative overflow-hidden">
                           <div className="absolute inset-0 flex justify-center items-start pt-2">
-                            <div className="scale-[0.24] origin-top transform-gpu pointer-events-none">
+                            <div className="scale-[0.24] origin-top pointer-events-none">
                               <CVRenderer template={{ ...t, templateData: editingData || t.templateData }} isPaid={true} analysisData={null} />
                             </div>
                           </div>
@@ -2022,7 +2022,7 @@ export default function TemplateGrid({
                 style={{ "--preview-scale": previewScale } as CSSProperties}
               >
                 <div
-                  className="relative bg-white shadow-2xl rounded-sm overflow-visible transform-gpu transition-all duration-300"
+                  className="relative bg-white shadow-2xl rounded-sm overflow-visible transition-all duration-300"
 
 
                   style={{
@@ -2038,7 +2038,7 @@ export default function TemplateGrid({
                     minWidth: forceDesktopPreview ? "calc(794px * var(--preview-scale, 1))" : undefined,
                   }}
                 >
-                  <div ref={previewContentRef} className="absolute left-0 top-0 w-[794px] transform-gpu flex justify-center" style={{ transform: "scale(var(--preview-scale, 1))", transformOrigin: 'top left' }}>
+                  <div ref={previewContentRef} className="absolute left-0 top-0 w-[794px] flex justify-center" style={{ transform: "scale(var(--preview-scale, 1))", transformOrigin: 'top left' }}>
                     <PinchZoomPreview>
                       <style>{`
                       .cv-live-preview .cv-printable { margin-left: 0 !important; margin-right: 0 !important; }

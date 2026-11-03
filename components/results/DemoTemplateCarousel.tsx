@@ -75,7 +75,7 @@ function TemplateCard({
         <div className="relative bg-slate-50 overflow-hidden flex justify-center h-full w-full">
           {isVisible ? (
             <div className="absolute inset-0 flex justify-center items-start pt-4">
-              <div className="scale-[0.25] sm:scale-[0.28] origin-top transform-gpu pointer-events-none transition-transform">
+              <div className="scale-[0.25] sm:scale-[0.28] origin-top pointer-events-none transition-transform">
                 <CVRenderer template={template} isPaid={true} analysisData={null} />
               </div>
             </div>
