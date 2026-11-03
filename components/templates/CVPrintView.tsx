@@ -3,6 +3,12 @@
 import React, { useRef, useState, useLayoutEffect, useEffect } from "react";
 import CVRenderer from "./CVRenderer";
 
+export function getPrintDensityRange(userFontScale: number): { min: number; max: number } {
+  const requestedScale = Number.isFinite(userFontScale) ? userFontScale : 1;
+  const max = Math.max(0.85, Math.min(1.15, requestedScale));
+  return { min: Math.min(1, max), max };
+}
+
 const CVPrintView = ({ template }: { template: any }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -26,8 +32,7 @@ const CVPrintView = ({ template }: { template: any }) => {
     const userFontScale =
       template?.templateData?.displaySettings?.fontScale ?? 1;
 
-    const MIN_DENSITY = 0.85;
-    const MAX_DENSITY = userFontScale;
+    const { min: MIN_DENSITY, max: MAX_DENSITY } = getPrintDensityRange(userFontScale);
 
     // A4 height is approximately 1122.5px at 96 DPI.
     // Keep a 4.5px safety buffer to prevent sub-pixel rounding from
@@ -66,9 +71,9 @@ const CVPrintView = ({ template }: { template: any }) => {
      * Pass 1:
      * Find the largest density that allows the content to fit on one page.
      *
-     * If the content cannot fit even at MIN_DENSITY, the binary search
-     * naturally leaves us at MIN_DENSITY and the CV is allowed to flow
-     * onto multiple pages.
+     * Auto-fitting does not reduce text below its normal size. A smaller
+     * density is used only when the user explicitly selected it.
+     * If the content cannot fit at that density, it flows onto more pages.
      */
     let low = MIN_DENSITY;
     let high = Math.max(MIN_DENSITY, MAX_DENSITY);
@@ -94,13 +99,13 @@ const CVPrintView = ({ template }: { template: any }) => {
      * If the CV fits on one page, grow the density back up so the page
      * is used efficiently instead of leaving excessive blank space.
      *
-     * The maximum remains 1.15, matching the supported font-scale range.
+     * The user's selected font scale remains the upper limit.
      *
      * If the CV requires multiple pages, this pass does not force it to
-     * fit onto one page; the readable MIN_DENSITY is preserved and the
+     * fit onto one page; the selected density is preserved and the
      * content is allowed to flow naturally across pages.
      */
-    const FILL_CEILING = 1.15;
+    const FILL_CEILING = MAX_DENSITY;
 
     if (el.scrollHeight <= TARGET_HEIGHT && best < FILL_CEILING) {
       let fillLow = best;

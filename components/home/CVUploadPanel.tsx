@@ -32,6 +32,7 @@ export default function CVUploadPanel({
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
     },
     maxFiles: 1
@@ -127,7 +128,7 @@ export default function CVUploadPanel({
               <div className="text-center space-y-2 px-2">
                 <h3 className="font-black text-slate-900 text-lg sm:text-xl tracking-tight">Glissez votre CV ici</h3>
                 <p className="text-xs sm:text-sm font-medium text-slate-400 max-w-[280px] mx-auto leading-relaxed">
-                  Ou cliquez pour parcourir vos dossiers. PDF ou DOCX acceptés.
+                  Ou cliquez pour parcourir vos dossiers. PDF, DOC ou DOCX acceptés.
                 </p>
               </div>
             )}

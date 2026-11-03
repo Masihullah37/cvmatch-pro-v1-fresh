@@ -51,6 +51,7 @@ import PageOverflowWarning from "@/components/editor/PageOverflowWarning";
 import CVRenderer from "./CVRenderer";
 import { toast } from "sonner";
 import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";
+import { removeArrayItemAt } from "@/lib/cv/array-utils";
 import OuiCVLoader from "../common/OuiCVLoader";
 import PinchZoomPreview from "@/components/templates/PinchZoomPreview";
 interface Template {
@@ -450,10 +451,12 @@ const EditorContent = ({
             setConfirmingDelete={setConfirmingDelete}
             deleteSection={deleteSection}
           />
-          <div className="space-y-4">
+          <div className="space-y-3">
             {asRecordArray(editingData?.experience).map((exp: any, idx: number) => (
               <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm relative group/item">
                 <button
+                  type="button"
+                  aria-label="Supprimer cette expérience"
                   onClick={() => removeArr("experience", idx)}
                   className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors"
                 >
@@ -494,10 +497,10 @@ const EditorContent = ({
             setConfirmingDelete={setConfirmingDelete}
             deleteSection={deleteSection}
           />
-          <div className="space-y-4">
+          <div className="space-y-3">
             {asRecordArray(editingData?.education).map((edu: any, idx: number) => (
               <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm relative">
-                <button onClick={() => removeArr("education", idx)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500">
+                <button type="button" aria-label="Supprimer cette formation" onClick={() => removeArr("education", idx)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500">
                   <Trash2 size={16} />
                 </button>
                 <div>
@@ -1527,7 +1530,7 @@ export default function TemplateGrid({
       const safeArr = Array.isArray(prev[section]) ? prev[section] : [];
       return {
         ...prev,
-        [section]: safeArr.filter((_: any, i: number) => i !== idx),
+        [section]: removeArrayItemAt(safeArr, idx),
       };
     }), []);
 

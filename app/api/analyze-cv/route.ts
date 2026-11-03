@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { cvAnalyses, users } from "@/lib/db/schema";
 import { redis } from "@/lib/rate-limit/upstash";
 import { analyzeCV, extractRawCVData } from "@/lib/ai/ats-analyzer";
-import { parseCVFile } from "@/lib/ai/cv-parser";
+import { getCVFileType, parseCVFile } from "@/lib/ai/cv-parser";
 import { isUrl, scrapeJobDescription, extractStructuredJobDetails } from "@/lib/utils/scraper";
 import { detectATSPlatform, evaluateCVCompatibility } from "@/lib/ats-detection";
 import { z } from "zod";
@@ -302,16 +302,42 @@ export async function POST(req: Request) {
       }
 
       const buffer = Buffer.from(arrayBuffer);
-      cvText = await parseCVFile(buffer, cvName || cvUrl);
+      const filename = cvName || cvUrl;
+      let fileType: ReturnType<typeof getCVFileType>;
+      try {
+        fileType = getCVFileType(buffer, filename);
+        cvText = await parseCVFile(buffer, filename);
+      } catch (error) {
+        await incrementFailCount(hashedIp, isPaid);
+        await refundAtsScanAttempt(rateLimitRefundInfo);
+        return NextResponse.json(
+          {
+            error: error instanceof Error
+              ? error.message
+              : "Le fichier CV est invalide ou ne peut pas être lu.",
+            reason: "file_parsing_failed",
+          },
+          { status: 400 },
+        );
+      }
+
+      if (!cvText || cvText.trim().length < 50) {
+        await incrementFailCount(hashedIp, isPaid);
+        await refundAtsScanAttempt(rateLimitRefundInfo);
+        const error = fileType === "pdf"
+          ? "Ce PDF ne contient pas suffisamment de texte sélectionnable pour l'analyse. Essayez un PDF contenant du texte plutôt qu'une image."
+          : "Ce document Word ne contient pas suffisamment de texte lisible pour l'analyse. Vérifiez le contenu du fichier et réessayez.";
+        return NextResponse.json({ error, reason: "insufficient_cv_text" }, { status: 400 });
+      }
     } else if (profileDescription) {
       cvText = profileDescription;
     }
 
-    if (!cvText || cvText.trim().length < 50) {
+    if (!cvUrl && (!cvText || cvText.trim().length < 50)) {
       await incrementFailCount(hashedIp, isPaid);
       await refundAtsScanAttempt(rateLimitRefundInfo);
       return NextResponse.json(
-        { error: "Ce CV semble contenir du texte non sélectionnable, ce qui arrive souvent avec les exports gratuits ou filigranés des générateurs de CV. Essayez d'exporter votre CV depuis Word ou d'utiliser un PDF sans filigrane." },
+        { error: "La description de profil est trop courte pour être analysée. Ajoutez davantage de détails sur votre parcours et vos compétences." },
         { status: 400 },
       );
     }
