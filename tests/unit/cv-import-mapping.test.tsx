@@ -135,6 +135,53 @@ describe("CV import mapping", () => {
     expect(mapped.additionalSections).toBeUndefined();
   });
 
+  it("removes repeated document-layout artifacts from experience content", () => {
+    const mapped = mapImportedCvData({
+      experience: [{
+        title: "Engineer",
+        description: [
+          "Built reliable systems for customers",
+          "EMAIL Téléphone LOCALISATION Page (0) Break ----------",
+          "----------",
+          "Break",
+        ].join("\n"),
+      }],
+    });
+
+    expect(mapped.experience).toEqual([
+      expect.objectContaining({
+        description: "Built reliable systems for customers",
+      }),
+    ]);
+  });
+
+  it("keeps each imported project exact instead of merging altered optimizer output", () => {
+    const importedProjects = [
+      {
+        name: "Inventory Platform",
+        description: "Built a stock forecasting service for regional warehouses.",
+        technologies: ["Python", "PostgreSQL"],
+      },
+      {
+        name: "Customer Portal",
+        description: "Created a self-service portal for enterprise customers.",
+        technologies: ["TypeScript", "React"],
+      },
+    ];
+    const preserved = preserveImportedCvContent(
+      { userName: "Alex Morgan", projects: importedProjects },
+      {
+        userName: "Alex Morgan",
+        projects: [
+          { ...importedProjects[0], description: importedProjects[1].description },
+          { ...importedProjects[1], description: importedProjects[0].description },
+        ],
+      },
+    );
+
+    expect(preserved.projects).toEqual(importedProjects);
+  });
+
   it("maps section headings by purpose when their wording differs from template headings", () => {
     const mapped = mapImportedCvData(
       { userName: "Alex Morgan", skills: [], experience: [], education: [] },

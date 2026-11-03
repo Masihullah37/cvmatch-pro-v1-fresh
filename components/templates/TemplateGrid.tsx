@@ -50,7 +50,11 @@ import CVDensityControls from "@/components/editor/CVDensityControls";
 import PageOverflowWarning from "@/components/editor/PageOverflowWarning";
 import CVRenderer from "./CVRenderer";
 import { toast } from "sonner";
-import { asRecordArray, asStringArray } from "@/components/templates/normalizeCvArrays";
+import {
+  asEditableStringArray,
+  asRecordArray,
+  asStringArray,
+} from "@/components/templates/normalizeCvArrays";
 import { removeArrayItemAt } from "@/lib/cv/array-utils";
 import OuiCVLoader from "../common/OuiCVLoader";
 import PinchZoomPreview from "@/components/templates/PinchZoomPreview";
@@ -527,7 +531,7 @@ const EditorContent = ({
         <div className={`p-6 md:p-8 border-t border-slate-100 ${sectionColors.skills}`}>
           <SectionHeader
             sectionKey="skills"
-            onAdd={() => update("skills", [...asStringArray(editingData?.skills), ""])}
+            onAdd={() => update("skills", [...asEditableStringArray(editingData?.skills), ""])}
             editingData={editingData}
             update={update}
             confirmingDelete={confirmingDelete}
@@ -535,12 +539,12 @@ const EditorContent = ({
             deleteSection={deleteSection}
           />
           <div className="flex flex-wrap gap-2.5 p-4 bg-white/50 rounded-2xl border border-slate-200 min-h-[60px]">
-            {asStringArray(editingData?.skills).map((skill: string, idx: number) => (
+            {asEditableStringArray(editingData?.skills).map((skill: string, idx: number) => (
               <div key={idx} className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200 group/skill">
                 <input
                   value={skill || ""}
                   onChange={(e) => {
-                    const arr = [...asStringArray(editingData?.skills)];
+                    const arr = [...asEditableStringArray(editingData?.skills)];
                     arr[idx] = e.target.value;
                     update("skills", arr);
                   }}
@@ -548,7 +552,7 @@ const EditorContent = ({
                 />
                 <button
                   onClick={() => {
-                    const arr = asStringArray(editingData?.skills);
+                    const arr = asEditableStringArray(editingData?.skills);
                     update("skills", arr.filter((_: any, i: number) => i !== idx));
                   }}
                   className="text-slate-300 hover:text-red-500 transition-colors"

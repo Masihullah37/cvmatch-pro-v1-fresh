@@ -38,6 +38,37 @@ function docxHtmlToText(html: string): string {
     .trim();
 }
 
+async function extractDocxXmlText(buffer: Buffer): Promise<string> {
+  const JSZip = require("jszip");
+  const zip = await JSZip.loadAsync(buffer);
+  const documentXml = zip.file("word/document.xml");
+  if (!documentXml) {
+    throw new Error("Le document Word ne contient pas sa partie principale.");
+  }
+
+  const xml = await documentXml.async("string");
+  const { load } = require("cheerio") as typeof import("cheerio");
+  const $ = load(xml, { xml: { xmlMode: true } });
+  $("w\\:tab").replaceWith(" ");
+  $("w\\:br, w\\:cr").replaceWith("\n");
+
+  return $("w\\:body")
+    .find("w\\:p")
+    .toArray()
+    .filter((paragraph) => !$(paragraph).parents("w\\:p").length)
+    .map((paragraph) =>
+      $(paragraph)
+        .find("w\\:t, a\\:t")
+        .map((_, text) => $(text).text())
+        .get()
+        .join("")
+        .trim(),
+    )
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
 export function getCVFileType(buffer: Buffer, filename: string): CVFileType {
   const cleanPath = filename.toLowerCase().split(/[?#]/, 1)[0].replace(/[\\/]+$/, "");
   const filenameOnly = cleanPath.slice(Math.max(cleanPath.lastIndexOf("/"), cleanPath.lastIndexOf("\\")) + 1);
@@ -101,22 +132,32 @@ export async function parseCVFile(buffer: Buffer, filename: string): Promise<str
     if (fileType === "docx") {
       const mammoth = require("mammoth");
       let text = "";
-      let htmlConversionError: unknown;
+      const extractionErrors: unknown[] = [];
       try {
         const result = await mammoth.convertToHtml({ buffer });
         text = docxHtmlToText(result.value || "");
       } catch (error) {
-        htmlConversionError = error;
+        extractionErrors.push(error);
       }
 
       if (!text.trim()) {
-        const result = await mammoth.extractRawText({ buffer });
-        text = result.value || "";
+        try {
+          const result = await mammoth.extractRawText({ buffer });
+          text = result.value || "";
+        } catch (error) {
+          extractionErrors.push(error);
+        }
       }
       if (!text.trim()) {
-        const detail = htmlConversionError instanceof Error
-          ? ` ${htmlConversionError.message}`
-          : "";
+        try {
+          text = await extractDocxXmlText(buffer);
+        } catch (error) {
+          extractionErrors.push(error);
+        }
+      }
+      if (!text.trim()) {
+        const lastError = extractionErrors.at(-1);
+        const detail = lastError instanceof Error ? ` ${lastError.message}` : "";
         throw new Error(`Le document Word .docx ne contient aucun texte lisible.${detail}`);
       }
       return text;

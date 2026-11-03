@@ -110,6 +110,28 @@ describe("CV file parsing", () => {
     expect(mapped.additionalSections).toBeUndefined();
   });
 
+  it("falls back to the DOCX XML when Mammoth cannot extract CV text", async () => {
+    const buffer = await createDocxBuffer("Project experience recovered directly from Word XML.");
+    const mammoth = require("mammoth");
+    const htmlSpy = jest.spyOn(mammoth, "convertToHtml").mockResolvedValue({
+      value: "",
+      messages: [],
+    });
+    const rawTextSpy = jest.spyOn(mammoth, "extractRawText").mockResolvedValue({
+      value: "",
+      messages: [],
+    });
+
+    try {
+      await expect(parseCVFile(buffer, "xml-fallback.docx")).resolves.toContain(
+        "Project experience recovered directly from Word XML.",
+      );
+    } finally {
+      htmlSpy.mockRestore();
+      rawTextSpy.mockRestore();
+    }
+  });
+
   it("reports invalid or unsupported Word documents clearly", async () => {
     await expect(parseCVFile(Buffer.from("not a Word file"), "resume.doc")).rejects.toThrow(
       "Le fichier Word .doc est invalide ou endommagé.",
