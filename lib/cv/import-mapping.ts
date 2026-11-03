@@ -170,6 +170,32 @@ function textValue(value: unknown): string {
   return "";
 }
 
+function removeExtractionArtifacts(value: string): string {
+  const artifactWords = new Set([
+    "email", "mail", "phone", "telephone", "tel", "mobile", "location",
+    "localisation", "page", "break",
+  ]);
+  return value
+    .split(/\r?\n/)
+    .filter((line) => {
+      const compact = line.replace(/[-–—_=|.]{2,}/g, " ").trim();
+      if (!compact) return false;
+      const words = normalizeText(compact).split(/\s+/);
+      if (!words.length) return false;
+
+      const isContactLabels = words.every((word) => artifactWords.has(word));
+      const hasMultipleLabels = words.filter((word) =>
+        ["email", "mail", "phone", "telephone", "tel", "mobile", "location", "localisation"].includes(word),
+      ).length >= 2;
+      const isPageBreak = words.includes("page") && words.includes("break");
+      const isStandaloneBreak = words.includes("break") &&
+        words.every((word) => artifactWords.has(word) || /^\d+$/.test(word));
+      return !(isContactLabels && (hasMultipleLabels || isPageBreak)) && !isStandaloneBreak;
+    })
+    .join("\n")
+    .trim();
+}
+
 function sectionEntries(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.flatMap((entry) => {
@@ -253,7 +279,12 @@ function normalizeExperience(value: unknown): CvRecord[] {
     ["title", "role", "position", "jobTitle", "company", "employer", "organization"]
       .some((key) => key in record);
   return sectionEntries(value).length > 0 && !Array.isArray(value) && !looksLikeExperience
-    ? sectionEntries(value).map((description) => ({ title: "", company: "", period: "", description }))
+    ? sectionEntries(value).flatMap((description) => {
+        const cleanedDescription = removeExtractionArtifacts(description);
+        return cleanedDescription
+          ? [{ title: "", company: "", period: "", description: cleanedDescription }]
+          : [];
+      })
     : (Array.isArray(value) ? value : value ? [value] : []).flatMap((entry) => {
         const record = asRecord(entry);
         if (Object.keys(record).length === 0) {
@@ -264,9 +295,9 @@ function normalizeExperience(value: unknown): CvRecord[] {
         const title = textValue(record.title || record.role || record.position || record.jobTitle);
         const company = textValue(record.company || record.employer || record.organization);
         const period = textValue(record.period || record.dates || record.duration || record.date);
-        const description = textValue(
+        const description = removeExtractionArtifacts(textValue(
           record.description || record.responsibilities || record.details || record.summary,
-        );
+        ));
         const known = new Set([
           "title", "role", "position", "jobTitle", "company", "employer",
           "organization", "period", "dates", "duration", "date", "description",
@@ -280,7 +311,7 @@ function normalizeExperience(value: unknown): CvRecord[] {
           title,
           company,
           period,
-          description: [description, ...extra].filter(Boolean).join("\n"),
+          description: removeExtractionArtifacts([description, ...extra].filter(Boolean).join("\n")),
         }];
       });
 }
@@ -308,7 +339,7 @@ function normalizeRecords(
         degree: textValue(record.degree || record.qualification || record.title),
         school: textValue(record.school || record.institution || record.university || record.organization),
         year: textValue(record.year || record.period || record.dates || record.date),
-        details: textValue(record.details || record.description || record.field || record.major),
+        details: removeExtractionArtifacts(textValue(record.details || record.description || record.field || record.major)),
       });
     } else if (kind === "languages") {
       records.push({
@@ -320,7 +351,7 @@ function normalizeRecords(
       records.push({
         ...record,
         name: textValue(record.name || record.title || record.project),
-        description: textValue(record.description || record.details || record.summary),
+        description: removeExtractionArtifacts(textValue(record.description || record.details || record.summary)),
         technologies: Array.isArray(record.technologies)
           ? record.technologies
           : skillEntries(record.technologies || record.tools),
@@ -444,6 +475,7 @@ function collectTextFragments(value: unknown): string[] {
 }
 
 function cleanSourceLine(line: string): string {
+  if (removeExtractionArtifacts(line) === "") return "";
   return line
     .replace(/^[\s•●▪◦\-–—*]+/, "")
     .replace(/\s+/g, " ")
@@ -545,7 +577,7 @@ function appendSectionContent(
     case "projects":
       data.projects = [
         ...normalizeRecords(data.projects, "projects"),
-        { name: "", description: uniqueLines.join("\n"), technologies: [] },
+        { name: "", description: removeExtractionArtifacts(uniqueLines.join("\n")), technologies: [] },
       ];
       return;
     case "interests":
@@ -787,12 +819,17 @@ export function preserveImportedCvContent(
   merged.userName = textValue(generated.userName) || baseline.userName;
   merged.jobTitle = textValue(generated.jobTitle) || baseline.jobTitle;
 
-  for (const field of ["experience", "education", "skills", "languages", "projects", "interests"]) {
+  for (const field of ["experience", "education", "skills", "languages", "interests"]) {
     merged[field] = mergeUnique(
       Array.isArray(generated[field]) ? generated[field] as unknown[] : [],
       Array.isArray(baseline[field]) ? baseline[field] as unknown[] : [],
     );
   }
+  merged.projects = Array.isArray(baseline.projects) && baseline.projects.length
+    ? baseline.projects
+    : Array.isArray(generated.projects)
+      ? generated.projects
+      : [];
 
   const standardSections = new Set([
     "summary", "experience", "education", "skills", "languages", "projects",

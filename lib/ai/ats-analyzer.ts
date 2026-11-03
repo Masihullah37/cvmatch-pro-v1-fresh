@@ -312,7 +312,8 @@ function buildCompactCVSummary(cv: any): string {
     lines.push("Projects:");
     for (const p of cv.projects) {
       const tech = Array.isArray(p.technologies) ? p.technologies.join(", ") : "";
-      lines.push(`  - ${p.name || "?"}: ${tech}`);
+      const description = String(p.description || "").trim();
+      lines.push(`  - ${p.name || "?"}: ${tech}${description ? `\n    Description: ${description}` : ""}`);
     }
   }
 
@@ -424,6 +425,7 @@ Return this JSON structure, including every section from the source CV:
 {"userName":"","jobTitle":"","summary":"","contact":{"email":"","phone":"","location":"","linkedin":"","github":"","portfolio":""},"experience":[{"title":"","company":"","period":"","description":""}],"education":[{"degree":"","school":"","year":"","details":""}],"projects":[{"name":"","description":"","technologies":[]}],"skills":[],"languages":[{"language":"","level":""}],"interests":[],"additionalSections":[{"title":"","content":""}]}
 
 Map sections by their purpose, even when their heading uses different wording. Keep separate skills as separate strings. Put certifications, awards, publications, volunteering, and any other content that does not fit the standard fields in additionalSections. Do not omit any source content.
+For projects, create exactly one object for each distinct project in the source. Keep each project's name, description, and technologies together; never move, merge, or reuse details from one project under another. Preserve project names and descriptions verbatim wherever possible.
 
 CV:
 ${safeCvText}`;
@@ -511,6 +513,7 @@ You are an expert ATS Resume Optimizer. Your task:
 4. Use STAR methodology for experience descriptions
 5. Never invent employers, degrees, dates or certifications
 6. Keep the CV in its original language
+7. Keep each project's existing name, description, and technologies together. Do not merge projects or move content between projects; retain original project descriptions verbatim.
 
 ${isGeneral ? "Optimize for general professional standards." : atsSection}
 

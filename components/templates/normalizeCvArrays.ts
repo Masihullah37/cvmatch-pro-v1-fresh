@@ -26,6 +26,13 @@ export function asStringArray(value: unknown): string[] {
   return [];
 }
 
+export function asEditableStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return asStringArray(value);
+  return value.flatMap((item) =>
+    typeof item === "string" ? [item] : asStringArray([item]),
+  );
+}
+
 export function asRecordArray(value: unknown): Record<string, unknown>[] {
   if (Array.isArray(value)) return value as Record<string, unknown>[];
   if (value != null && typeof value === "object") {
