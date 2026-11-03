@@ -104,6 +104,95 @@ describe("CV import mapping", () => {
     expect(mapped.additionalSections).toBeUndefined();
   });
 
+  it("keeps unique pre-heading profile text editable without creating an additional section", () => {
+    const mapped = mapImportedCvData(
+      { userName: "Alex Morgan", summary: "" },
+      "Alex Morgan\nExperience designing resilient cloud systems for international teams",
+    );
+
+    expect(mapped.summary).toContain(
+      "Experience designing resilient cloud systems for international teams",
+    );
+    expect(mapped.additionalSections).toBeUndefined();
+  });
+
+  it("maps differently labeled contact fields into the existing contact section", () => {
+    const mapped = mapImportedCvData(
+      { userName: "Alex Morgan", contact: {} },
+      [
+        "Personal Details",
+        "Courriel: alex@example.com",
+        "Mobile: +33 6 12 34 56 78",
+        "LinkedIn: https://linkedin.example/alex",
+      ].join("\n"),
+    );
+
+    expect(mapped.contact).toEqual(expect.objectContaining({
+      email: "alex@example.com",
+      phone: "+33 6 12 34 56 78",
+      linkedin: "https://linkedin.example/alex",
+    }));
+    expect(mapped.additionalSections).toBeUndefined();
+  });
+
+  it("maps section headings by purpose when their wording differs from template headings", () => {
+    const mapped = mapImportedCvData(
+      { userName: "Alex Morgan", skills: [], experience: [], education: [] },
+      [
+        "Career Highlights",
+        "Led a platform migration for a 40-person engineering team",
+        "Academic Training",
+        "MSc Computer Science, Example University, 2020",
+        "Technical Expertise",
+        "PostgreSQL",
+        "Professional Profile",
+        "Product engineer focused on reliable cloud services",
+      ].join("\n"),
+    );
+
+    expect(mapped.experience).toContainEqual(expect.objectContaining({
+      description: "Led a platform migration for a 40-person engineering team",
+    }));
+    expect(mapped.education).toContainEqual(expect.objectContaining({
+      details: "MSc Computer Science, Example University, 2020",
+    }));
+    expect(mapped.skills).toContain("PostgreSQL");
+    expect(mapped.summary).toContain("Product engineer focused on reliable cloud services");
+    expect(mapped.additionalSections).toBeUndefined();
+  });
+
+  it("maps semantically named structured fields into standard sections without adding another section", () => {
+    const mapped = mapImportedCvData({
+      userName: "Alex Morgan",
+      careerHighlights: [
+        { role: "Engineering Lead", employer: "Example Corp", responsibilities: "Led a 12-person team" },
+      ],
+      academicTraining: [
+        { qualification: "MSc Computer Science", institution: "Example University", year: "2020" },
+      ],
+      headers: {
+        careerHighlights: "Career Highlights",
+        academicTraining: "Academic Training",
+      },
+      sectionOrder: ["careerHighlights", "academicTraining"],
+    });
+
+    expect(mapped.experience).toContainEqual(expect.objectContaining({
+      title: "Engineering Lead",
+      company: "Example Corp",
+    }));
+    expect(mapped.education).toContainEqual(expect.objectContaining({
+      degree: "MSc Computer Science",
+      school: "Example University",
+    }));
+    expect(mapped.headers).not.toHaveProperty("careerHighlights");
+    expect(mapped.headers).not.toHaveProperty("academicTraining");
+    expect(mapped.sectionOrder).toEqual(expect.arrayContaining(["experience", "education"]));
+    expect(mapped.sectionOrder).not.toContain("careerHighlights");
+    expect(mapped.sectionOrder).not.toContain("academicTraining");
+    expect(mapped.additionalSections).toBeUndefined();
+  });
+
   it("removes semantically equivalent line-wrapped content without dropping unique sections", () => {
     const mapped = mapImportedCvData(
       {
